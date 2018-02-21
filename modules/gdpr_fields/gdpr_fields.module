@@ -1,0 +1,71 @@
+<?php
+
+/**
+ * @file
+ * Module file for the GDPR Fields module.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\field\FieldConfigInterface;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Field\FieldItemListInterface;
+
+/**
+ * Implements hook_entity_field_access().
+ */
+function gdpr_fields_entity_field_access($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, FieldItemListInterface $items = NULL) {
+  // @todo Check that target entity is a content entity.
+  if ($operation == 'view' && $items) {
+    if ($field_definition instanceof FieldConfigInterface) {
+      $is_private = $field_definition->getThirdPartySetting('gdpr_fields', 'gdpr_fields_settings', FALSE);
+      if ($is_private) {
+        // @todo Do access check based on field settings.
+        return AccessResult::forbiddenIf(!$account->hasPermission('administer gdpr fields'));
+      }
+    }
+  }
+  return AccessResult::neutral();
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function gdpr_fields_form_field_config_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  /* @var \Drupal\Core\Field\FieldConfigInterface $field */
+  $field = $form_state->getFormObject()->getEntity();
+  // @todo Check that target entity is a content entity.
+
+  $form['field']['gdpr_fields']['gdpr_fields_settings'] = [
+    '#type' => 'checkbox',
+    '#title' => t('This is a GDPR field.'),
+    '#default_value' => $field->getThirdPartySetting('gdpr_fields', 'gdpr_fields_settings', FALSE),
+  ];
+  $form['actions']['submit']['#submit'][] = 'gdpr_fields_form_field_config_edit_form_submit';
+}
+
+/**
+ * Form submission handler for gdpr_fields_form_field_config_edit_form_alter.
+ *
+ * @param array $form
+ *   The form array.
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *   The form state.
+ */
+function gdpr_fields_form_field_config_edit_form_submit(array $form, FormStateInterface $form_state) {
+  /* @var \Drupal\Core\Field\FieldConfigInterface $field */
+  $field = $form_state->getFormObject()->getEntity();
+  $form_fields = &$form_state->getValues();
+
+  // If the private option is checked, update settings.
+  if ($form_fields['gdpr_fields_settings']) {
+    $field->setThirdPartySetting('gdpr_fields', 'gdpr_fields_settings', TRUE);
+    $field->save();
+  }
+  else {
+    $field->unsetThirdPartySetting('gdpr_fields', 'gdpr_fields_settings');
+    $field->save();
+  }
+
+}
