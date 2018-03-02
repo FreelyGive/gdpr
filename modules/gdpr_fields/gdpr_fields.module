@@ -11,16 +11,24 @@ use Drupal\Core\Form\FormStateInterface;
  * Implements hook_form_FORM_ID_alter().
  *
  * @todo Find a better way of editing field GDPR settings as lots of fields are not UI configurable.
+ * @todo Check user edit permission for GDPR fields.
  */
 function gdpr_fields_form_field_config_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   /* @var \Drupal\Core\Field\FieldConfigInterface $field */
   $field = $form_state->getFormObject()->getEntity();
   // @todo Check that target entity is a content entity.
 
+  $enabled = $field->getThirdPartySetting('gdpr_fields', 'gdpr_fields_enabled', FALSE);
+  $form['field']['gdpr_fields'] = [
+    '#type' => 'details',
+    '#title' => t('GDPR field settings'),
+    '#open' => $enabled,
+  ];
+
   $form['field']['gdpr_fields']['gdpr_fields_enabled'] = [
     '#type' => 'checkbox',
     '#title' => t('This is a GDPR field'),
-    '#default_value' => $field->getThirdPartySetting('gdpr_fields', 'gdpr_fields_enabled', FALSE),
+    '#default_value' => $enabled,
   ];
 
   $form['field']['gdpr_fields']['gdpr_fields_rta'] = [
@@ -32,6 +40,13 @@ function gdpr_fields_form_field_config_edit_form_alter(&$form, FormStateInterfac
       'no' => 'Not',
     ],
     '#default_value' => $field->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rta', 'no'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="gdpr_fields_enabled"]' => array(
+          'checked' => TRUE,
+        ),
+      ),
+    ),
   ];
 
   $form['field']['gdpr_fields']['gdpr_fields_rtf'] = [
@@ -44,6 +59,13 @@ function gdpr_fields_form_field_config_edit_form_alter(&$form, FormStateInterfac
       'no' => 'Not',
     ],
     '#default_value' => $field->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rtf', 'no'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="gdpr_fields_enabled"]' => array(
+          'checked' => TRUE,
+        ),
+      ),
+    ),
   ];
   $form['actions']['submit']['#submit'][] = 'gdpr_fields_form_field_config_edit_form_submit';
 }
