@@ -112,6 +112,57 @@ class GDPRCollector {
   }
 
   /**
+   * Get entity tree for GDPR.
+   */
+  public function getValueEntities(&$entity_list, $entity_type = 'user', $entity) {
+    $definition = $this->entityTypeManager->getDefinition($entity_type);
+
+    if ($definition instanceof ConfigEntityTypeInterface) {
+      return;
+    }
+
+    // Check for recursion.
+    if (isset($entity_list[$entity_type][$entity->id()])) {
+      return;
+    }
+
+    // Set entity.
+    $entity_list[$entity_type][$entity->id()] = $entity;
+
+    // Find relationships.
+    $context = new Context(new ContextDefinition("entity:{$entity_type}"));
+    $definitions = $this->relationshipManager->getDefinitionsForContexts([$context]);
+
+
+    foreach ($definitions as $definition_id => $definition) {
+      list($type, , , $field) = explode(':', $definition_id);
+
+      if ($type == 'typed_data_entity_relationship') {
+        $plugin = $this->relationshipManager->createInstance($definition_id);
+        $plugin->setContextValue('base', $entity);
+
+        $test = $plugin->getRelationship();
+//        $test = $this->relationshipManager->get;
+        if ($test->hasContextValue()) {
+         $relationship_entity = $test->getContextValue();
+          $this->getValueEntities($entity_list, $relationship_entity->getEntityTypeId(), $relationship_entity);
+        }
+//        if (isset($definition['target_entity_type'])) {
+//          $this->getEntities($entity_list, $definition['target_entity_type']);
+//        }
+      }
+//      elseif ($type == 'typed_data_entity_relationship_reverse') {
+//        if (isset($definition['source_entity_type'])) {
+//          $this->getEntities($entity_list, $definition['source_entity_type']);
+//        }
+//      }
+      else {
+        continue;
+      }
+    }
+  }
+
+  /**
    * List fields on entity including their GDPR values.
    *
    * @param string $entity_type
@@ -171,6 +222,57 @@ class GDPRCollector {
         $fields[$key]['gdpr_rta'] = $config->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rta', 'no');
         $fields[$key]['gdpr_rtf'] = $config->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rtf', 'no');
       }
+    }
+
+    return $fields;
+  }
+
+  /**
+   * Get a list of fields.
+   *
+   * @return array
+   *   GDPR field list.
+   */
+  public function fieldValues($entity_type = 'user', $entity) {
+    $storage = $this->entityTypeManager->getStorage($entity_type);
+    $entity_definition = $this->entityTypeManager->getDefinition($entity_type);
+    $bundle_type = $entity_definition->getBundleEntityType();
+
+    // Get fields for entity.
+    $fields = [];
+    foreach ($entity as $field_id => $field) {
+      /** @var \Drupal\Core\Field\FieldItemListInterface $field */
+      $field_definition = $field->getFieldDefinition();
+      $key = "$entity_type.{$entity->id()}.$field_id";
+
+
+      $fieldValue = $field->getString();
+
+
+      $fields[$key] = [
+        'title' => $field_definition->getLabel(),
+        'value' => $fieldValue,
+        'entity' => $entity->getEntityType()->getLabel(),
+        'gdpr_rta' => 'None',
+        'gdpr_rtf' => 'None',
+        'edit' => '',
+      ];
+
+//      if ($entity_definition->get('field_ui_base_route')) {
+//        $url = Url::fromRoute($route_name, $route_params);
+//
+//        if ($url->access()) {
+//          $fields[$key]['edit'] = Link::fromTextAndUrl('edit', $url);
+//        }
+//      }
+//
+//
+//      $config = $field_definition->getConfig($bundle_id);
+//
+//      if ($config->getThirdPartySetting('gdpr_fields', 'gdpr_fields_enabled', FALSE)) {
+//        $fields[$key]['gdpr_rta'] = $config->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rta', 'no');
+//        $fields[$key]['gdpr_rtf'] = $config->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rtf', 'no');
+//      }
     }
 
     return $fields;

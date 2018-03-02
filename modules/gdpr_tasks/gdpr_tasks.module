@@ -1,0 +1,106 @@
+<?php
+
+/**
+ * @file
+ * Module file for the GDPR Fields module.
+ */
+
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_toolbar().
+ */
+function gdpr_tasks_toolbar() {
+  $user = \Drupal::currentUser();
+
+  $items = [];
+  $items['gdpr'] = [
+    '#cache' => [
+      'contexts' => [
+        'user',
+      ],
+    ],
+  ];
+
+  if ($user->hasPermission('view gdpr tasks')) {
+    $links = [
+      'summary' => [
+        'title' => t('Summary'),
+        'url' => Url::fromRoute('gdpr_tasks.summary'),
+        'attributes' => [
+          'title' => t('GDPR Summary'),
+        ],
+      ],
+      'tasks' => [
+        'title' => t('Tasks'),
+        'url' => Url::fromRoute('entity.gdpr_task.collection'),
+        'attributes' => [
+          'title' => t('GDPR Task list'),
+        ],
+      ],
+    ];
+    $items['gdpr'] += [
+      '#type' => 'toolbar_item',
+      'tab' => [
+        '#type' => 'link',
+        '#title' => t('GDPR'),
+        '#url' => Url::fromRoute('gdpr_tasks.summary'),
+        '#attributes' => [
+          'title' => t('GDPR'),
+          'class' => ['toolbar-icon', 'toolbar-icon-shortcut'],
+        ],
+      ],
+      'tray' => [
+        'links' => [
+          '#theme' => 'links',
+          '#links' => $links,
+          '#attributes' => [
+            'class' => ['toolbar-menu'],
+          ],
+        ],
+      ],
+      '#weight' => -10,
+      '#attached' => [
+        'library' => [
+          'shortcut/drupal.shortcut',
+        ],
+      ],
+    ];
+  }
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function gdpr_tasks_theme() {
+  $theme = [];
+  $theme['gdpr_task'] = [
+    'render element' => 'elements',
+    'file' => 'gdpr_task.page.inc',
+    'template' => 'gdpr_task',
+  ];
+  $theme['gdpr_task_content_add_list'] = [
+    'render element' => 'content',
+    'variables' => ['content' => NULL],
+    'file' => 'gdpr_task.page.inc',
+  ];
+  return $theme;
+}
+
+/**
+* Implements hook_theme_suggestions_HOOK().
+*/
+function gdpr_tasks_theme_suggestions_gdpr_task(array $variables) {
+  $suggestions = [];
+  $entity = $variables['elements']['#gdpr_task'];
+  $sanitized_view_mode = strtr($variables['elements']['#view_mode'], '.', '_');
+
+  $suggestions[] = 'gdpr_task__' . $sanitized_view_mode;
+  $suggestions[] = 'gdpr_task__' . $entity->bundle();
+  $suggestions[] = 'gdpr_task__' . $entity->bundle() . '__' . $sanitized_view_mode;
+  $suggestions[] = 'gdpr_task__' . $entity->id();
+  $suggestions[] = 'gdpr_task__' . $entity->id() . '__' . $sanitized_view_mode;
+  return $suggestions;
+}

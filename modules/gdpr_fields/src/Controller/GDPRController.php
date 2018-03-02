@@ -107,4 +107,54 @@ class GDPRController extends ControllerBase {
     ];
   }
 
+
+
+    public function rtfPage($user) {
+    $rows = [];
+    $entities = [];
+    $this->collector->getEntities($entities);
+
+    foreach ($entities as $entity_type => $bundles) {
+      foreach ($bundles as $bundle_id) {
+        $rows += $this->collector->listFields($entity_type, $bundle_id);
+      }
+    }
+
+    // Sort rows by field name.
+    ksort($rows);
+
+    return  [
+      '#type' => 'table',
+      '#header' => [t('Name'), t('Type'), t('Entity'), t('Bundle'), t('Right to access'), t('Right to be forgotten'), ''],
+      '#rows' => $rows,
+      '#sticky' => TRUE,
+      '#empty' => t('There are no GDPR fields.'),
+    ];
+  }
+
+  public function rtaPage($user) {
+    $rows = [];
+    $entities = [];
+    $this->collector->getValueEntities($entities, 'user', $user);
+
+    dpm(array_keys($entities['profile']));
+
+    foreach ($entities as $entity_type => $bundles) {
+      foreach ($bundles as $bundle_entity) {
+        $rows += $this->collector->fieldValues($entity_type, $bundle_entity);
+      }
+    }
+
+    // Sort rows by field name.
+    ksort($rows);
+
+    return  [
+      '#type' => 'table',
+      '#header' => [t('Name'), t('Type'), t('Entity'), t('Bundle'), t('Right to access'), t('Right to be forgotten'), ''],
+      '#rows' => $rows,
+      '#sticky' => TRUE,
+      '#empty' => t('There are no GDPR fields.'),
+    ];
+  }
+
 }

@@ -5,3 +5,27 @@ gdpr_fields.fields_list:
     _title: 'Used in GDPR'
   requirements:
     _permission: 'view gdpr fields'
+
+gdpr_fields.user.rtf:
+  path: '/user/{user}/gdpr-rtf'
+  defaults:
+    _title: 'Right to be Forgotten'
+    _controller: '\Drupal\gdpr_fields\Controller\GDPRController::rtfPage'
+  requirements:
+    _permission: 'view gdpr fields'
+  options:
+    parameters:
+      user:
+        type: entity:user
+
+gdpr_fields.user.rta:
+  path: '/user/{user}/gdpr-rta'
+  defaults:
+    _title: 'Right to Access'
+    _controller: '\Drupal\gdpr_fields\Controller\GDPRController::rtaPage'
+  requirements:
+    _permission: 'view gdpr fields'
+  options:
+    parameters:
+      user:
+        type: entity:user
