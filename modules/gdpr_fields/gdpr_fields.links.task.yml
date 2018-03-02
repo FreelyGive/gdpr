@@ -1,0 +1,4 @@
+gdpr_fields.fields_list:
+  route_name: gdpr_fields.fields_list
+  title: 'Used in GDPR'
+  base_route: entity.field_storage_config.collection
