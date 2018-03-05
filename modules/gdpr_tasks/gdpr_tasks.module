@@ -2,10 +2,14 @@
 
 /**
  * @file
- * Module file for the GDPR Fields module.
+ * Module file for the GDPR Tasks module.
  */
 
 use Drupal\Core\Url;
+use Drupal\gdpr_fields\Controller\GDPRController;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\user\UserInterface;
+use Drupal\Component\Utility\Random;
 
 /**
  * Implements hook_toolbar().
@@ -94,6 +98,7 @@ function gdpr_tasks_theme() {
 */
 function gdpr_tasks_theme_suggestions_gdpr_task(array $variables) {
   $suggestions = [];
+  /* @var \Drupal\gdpr_tasks\Entity\TaskInterface $entity */
   $entity = $variables['elements']['#gdpr_task'];
   $sanitized_view_mode = strtr($variables['elements']['#view_mode'], '.', '_');
 
@@ -103,4 +108,77 @@ function gdpr_tasks_theme_suggestions_gdpr_task(array $variables) {
   $suggestions[] = 'gdpr_task__' . $entity->id();
   $suggestions[] = 'gdpr_task__' . $entity->id() . '__' . $sanitized_view_mode;
   return $suggestions;
+}
+
+function gdpr_tasks_generate_sar_report(UserInterface $user) {
+  /* @var \Drupal\gdpr_fields\Controller\GDPRController $controller */
+  $controller = \Drupal::classResolver()->getInstanceFromDefinition(GDPRController::class);
+
+  return $controller->rtaData($user);
+}
+
+/**
+ * Implements hook_entity_presave().
+ *
+ * Process data for task requests.
+ * @todo Consider creating plugin or event listeners for task processing.
+ */
+function gdpr_tasks_entity_presave(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() != 'gdpr_task') {
+    return;
+  }
+
+  /* @var \Drupal\gdpr_tasks\Entity\TaskInterface $entity */
+  switch ($entity->bundle()) {
+    case 'gdpr_remove':
+      break;
+
+    // Collect relevant data and save to downloadable csv.
+    case 'gdpr_sar':
+      if (empty($entity->get('sar_export')->fid)) {
+        /* @var \Drupal\file\Plugin\Field\FieldType\FileFieldItemList $field */
+        $field = $entity->get('sar_export');
+        /* @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
+        $field_definition = $field->getFieldDefinition();
+        $settings = $field_definition->getSettings();
+
+        $config = [
+          'field_definition' => $field_definition,
+          'name' => $field->getName(),
+          'parent' => $field->getParent(),
+        ];
+        /* @var \Drupal\file\Plugin\Field\FieldType\FileItem $field_type */
+        $field_type = Drupal::service('plugin.manager.field.field_type')->createInstance($field_definition->getType(), $config);
+
+        // Prepare destination.
+        $dirname = $field_type->getUploadLocation();
+        file_prepare_directory($dirname, FILE_CREATE_DIRECTORY);
+
+        // Generate a file entity.
+        $random = new Random();
+        $destination = $dirname . '/' . $random->name(10, TRUE) . '.csv';
+
+        $user = $entity->getOwner();
+        $data = gdpr_tasks_generate_sar_report($user);
+
+        // @todo Add headers to csv export.
+        $file = file_save_data('', $destination, FILE_EXISTS_ERROR);
+
+        // Update csv with actual data.
+        $fp = fopen($destination, 'w');
+        foreach($data as $line){
+          fputcsv($fp, $line);
+        }
+        fclose($fp);
+
+        $values = [
+          'target_id' => $file->id(),
+          'display' => (int) $settings['display_default'],
+          'description' => '',
+        ];
+
+        $entity->sar_export = $values;
+      }
+      break;
+  }
 }

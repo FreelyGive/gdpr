@@ -6,6 +6,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\gdpr_fields\GDPRCollector;
+use Drupal\user\UserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -107,37 +108,19 @@ class GDPRController extends ControllerBase {
     ];
   }
 
-
-
-    public function rtfPage($user) {
-    $rows = [];
-    $entities = [];
-    $this->collector->getEntities($entities);
-
-    foreach ($entities as $entity_type => $bundles) {
-      foreach ($bundles as $bundle_id) {
-        $rows += $this->collector->listFields($entity_type, $bundle_id);
-      }
-    }
-
-    // Sort rows by field name.
-    ksort($rows);
-
-    return  [
-      '#type' => 'table',
-      '#header' => [t('Name'), t('Type'), t('Entity'), t('Bundle'), t('Right to access'), t('Right to be forgotten'), ''],
-      '#rows' => $rows,
-      '#sticky' => TRUE,
-      '#empty' => t('There are no GDPR fields.'),
-    ];
-  }
-
-  public function rtaPage($user) {
+  /**
+   * Builds data for Right to Access data requests.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The user to fetch data for.
+   *
+   * @return array
+   *   Structured array of user related data.
+   */
+  public function rtaData(UserInterface $user) {
     $rows = [];
     $entities = [];
     $this->collector->getValueEntities($entities, 'user', $user);
-
-    dpm(array_keys($entities['profile']));
 
     foreach ($entities as $entity_type => $bundles) {
       foreach ($bundles as $bundle_entity) {
@@ -147,14 +130,7 @@ class GDPRController extends ControllerBase {
 
     // Sort rows by field name.
     ksort($rows);
-
-    return  [
-      '#type' => 'table',
-      '#header' => [t('Name'), t('Type'), t('Entity'), t('Bundle'), t('Right to access'), t('Right to be forgotten'), ''],
-      '#rows' => $rows,
-      '#sticky' => TRUE,
-      '#empty' => t('There are no GDPR fields.'),
-    ];
+    return $rows;
   }
 
 }

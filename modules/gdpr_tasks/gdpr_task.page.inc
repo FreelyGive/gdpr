@@ -27,8 +27,15 @@ function template_preprocess_gdpr_task(array &$variables) {
 
   /* @var \Drupal\gdpr_fields\Controller\GDPRController $controller */
   $controller = \Drupal::classResolver()->getInstanceFromDefinition(GDPRController::class);
+  $rows = $controller->rtaData($gdpr_task->getOwner());
 
-  $variables['data'] = $controller->rtaPage($gdpr_task->getOwner());
+  $variables['data'] = [
+    '#type' => 'table',
+    '#header' => [t('Name'), t('Type'), t('Entity'), t('Bundle'), t('Right to access'), t('Right to be forgotten'), ''],
+    '#rows' => $rows,
+    '#sticky' => TRUE,
+    '#empty' => t('There are no GDPR fields.'),
+  ];
 
   // Helpful $content variable for templates.
   foreach (Element::children($variables['elements']) as $key) {
