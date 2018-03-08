@@ -1,0 +1,40 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.gdpr_task.gdpr_sar.manual_data
+    - field.field.gdpr_task.gdpr_sar.sar_export
+    - gdpr_tasks.gdpr_task_type.gdpr_sar
+  module:
+    - file
+    - options
+    - user
+id: gdpr_task.gdpr_sar.default
+targetEntityType: gdpr_task
+bundle: gdpr_sar
+mode: default
+content:
+  sar_export:
+    type: file_default
+    weight: 2
+    region: content
+    label: inline
+    settings:
+      use_description_as_link_text: true
+    third_party_settings: {  }
+  status:
+    type: list_default
+    weight: 1
+    region: content
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+  user_id:
+    label: inline
+    type: author
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  manual_data: true

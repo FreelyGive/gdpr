@@ -1,0 +1,24 @@
+create gdpr tasks:
+  title: 'Create GDPR tasks'
+
+view gdpr tasks:
+  title: 'View GDPR tasks'
+
+edit gdpr tasks:
+  title: 'Edit GDPR tasks'
+add task entities:
+  title: 'Create new Task entities'
+
+administer task entities:
+  title: 'Administer Task entities'
+  description: 'Allow to access the administration form to configure Task entities.'
+  restrict access: true
+
+delete task entities:
+  title: 'Delete Task entities'
+
+edit task entities:
+  title: 'Edit Task entities'
+
+view task entities:
+  title: 'View Task entities'

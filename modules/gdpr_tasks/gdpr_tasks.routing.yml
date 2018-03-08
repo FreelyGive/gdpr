@@ -1,0 +1,21 @@
+gdpr_tasks.summary:
+  path: '/admin/gdpr/summary'
+  defaults:
+    _controller: '\Drupal\gdpr_tasks\Controller\GDPRController::summaryPage'
+    _title: 'GDPR Summary'
+  requirements:
+    _permission: 'view gdpr tasks'
+
+gdpr_tasks.request:
+  path: '/user/{user}/gdpr-request/{gdpr_task_type}'
+  defaults:
+    _controller: '\Drupal\gdpr_tasks\Controller\GDPRController::requestPage'
+    _title: 'GDPR Summary'
+  requirements:
+    _permission: 'create gdpr tasks'
+  options:
+    parameters:
+      gdpr_task_type:
+        type: string
+      user:
+        type: entity:user

@@ -18,17 +18,16 @@ function gdpr_fields_form_field_config_edit_form_alter(&$form, FormStateInterfac
   $field = $form_state->getFormObject()->getEntity();
   // @todo Check that target entity is a content entity.
 
-  $enabled = $field->getThirdPartySetting('gdpr_fields', 'gdpr_fields_enabled', FALSE);
   $form['field']['gdpr_fields'] = [
     '#type' => 'details',
     '#title' => t('GDPR field settings'),
-    '#open' => $enabled,
+    '#open' => TRUE,
   ];
 
   $form['field']['gdpr_fields']['gdpr_fields_enabled'] = [
     '#type' => 'checkbox',
     '#title' => t('This is a GDPR field'),
-    '#default_value' => $enabled,
+    '#default_value' => $field->getThirdPartySetting('gdpr_fields', 'gdpr_fields_enabled', FALSE),
   ];
 
   $form['field']['gdpr_fields']['gdpr_fields_rta'] = [
@@ -53,7 +52,7 @@ function gdpr_fields_form_field_config_edit_form_alter(&$form, FormStateInterfac
     '#type' => 'select',
     '#title' => t('Right to be forgotten'),
     '#options' => [
-      'obfuscate' => 'Obfuscate',
+      'anonymise' => 'Anonymise',
       'remove' => 'Remove',
       'maybe' => 'Maybe',
       'no' => 'Not',

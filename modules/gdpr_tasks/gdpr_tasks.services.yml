@@ -1,0 +1,4 @@
+services:
+  gdpr_tasks.manager:
+    class: Drupal\gdpr_tasks\TaskManager
+    arguments: ['@entity_type.manager', '@current_user']
