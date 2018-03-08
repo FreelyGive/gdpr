@@ -4,6 +4,8 @@ namespace Drupal\gdpr_tasks;
 
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityManager;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\TypedData\Exception\ReadOnlyException;
 use Drupal\gdpr_tasks\Event\GetAnonymizersEvent;
@@ -22,19 +24,29 @@ class Anonymizer {
 
   private $db;
 
+  private $entityTypeManager;
+
   /**
    * Anonymizer constructor.
    */
-  public function __construct(GDPRCollector $collector, EventDispatcherInterface $dispatcher, Connection $db) {
+  public function __construct(GDPRCollector $collector, EventDispatcherInterface $dispatcher, Connection $db, EntityTypeManagerInterface $entity_manager) {
     $this->collector = $collector;
     $this->dispatcher = $dispatcher;
     $this->db = $db;
+    $this->entityTypeManager = $entity_manager;
   }
 
   /**
    * Runs anonymization routines against a user.
    */
-  public function run(User $user) {
+  public function run($user_id) {
+
+    // Make sure we load a fresh copy of the entity (bypassing the cache)
+    // so we don't end up affecting any other references to the entity.
+
+    $user = $this->entityTypeManager->getStorage('user')
+      ->loadUnchanged($user_id);
+
     $errors = [];
     $entities = [];
     $successes = [];
@@ -44,6 +56,10 @@ class Anonymizer {
 
     foreach ($entities as $entity_type => $bundles) {
       foreach ($bundles as $bundle_entity) {
+        // Re-load a fresh copy of the bundle entity from storage so we don't
+        // end up modifying any other references to the entity in memory.
+        $bundle_entity = $this->entityTypeManager->getStorage($bundle_entity->getEntityTypeId())
+          ->loadUnchanged($bundle_entity->id());
 
         $entity_success = TRUE;
 

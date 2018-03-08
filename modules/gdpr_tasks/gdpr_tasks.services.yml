@@ -4,4 +4,4 @@ services:
     arguments: ['@entity_type.manager', '@current_user']
   gdpr_tasks.anonymizer:
     class: Drupal\gdpr_tasks\Anonymizer
-    arguments: ['@gdpr_fields.collector', '@event_dispatcher', '@database']
+    arguments: ['@gdpr_fields.collector', '@event_dispatcher', '@database', '@entity_type.manager']

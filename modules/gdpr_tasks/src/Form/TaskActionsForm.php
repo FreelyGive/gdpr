@@ -78,7 +78,7 @@ class TaskActionsForm extends ContentEntityForm {
 
 //    $user = $this->entityManager->getStorage($user_made_request->getEntityTypeId())
 //      ->loadUnchanged($user_made_request->id());
-    $errors = $anonymizer->run($this->entity->getOwner());
+    $errors = $anonymizer->run($this->entity->getOwner()->id());
     return $errors;
   }
 
