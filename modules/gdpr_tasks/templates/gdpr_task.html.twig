@@ -21,6 +21,7 @@
     <summary role="button" aria-controls="task-summary" aria-expanded="true" aria-pressed="true">Task Summary</summary>
     <div class="details-wrapper">
       <div{{ attributes.addClass('gdpr_task') }}>
+        <strong>Type: </strong> {{ type }}
         {{- content -}}
       </div>
     </div>
@@ -36,4 +37,8 @@
       </div>
     </div>
   </details>
+{% endif %}
+
+{% if actions %}
+  {{ actions }}
 {% endif %}

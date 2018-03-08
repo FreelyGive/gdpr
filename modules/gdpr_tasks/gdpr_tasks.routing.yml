@@ -19,15 +19,3 @@ gdpr_tasks.request:
         type: string
       user:
         type: entity:user
-
-gdpr_tasks.my_requests:
-  path: '/user/{user}/gdpr/requests'
-  defaults:
-    _title: 'Your data requests'
-    _controller: '\Drupal\gdpr_tasks\Controller\GDPRController::userRequestPage'
-  requirements:
-    _permission: 'view own gdpr tasks'
-  options:
-    parameters:
-      user:
-        type: entity:user

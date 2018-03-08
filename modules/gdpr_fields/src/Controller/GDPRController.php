@@ -124,7 +124,32 @@ class GDPRController extends ControllerBase {
 
     foreach ($entities as $entity_type => $bundles) {
       foreach ($bundles as $bundle_entity) {
-        $rows += $this->collector->fieldValues($entity_type, $bundle_entity);
+        $rows += $this->collector->fieldValues($entity_type, $bundle_entity, ['rta' => 'rta']);
+      }
+    }
+
+    // Sort rows by field name.
+    ksort($rows);
+    return $rows;
+  }
+
+  /**
+   * Builds data for Right to be Forgotten data requests.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The user to fetch data for.
+   *
+   * @return array
+   *   Structured array of user related data.
+   */
+  public function rtfData(UserInterface $user) {
+    $rows = [];
+    $entities = [];
+    $this->collector->getValueEntities($entities, 'user', $user);
+
+    foreach ($entities as $entity_type => $bundles) {
+      foreach ($bundles as $bundle_entity) {
+        $rows += $this->collector->fieldValues($entity_type, $bundle_entity, ['rtf' => 'rtf']);
       }
     }
 

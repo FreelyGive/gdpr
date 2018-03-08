@@ -247,11 +247,13 @@ class GDPRCollector {
    *   The entity type id.
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The fully loaded entity for which values are listed.
+   * @param array $extra_fields
+   *   Add extra fields if required
    *
    * @return array
    *   GDPR entity field value list.
    */
-  public function fieldValues($entity_type = 'user', EntityInterface $entity) {
+  public function fieldValues($entity_type = 'user', EntityInterface $entity, $extra_fields = []) {
     $entity_definition = $this->entityTypeManager->getDefinition($entity_type);
     $bundle_type = $entity_definition->getBundleEntityType();
     $bundle_id = $entity->bundle();
@@ -269,6 +271,13 @@ class GDPRCollector {
     foreach ($entity as $field_id => $field) {
       /** @var \Drupal\Core\Field\FieldItemListInterface $field */
       $field_definition = $field->getFieldDefinition();
+
+      $config = $field_definition->getConfig($bundle_id);
+      if (!$config->getThirdPartySetting('gdpr_fields', 'gdpr_fields_enabled', FALSE)) {
+        continue;
+      }
+
+
       $key = "$entity_type.{$entity->id()}.$field_id";
 
       $fieldValue = $field->getString();
@@ -277,14 +286,32 @@ class GDPRCollector {
         'value' => $fieldValue,
         'entity' => $entity->getEntityType()->getLabel(),
         'bundle' => $bundle_label,
-        'gdpr_rta' => 'None',
-        'gdpr_rtf' => 'None',
       ];
 
-      $config = $field_definition->getConfig($bundle_id);
-      if ($config->getThirdPartySetting('gdpr_fields', 'gdpr_fields_enabled', FALSE)) {
-        $fields[$key]['gdpr_rta'] = $config->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rta', 'no');
-        $fields[$key]['gdpr_rtf'] = $config->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rtf', 'no');
+      if (empty($extra_fields)) {
+        continue;
+      }
+
+      // Fetch and validate based on field settings.
+      if (isset($extra_fields['rta'])) {
+        $rta_value = $config->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rta', FALSE);
+
+        if ($rta_value && $rta_value !== 'no') {
+          $fields[$key]['gdpr_rta'] = $rta_value;
+        }
+        else {
+          unset($fields[$key]);
+        }
+      }
+      if (isset($extra_fields['rtf'])) {
+        $rtf_value = $config->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rtf', FALSE);
+
+        if ($rtf_value && $rtf_value !== 'no') {
+          $fields[$key]['gdpr_rtf'] = $rtf_value;
+        }
+        else {
+          unset($fields[$key]);
+        }
       }
     }
 

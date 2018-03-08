@@ -2,6 +2,7 @@
 
 namespace Drupal\gdpr_tasks;
 
+use Drupal\Component\Utility\Random;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Session\AccountProxy;
 
@@ -64,6 +65,35 @@ class TaskManager {
     }
 
     return $tasks;
+  }
+
+  /**
+   * Writes array data to a csv file.
+   *
+   * @param array $data
+   *   The data to be stored in csv.
+   * @param string $dirname
+   *   The local path or stream wrapper for destination directory.
+   *
+   * @return string
+   *   The uri path of the created file.
+   */
+  public function toCSV($data, $dirname = 'private://') {
+    // Prepare destination.
+    file_prepare_directory($dirname, FILE_CREATE_DIRECTORY);
+
+    // Generate a file entity.
+    $random = new Random();
+    $destination = $dirname . '/' . $random->name(10, TRUE) . '.csv';
+
+    // Update csv with actual data.
+    $fp = fopen($destination, 'w');
+    foreach($data as $line){
+      fputcsv($fp, $line);
+    }
+    fclose($fp);
+
+    return $destination;
   }
 
 }

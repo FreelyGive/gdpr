@@ -26,6 +26,7 @@ use Drupal\user\UserInterface;
  *
  *     "form" = {
  *       "default" = "Drupal\gdpr_tasks\Form\TaskForm",
+ *       "process" = "Drupal\gdpr_tasks\Form\TaskActionsForm",
  *       "delete" = "Drupal\gdpr_tasks\Form\TaskDeleteForm",
  *     },
  *     "access" = "Drupal\gdpr_tasks\TaskAccessControlHandler",
@@ -122,6 +123,18 @@ class Task extends ContentEntityBase implements TaskInterface {
   /**
    * {@inheritdoc}
    */
+  public function getStatus() {
+    $statuses = $this->getStatuses();
+    $value = $this->status->value;
+    if (isset($statuses[$value])) {
+      $value = $statuses[$value];
+    }
+    return $value;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields = parent::baseFieldDefinitions($entity_type);
 
@@ -185,8 +198,7 @@ class Task extends ContentEntityBase implements TaskInterface {
   public static function getStatuses() {
     return [
       'requested' => 'Requested',
-      'pending' => 'Deposit Paid',
-      'complete' => 'Paid in Full',
+      'closed' => 'Closed',
     ];
   }
 

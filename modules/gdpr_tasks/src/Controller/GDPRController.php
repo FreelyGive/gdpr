@@ -57,15 +57,27 @@ class GDPRController extends ControllerBase {
     );
   }
 
+  /**
+   * Placeholder for a GDPR Dashboard.
+   *
+   * @return array
+   *   Renderable Drupal markup.
+   */
   public function summaryPage() {
     return ['#markup' => $this->t('Summary')];
   }
 
-  public function userRequestPage() {
-    return ['#markup' => $this->t('Summary')];
-  }
-
-
+  /**
+   * Request a GDPR Task.
+   *
+   * @param \Drupal\Core\Session\AccountInterface $user
+   *   The user for whom the request is being made.
+   * @param $gdpr_task_type
+   *   Type of task to be created.
+   *
+   * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   *   Return user to GDPR requests.
+   */
   public function requestPage(AccountInterface $user, $gdpr_task_type) {
       $tasks = $this->taskManager->getUserTasks($user, $gdpr_task_type);
 
@@ -81,9 +93,8 @@ class GDPRController extends ControllerBase {
         $this->messenger->addStatus('Your request has been logged');
       }
 
-    $response = new RedirectResponse(Url::fromRoute('gdpr_tasks.my_requests', ['user' => $user->id()])->toString());
+    $response = new RedirectResponse(Url::fromRoute('view.gdpr_tasks_my_data_requests.page_1', ['user' => $user->id()])->toString());
     return $response;
-
   }
 
 }

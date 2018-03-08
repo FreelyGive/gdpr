@@ -77,18 +77,16 @@ class TaskListBuilder extends EntityListBuilder {
     $row['type'] = $this->bundleStorage->load($entity->bundle())->label();
     $row['created'] = DateTimePlus::createFromTimestamp($entity->getCreatedTime())->format('j/m/Y - H:m');
 
+    $date_formatter = \Drupal::service('date.formatter');
+    $row['created'] .= ' - ' . $date_formatter->formatDiff($entity->getCreatedTime(), \Drupal::time()->getRequestTime(), [
+      'granularity' => 1,
+    ]) . ' ago';
+
     return $row + parent::buildRow($entity);
   }
 
   /**
-   * Gets this list's default operations.
-   *
-   * @param \Drupal\Core\Entity\EntityInterface $entity
-   *   The entity the operations are for.
-   *
-   * @return array
-   *   The array structure is identical to the return value of
-   *   self::getOperations().
+   * {@inheritdoc}
    */
   protected function getDefaultOperations(EntityInterface $entity) {
     $operations = parent::getDefaultOperations($entity);
@@ -100,9 +98,60 @@ class TaskListBuilder extends EntityListBuilder {
       ];
     }
 
-
     return $operations;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function render() {
+    $build['requested']['title'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'h3',
+      '#value' => 'Requested tasks',
+    ];
+
+    $build['requested']['table'] = [
+      '#type' => 'table',
+      '#header' => $this->buildHeader(),
+      '#rows' => [],
+      '#empty' => $this->t('There is no open @label yet.', ['@label' => $this->entityType->getLabel()]),
+      '#cache' => [
+        'contexts' => $this->entityType->getListCacheContexts(),
+        'tags' => $this->entityType->getListCacheTags(),
+      ],
+    ];
+
+    $build['closed']['title'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'h3',
+      '#value' => 'Closed tasks',
+    ];
+
+    $build['closed']['table'] = [
+      '#type' => 'table',
+      '#header' => $this->buildHeader(),
+      '#rows' => [],
+      '#empty' => $this->t('There is no closed @label yet.', ['@label' => $this->entityType->getLabel()]),
+      '#cache' => [
+        'contexts' => $this->entityType->getListCacheContexts(),
+        'tags' => $this->entityType->getListCacheTags(),
+      ],
+    ];
+    foreach ($this->load() as $entity) {
+      if ($row = $this->buildRow($entity)) {
+        $build[$entity->status->value]['table']['#rows'][$entity->id()] = $row;
+      }
+    }
+
+    // Only add the pager if a limit is specified.
+    if ($this->limit) {
+      $build['pager'] = [
+        '#type' => 'pager',
+      ];
+    }
+
+    return $build;
+  }
 
 }

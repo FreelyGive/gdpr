@@ -32,4 +32,12 @@ interface TaskInterface extends ContentEntityInterface, EntityChangedInterface, 
    */
   public function setCreatedTime($timestamp);
 
+  /**
+   * Gets the current status of the task.
+   *
+   * @return string
+   *   The status of the Task entity.
+   */
+  public function getStatus();
+
 }

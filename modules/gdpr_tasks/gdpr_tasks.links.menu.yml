@@ -1,4 +1,3 @@
-
 # Task menu items definition
 entity.gdpr_task.collection:
   title: 'Task list'

@@ -10,6 +10,7 @@ use Drupal\gdpr_fields\Controller\GDPRController;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\user\UserInterface;
 use Drupal\Component\Utility\Random;
+use Drupal\gdpr_tasks\TaskManager;
 
 /**
  * Implements hook_toolbar().
@@ -135,7 +136,7 @@ function gdpr_tasks_entity_presave(EntityInterface $entity) {
 
     // Collect relevant data and save to downloadable csv.
     case 'gdpr_sar':
-      if (empty($entity->get('sar_export')->fid)) {
+      if (empty($entity->get('sar_export')->count())) {
         /* @var \Drupal\file\Plugin\Field\FieldType\FileFieldItemList $field */
         $field = $entity->get('sar_export');
         /* @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
@@ -154,22 +155,29 @@ function gdpr_tasks_entity_presave(EntityInterface $entity) {
         $dirname = $field_type->getUploadLocation();
         file_prepare_directory($dirname, FILE_CREATE_DIRECTORY);
 
-        // Generate a file entity.
-        $random = new Random();
-        $destination = $dirname . '/' . $random->name(10, TRUE) . '.csv';
-
         $user = $entity->getOwner();
         $data = gdpr_tasks_generate_sar_report($user);
 
-        // @todo Add headers to csv export.
-        $file = file_save_data('', $destination, FILE_EXISTS_ERROR);
+        $inc = [];
+        $maybe = [];
+        foreach ($data as $key => $values) {
+          $rta = $values['gdpr_rta'];
+          unset($values['gdpr_rta']);
+          $inc[$key] = $values;
 
-        // Update csv with actual data.
-        $fp = fopen($destination, 'w');
-        foreach($data as $line){
-          fputcsv($fp, $line);
+          if ($rta == 'maybe') {
+            $maybe[$key] = $values;
+          }
         }
-        fclose($fp);
+
+        /* @var \Drupal\gdpr_tasks\TaskManager $task_manager */
+        $task_manager = \Drupal::service('gdpr_tasks.manager');
+        $destination = $task_manager->toCSV($inc, $dirname);
+        $export = file_get_contents($destination);
+
+        // Generate a file entity.
+        // @todo Add headers to csv export.
+        $file = file_save_data($export, $destination, FILE_EXISTS_REPLACE);
 
         $values = [
           'target_id' => $file->id(),
@@ -178,6 +186,9 @@ function gdpr_tasks_entity_presave(EntityInterface $entity) {
         ];
 
         $entity->sar_export = $values;
+
+        $temp = $task_manager->toCSV($maybe, $dirname);
+        $entity->manual_data = file_get_contents($temp);
       }
       break;
   }
