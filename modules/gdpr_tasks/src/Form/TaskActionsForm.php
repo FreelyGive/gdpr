@@ -70,14 +70,6 @@ class TaskActionsForm extends ContentEntityForm {
   private function doRemoval(FormStateInterface $form_state) {
     // @todo Should be injected
     $anonymizer = \Drupal::service('gdpr_tasks.anonymizer');
-    // Make sure to load a new copy of the user.
-    // Do not modify the original instance, or you'll see anonymized data
-    // in the Requested By field. Use loadUnchanged to bypass the cache
-    // and retrieve a fresh instance.
-//    $user_made_request = $this->entity->getOwner();
-
-//    $user = $this->entityManager->getStorage($user_made_request->getEntityTypeId())
-//      ->loadUnchanged($user_made_request->id());
     $errors = $anonymizer->run($this->entity->getOwner()->id());
     return $errors;
   }
@@ -105,25 +97,6 @@ class TaskActionsForm extends ContentEntityForm {
 
     return $actions;
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  //  public function submitForm(array &$form, FormStateInterface $form_state) {
-  //    parent::submitForm($form, $form_state);
-  //
-  //    $operation = $form_state->getTriggeringElement()['#name'];
-  //
-  //    switch ($operation) {
-  //      case 'export':
-  //        $this->doSarExport($form_state);
-  //        break;
-  //
-  //      case 'remove':
-  //        $this->doRemoval($form_state);
-  //        break;
-  //    }
-  //  }
 
   /**
    * {@inheritdoc}

@@ -7,8 +7,10 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\TypedData\Exception\ReadOnlyException;
 use Drupal\gdpr_fields\GDPRCollector;
+use Drupal\user\Entity\User;
 
 /**
  * Anonymizes or removes field values for GDPR.
@@ -23,26 +25,26 @@ class Anonymizer {
 
   private $moduleHandler;
 
+  private $currentUser;
+
   /**
    * Anonymizer constructor.
    */
-  public function __construct(GDPRCollector $collector, Connection $db, EntityTypeManagerInterface $entity_manager, ModuleHandlerInterface $module_handler) {
+  public function __construct(GDPRCollector $collector, Connection $db, EntityTypeManagerInterface $entity_manager, ModuleHandlerInterface $module_handler, AccountProxyInterface $current_user) {
     $this->collector = $collector;
     $this->db = $db;
     $this->entityTypeManager = $entity_manager;
     $this->moduleHandler = $module_handler;
+    $this->currentUser = $current_user;
   }
 
   /**
    * Runs anonymization routines against a user.
    */
   public function run($user_id) {
-
     // Make sure we load a fresh copy of the entity (bypassing the cache)
     // so we don't end up affecting any other references to the entity.
-
-    $user = $this->entityTypeManager->getStorage('user')
-      ->loadUnchanged($user_id);
+    $user = $this->refetchUser($user_id);
 
     $errors = [];
     $entities = [];
@@ -69,7 +71,7 @@ class Anonymizer {
           $msg = NULL;
 
           if ($mode == 'anonymise') {
-            list($success, $msg) = $this->anonymize($field);
+            list($success, $msg) = $this->anonymize($field, $bundle_entity, $entity_type);
           }
           elseif ($mode == 'remove') {
             list($success, $msg) = $this->remove($field);
@@ -96,25 +98,24 @@ class Anonymizer {
       $tx = $this->db->startTransaction();
 
       try {
+        /* @var EntityInterface $entity */
         foreach ($successes as $entity) {
           $entity->save();
         }
+        // Re-fetch the user so we see any changes that were made.
+        $user = $this->refetchUser($user_id);
+
+        // Log that this user has been anonymized and block the account.
+        $user->get('gdpr_date_removed')->setValue(date("Y-m-d H:i:s"));
+        $user->get('gdpr_removed_by')->setValue($this->currentUser->id());
+        $user->block();
+        $user->save();
       }
       catch (\Exception $e) {
         $tx->rollBack();
         $errors[] = $e->getMessage();
       }
     }
-
-    // @todo this
-    // Now we've finished processing any defined fields.
-    // We must always process the following:
-    // - Anonymize the username
-    // - Anonymize the email
-    // - Remove the password
-    // - Remove all roles
-    // - Block the user
-    // - Store that they've been anonymized.
 
     return $errors;
   }
@@ -137,20 +138,38 @@ class Anonymizer {
    *
    * Uses the GetAnonymizersEvent to find an appropriate anonymization function.
    */
-  private function anonymize(FieldItemListInterface $field) {
+  private function anonymize(FieldItemListInterface $field, EntityInterface $bundle_entity, $entity_type) {
     // For string fields, generate a random string the same length.
     $type = $field->getFieldDefinition()->getType();
+    $field_key = implode('.', array_filter(
+      [$entity_type, $bundle_entity->bundle(), $field->getName()]));
 
     $anonymizers = [
-      'string' => ['\Drupal\gdpr_tasks\Anonymizer', 'anonymizeString'],
-      'datetime' => ['\Drupal\gdpr_tasks\Anonymizer', 'anonymizeDate'],
+      'field' => [
+        'user.user.mail' => ['\Drupal\gdpr_tasks\Anonymizer', 'anonymizeMail'],
+      ],
+      'type' => [
+        'string' => ['\Drupal\gdpr_tasks\Anonymizer', 'anonymizeString'],
+        'datetime' => ['\Drupal\gdpr_tasks\Anonymizer', 'anonymizeDate'],
+      ],
     ];
 
     $this->moduleHandler->alter('gdpr_anonymizers', $anonymizers);
 
-    if (isset($anonymizers[$type]) && is_callable($anonymizers[$type])) {
+    // Check if there's an anonymizer for this field.
+    if (isset($anonymizers['field'][$field_key]) && is_callable($anonymizers['field'][$field_key])) {
       try {
-        call_user_func($anonymizers[$type], $field);
+        call_user_func($anonymizers['field'][$field_key], $field);
+        return [TRUE, NULL];
+      }
+      catch (\Exception $e) {
+        return [FALSE, $e->getMessage()];
+      }
+    }
+    // If not, anonymize by type instead.
+    elseif (isset($anonymizers['type'][$type]) && is_callable($anonymizers['type'][$type])) {
+      try {
+        call_user_func($anonymizers['type'][$type], $field);
         return [TRUE, NULL];
       }
       catch (\Exception $e) {
@@ -197,6 +216,30 @@ class Anonymizer {
     }
 
     return $fields;
+  }
+
+  /**
+   * Re-fetches the user bypassing the cache.
+   *
+   * @return \Drupal\user\Entity\User
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   */
+  private function refetchUser($user_id) {
+    return $this->entityTypeManager->getStorage('user')
+      ->loadUnchanged($user_id);
+  }
+
+  /**
+   * Generates an unique email address.
+   *
+   * Uses the timestamp to ensure this is unique.
+   *
+   * @throws \Drupal\Core\TypedData\Exception\ReadOnlyException
+   */
+  public static function anonymizeMail(FieldItemListInterface $field) {
+    $mail = 'anon_' . time() . '@example.com';
+    $field->setValue($mail);
   }
 
   /**
