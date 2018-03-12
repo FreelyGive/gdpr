@@ -308,6 +308,13 @@ class GDPRCollector {
 
         if ($rtf_value && $rtf_value !== 'no') {
           $fields[$key]['gdpr_rtf'] = $rtf_value;
+          // For 'maybes', provide a link to edit the entity.
+          if ($rtf_value == 'maybe') {
+            $fields[$key]['link'] = $entity->toLink('Edit', 'edit-form');
+          }
+          else {
+            $fields[$key]['link'] = '';
+          }
         }
         else {
           unset($fields[$key]);
