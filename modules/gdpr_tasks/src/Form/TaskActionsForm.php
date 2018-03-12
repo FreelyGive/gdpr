@@ -70,7 +70,7 @@ class TaskActionsForm extends ContentEntityForm {
   private function doRemoval(FormStateInterface $form_state) {
     // @todo Should be injected
     $anonymizer = \Drupal::service('gdpr_tasks.anonymizer');
-    $errors = $anonymizer->run($this->entity->getOwner()->id());
+    $errors = $anonymizer->run($this->entity);
     return $errors;
   }
 
@@ -110,17 +110,22 @@ class TaskActionsForm extends ContentEntityForm {
       // Removals may have generated errors.
       // If this happens, combine the error messages and display them.
       if (count($errors) > 0) {
+        $should_save = FALSE;
         \Drupal::messenger()->addError(implode(' ', $errors));
         $form_state->setRebuild();
       }
       else {
-        $entity->status = 'closed';
-        parent::save($form, $form_state);
+        $should_save = TRUE;
       }
     }
     else {
       $this->doSarExport($form_state);
+      $should_save = TRUE;
+    }
+
+    if ($should_save) {
       $entity->status = 'closed';
+      $entity->setProcessedById(\Drupal::currentUser()->id());
       \Drupal::messenger()->addStatus('Task has been processed.');
       parent::save($form, $form_state);
     }

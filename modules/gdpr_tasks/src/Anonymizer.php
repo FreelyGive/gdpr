@@ -10,6 +10,7 @@ use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\TypedData\Exception\ReadOnlyException;
 use Drupal\gdpr_fields\GDPRCollector;
+use Drupal\gdpr_tasks\Entity\TaskInterface;
 use Drupal\user\Entity\User;
 
 /**
@@ -41,10 +42,10 @@ class Anonymizer {
   /**
    * Runs anonymization routines against a user.
    */
-  public function run($user_id) {
+  public function run(TaskInterface $task) {
     // Make sure we load a fresh copy of the entity (bypassing the cache)
     // so we don't end up affecting any other references to the entity.
-    $user = $this->refetchUser($user_id);
+    $user = $task->getOwner(); //$this->refetchUser($task->getOwnerId());
 
     $errors = [];
     $entities = [];
@@ -103,11 +104,7 @@ class Anonymizer {
           $entity->save();
         }
         // Re-fetch the user so we see any changes that were made.
-        $user = $this->refetchUser($user_id);
-
-        // Log that this user has been anonymized and block the account.
-        $user->get('gdpr_date_removed')->setValue(date("Y-m-d H:i:s"));
-        $user->get('gdpr_removed_by')->setValue($this->currentUser->id());
+        $user = $this->refetchUser($task->getOwnerId());
         $user->block();
         $user->save();
       }
