@@ -4,14 +4,11 @@ namespace Drupal\gdpr_tasks;
 
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\EntityManager;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\TypedData\Exception\ReadOnlyException;
-use Drupal\gdpr_tasks\Event\GetAnonymizersEvent;
 use Drupal\gdpr_fields\GDPRCollector;
-use Drupal\user\Entity\User;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Anonymizes or removes field values for GDPR.
@@ -20,20 +17,20 @@ class Anonymizer {
 
   private $collector;
 
-  private $dispatcher;
-
   private $db;
 
   private $entityTypeManager;
 
+  private $moduleHandler;
+
   /**
    * Anonymizer constructor.
    */
-  public function __construct(GDPRCollector $collector, EventDispatcherInterface $dispatcher, Connection $db, EntityTypeManagerInterface $entity_manager) {
+  public function __construct(GDPRCollector $collector, Connection $db, EntityTypeManagerInterface $entity_manager, ModuleHandlerInterface $module_handler) {
     $this->collector = $collector;
-    $this->dispatcher = $dispatcher;
     $this->db = $db;
     $this->entityTypeManager = $entity_manager;
+    $this->moduleHandler = $module_handler;
   }
 
   /**
@@ -143,14 +140,17 @@ class Anonymizer {
   private function anonymize(FieldItemListInterface $field) {
     // For string fields, generate a random string the same length.
     $type = $field->getFieldDefinition()->getType();
-    $event = new GetAnonymizersEvent();
-    // Dispatch the event to allow other modules
-    // to register anonymization functions for particular entity types.
-    $this->dispatcher->dispatch(GetAnonymizersEvent::EVENT_NAME, $event);
 
-    if (isset($event->anonymizers[$type]) && is_callable($event->anonymizers[$type])) {
+    $anonymizers = [
+      'string' => ['\Drupal\gdpr_tasks\Anonymizer', 'anonymizeString'],
+      'datetime' => ['\Drupal\gdpr_tasks\Anonymizer', 'anonymizeDate'],
+    ];
+
+    $this->moduleHandler->alter('gdpr_anonymizers', $anonymizers);
+
+    if (isset($anonymizers[$type]) && is_callable($anonymizers[$type])) {
       try {
-        call_user_func($event->anonymizers[$type], $field);
+        call_user_func($anonymizers[$type], $field);
         return [TRUE, NULL];
       }
       catch (\Exception $e) {
