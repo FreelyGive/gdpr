@@ -77,7 +77,7 @@ function gdpr_fields_form_field_config_edit_form_alter(&$form, FormStateInterfac
 
   $form['field']['gdpr_fields']['gdpr_fields_sanitizer'] = [
     '#type' => 'select',
-    '#title' => t('Anonymizer to use'),
+    '#title' => t('Sanitizer to use'),
     '#options' => $sanitizer_options,
     '#default_value' => $field->getThirdPartySetting('gdpr_fields', 'gdpr_fields_sanitizer', ''),
     '#states' => [
