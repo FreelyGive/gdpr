@@ -2,6 +2,8 @@
 
 namespace Drupal\gdpr_dump\Sanitizer;
 
+use Drupal\Core\Field\FieldItemListInterface;
+
 /**
  * Interface GdprSanitizerInterface.
  *
@@ -18,6 +20,6 @@ interface GdprSanitizerInterface {
    * @return int|string
    *   The sanitized input.
    */
-  public function sanitize($input);
+  public function sanitize($input, FieldItemListInterface $field);
 
 }

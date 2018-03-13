@@ -14,6 +14,10 @@ use Drupal\Core\Form\FormStateInterface;
  * @todo Check user edit permission for GDPR fields.
  */
 function gdpr_fields_form_field_config_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+
+  /* @var \Drupal\gdpr_dump\Sanitizer\GdprSanitizerFactory $sanitizer_factory */
+  $sanitizer_factory = \Drupal::service('gdpr_dump.sanitizer_factory');
+  $sanitizer_definitions = $sanitizer_factory->getDefinitions();
   /* @var \Drupal\Core\Field\FieldConfigInterface $field */
   $field = $form_state->getFormObject()->getEntity();
   // @todo Check that target entity is a content entity.
@@ -39,13 +43,13 @@ function gdpr_fields_form_field_config_edit_form_alter(&$form, FormStateInterfac
       'no' => 'Not',
     ],
     '#default_value' => $field->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rta', 'no'),
-    '#states' => array(
-      'visible' => array(
-        ':input[name="gdpr_fields_enabled"]' => array(
+    '#states' => [
+      'visible' => [
+        ':input[name="gdpr_fields_enabled"]' => [
           'checked' => TRUE,
-        ),
-      ),
-    ),
+        ],
+      ],
+    ],
   ];
 
   $form['field']['gdpr_fields']['gdpr_fields_rtf'] = [
@@ -58,14 +62,32 @@ function gdpr_fields_form_field_config_edit_form_alter(&$form, FormStateInterfac
       'no' => 'Not',
     ],
     '#default_value' => $field->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rtf', 'no'),
-    '#states' => array(
-      'visible' => array(
-        ':input[name="gdpr_fields_enabled"]' => array(
+    '#states' => [
+      'visible' => [
+        ':input[name="gdpr_fields_enabled"]' => [
           'checked' => TRUE,
-        ),
-      ),
-    ),
+        ],
+      ],
+    ],
   ];
+
+  $sanitizer_options = ['' => ''] + array_map(function ($s) {
+    return $s['label'];
+  }, $sanitizer_definitions);
+
+  $form['field']['gdpr_fields']['gdpr_fields_sanitizer'] = [
+    '#type' => 'select',
+    '#title' => t('Anonymizer to use'),
+    '#options' => $sanitizer_options,
+    '#default_value' => $field->getThirdPartySetting('gdpr_fields', 'gdpr_fields_sanitizer', ''),
+    '#states' => [
+      'visible' => [
+        ':input[name="gdpr_fields_enabled"]' => ['checked' => TRUE],
+        ':input[name="gdpr_fields_rtf"]' => ['value' => 'anonymise'],
+      ],
+    ],
+  ];
+  
   $form['actions']['submit']['#submit'][] = 'gdpr_fields_form_field_config_edit_form_submit';
 }
 

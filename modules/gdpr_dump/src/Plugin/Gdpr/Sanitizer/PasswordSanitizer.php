@@ -3,6 +3,7 @@
 namespace Drupal\gdpr_dump\Plugin\Gdpr\Sanitizer;
 
 use Drupal\Component\Utility\Random;
+use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\gdpr_dump\Sanitizer\GdprSanitizerBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -65,7 +66,7 @@ class PasswordSanitizer extends GdprSanitizerBase {
    * @return int|string
    *   The sanitized input.
    */
-  public function sanitize($input) {
+  public function sanitize($input, FieldItemListInterface $field) {
     if (NULL === $this->random) {
       $this->random = new Random();
     }

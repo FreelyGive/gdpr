@@ -2,6 +2,8 @@
 
 namespace Drupal\gdpr_tasks;
 
+use Drupal\Component\Annotation\Plugin;
+use Drupal\Component\Plugin\Exception\PluginException;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -9,6 +11,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\TypedData\Exception\ReadOnlyException;
+use Drupal\gdpr_dump\Sanitizer\GdprSanitizerFactory;
 use Drupal\gdpr_fields\GDPRCollector;
 use Drupal\gdpr_tasks\Entity\TaskInterface;
 use Drupal\user\Entity\User;
@@ -28,15 +31,18 @@ class Anonymizer {
 
   private $currentUser;
 
+  private $sanitizerFactory;
+
   /**
    * Anonymizer constructor.
    */
-  public function __construct(GDPRCollector $collector, Connection $db, EntityTypeManagerInterface $entity_manager, ModuleHandlerInterface $module_handler, AccountProxyInterface $current_user) {
+  public function __construct(GDPRCollector $collector, Connection $db, EntityTypeManagerInterface $entity_manager, ModuleHandlerInterface $module_handler, AccountProxyInterface $current_user, GdprSanitizerFactory $sanitizer_factory) {
     $this->collector = $collector;
     $this->db = $db;
     $this->entityTypeManager = $entity_manager;
     $this->moduleHandler = $module_handler;
     $this->currentUser = $current_user;
+    $this->sanitizerFactory = $sanitizer_factory;
   }
 
   /**
@@ -142,56 +148,48 @@ class Anonymizer {
     }
   }
 
-  /**
-   * Anonymizes a field.
-   *
-   * Uses the GetAnonymizersEvent to find an appropriate anonymization function.
-   */
   private function anonymize(FieldItemListInterface $field, EntityInterface $bundle_entity, $entity_type) {
-    // For string fields, generate a random string the same length.
-    $type = $field->getFieldDefinition()->getType();
-    $field_key = implode('.', array_filter(
-      [$entity_type, $bundle_entity->bundle(), $field->getName()]));
+    $sanitizer_id = $this->getSanitizerId($field, $bundle_entity);
 
-    $anonymizers = [
-      'field' => [
-        'user.user.mail' => ['\Drupal\gdpr_tasks\Anonymizer', 'anonymizeMail'],
-      ],
-      'type' => [
-        'string' => ['\Drupal\gdpr_tasks\Anonymizer', 'anonymizeString'],
-        'datetime' => ['\Drupal\gdpr_tasks\Anonymizer', 'anonymizeDate'],
-      ],
-    ];
-
-    $this->moduleHandler->alter('gdpr_anonymizers', $anonymizers);
-
-    // Check if there's an anonymizer for this field.
-    if (isset($anonymizers['field'][$field_key]) && is_callable($anonymizers['field'][$field_key])) {
-      try {
-        call_user_func($anonymizers['field'][$field_key], $field);
-        return [TRUE, NULL];
-      }
-      catch (\Exception $e) {
-        return [FALSE, $e->getMessage()];
-      }
-    }
-    // If not, anonymize by type instead.
-    elseif (isset($anonymizers['type'][$type]) && is_callable($anonymizers['type'][$type])) {
-      try {
-        call_user_func($anonymizers['type'][$type], $field);
-        return [TRUE, NULL];
-      }
-      catch (\Exception $e) {
-        return [FALSE, $e->getMessage()];
-      }
-    }
-    else {
+    if (!$sanitizer_id) {
       return [
         FALSE,
-        "Could not anonymize field {$field->getName()}. Please consider changing this field from 'anonymize' to 'remove', or register a custom anonymizer function for the type {$type}.",
+        "Could not anonymize field {$field->getName()}. Please consider changing this field from 'anonymize' to 'remove', or register a custom sanitizer.",
       ];
     }
+
+    try {
+      $sanitizer = $this->sanitizerFactory->get($sanitizer_id);
+      $field->setValue($sanitizer->sanitize($field->value, $field));
+      return [TRUE, NULL];
+    }
+    catch (\Exception $e) {
+      return [FALSE, $e->getMessage()];
+    }
+
   }
+
+  private function getSanitizerId(FieldItemListInterface $field, EntityInterface $bundle_entity) {
+    // First check if this field has a sanitizer defined.
+    $fieldDefinition = $field->getFieldDefinition();
+    $type = $fieldDefinition->getType();
+    $sanitizer = $fieldDefinition
+      ->getConfig($bundle_entity->bundle())
+      ->getThirdPartySetting('gdpr_fields', 'gdpr_fields_sanitizer');
+
+    if (!$sanitizer) {
+      // No sanitizer defined directly on the field. Instead try and get one for the datatype.
+      $sanitizers = [
+        'string' => 'gpdr_text_sanitizer',
+        'datetime' => 'gdpr_date_sanitizer',
+      ];
+
+      $this->moduleHandler->alter('gdpr_type_sanitizers', $sanitizers);
+      $sanitizer = $sanitizers[$type];
+    }
+    return $sanitizer;
+  }
+
 
   /**
    * Gets fields to anonymize/remove.
