@@ -78,9 +78,10 @@ class Anonymizer {
 
           $success = TRUE;
           $msg = NULL;
+          $sanitizer = '';
 
           if ($mode == 'anonymise') {
-            list($success, $msg) = $this->anonymize($field, $bundle_entity, $entity_type);
+            list($success, $msg, $sanitizer) = $this->anonymize($field, $bundle_entity);
           }
           elseif ($mode == 'remove') {
             list($success, $msg) = $this->remove($field);
@@ -92,6 +93,7 @@ class Anonymizer {
               'entity_type' => $bundle_entity->getEntityTypeId() . '.' . $bundle_entity->bundle(),
               'field_name' => $field->getName(),
               'action' => $mode,
+              'sanitizer' => $sanitizer,
             ];
           }
           else {
@@ -148,23 +150,24 @@ class Anonymizer {
     }
   }
 
-  private function anonymize(FieldItemListInterface $field, EntityInterface $bundle_entity, $entity_type) {
+  private function anonymize(FieldItemListInterface $field, EntityInterface $bundle_entity) {
     $sanitizer_id = $this->getSanitizerId($field, $bundle_entity);
 
     if (!$sanitizer_id) {
       return [
         FALSE,
         "Could not anonymize field {$field->getName()}. Please consider changing this field from 'anonymize' to 'remove', or register a custom sanitizer.",
+        NULL,
       ];
     }
 
     try {
       $sanitizer = $this->sanitizerFactory->get($sanitizer_id);
       $field->setValue($sanitizer->sanitize($field->value, $field));
-      return [TRUE, NULL];
+      return [TRUE, NULL, $sanitizer_id];
     }
     catch (\Exception $e) {
-      return [FALSE, $e->getMessage()];
+      return [FALSE, $e->getMessage(), NULL];
     }
 
   }
@@ -235,63 +238,6 @@ class Anonymizer {
   private function refetchUser($user_id) {
     return $this->entityTypeManager->getStorage('user')
       ->loadUnchanged($user_id);
-  }
-
-  /**
-   * Generates an unique email address.
-   *
-   * Uses the timestamp to ensure this is unique.
-   *
-   * @throws \Drupal\Core\TypedData\Exception\ReadOnlyException
-   */
-  public static function anonymizeMail(FieldItemListInterface $field) {
-    $mail = 'anon_' . time() . '@example.com';
-    $field->setValue($mail);
-  }
-
-  /**
-   * Replaces string field value with a random value if the field is non-empty.
-   *
-   * @throws \Drupal\Core\TypedData\Exception\ReadOnlyException
-   */
-  public static function anonymizeString(FieldItemListInterface $field) {
-    $value = $field->getString();
-    $max_length = $field->getDataDefinition()->getSetting("max_length");
-
-    if (!empty($value)) {
-      // Generate a prefixed random string.
-      $value = "anon_" . self::generateRandomString(4);
-      // If the value is too long, tirm it.
-      if (isset($max_length) && strlen($value) > $max_length) {
-        $value = substr(0, $max_length);
-      }
-
-      $field->setValue($value);
-    }
-  }
-
-  /**
-   * Replaces date field value with a random value if the field is non-empty.
-   *
-   * @throws \Drupal\Core\TypedData\Exception\ReadOnlyException
-   */
-  public static function anonymizeDate(FieldItemListInterface $field) {
-    if (isset($field->value)) {
-      $field->setValue(date('1000-01-01'));
-    }
-  }
-
-  /**
-   * Generates a random string of a specified length.
-   */
-  private static function generateRandomString($length) {
-    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    $charactersLength = strlen($characters);
-    $randomString = '';
-    for ($i = 0; $i < $length; $i++) {
-      $randomString .= $characters[rand(0, $charactersLength - 1)];
-    }
-    return $randomString;
   }
 
 }

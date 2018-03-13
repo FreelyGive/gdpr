@@ -65,7 +65,7 @@ class TaskLogItem extends FieldItemBase {
         'sanitizer' => [
           'type' => 'varchar',
           'length' => 255,
-        ]
+        ],
       ],
     ];
   }
