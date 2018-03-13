@@ -140,10 +140,15 @@ class GDPRCollector {
 
 
     foreach ($definitions as $definition_id => $definition) {
-      list($type, $definition_entity, ,) = explode(':', $definition_id);
+      list($type, $definition_entity, $related_entity_type,) = explode(':', $definition_id);
 
       // Ignore entity revisions for now.
       if ($definition_entity == 'entity_revision') {
+        continue;
+      }
+
+      // Ignore links back to gdpr_task.
+      if ($related_entity_type == 'gdpr_task') {
         continue;
       }
 

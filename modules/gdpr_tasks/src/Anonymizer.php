@@ -45,12 +45,14 @@ class Anonymizer {
   public function run(TaskInterface $task) {
     // Make sure we load a fresh copy of the entity (bypassing the cache)
     // so we don't end up affecting any other references to the entity.
-    $user = $task->getOwner(); //$this->refetchUser($task->getOwnerId());
+    $user = $task->getOwner();
 
     $errors = [];
     $entities = [];
     $successes = [];
     $failures = [];
+
+    $log = [];
 
     $this->collector->getValueEntities($entities, 'user', $user);
 
@@ -78,7 +80,15 @@ class Anonymizer {
             list($success, $msg) = $this->remove($field);
           }
 
-          if ($success === FALSE) {
+          if ($success === TRUE) {
+            $log[] = [
+              'entity_id' => $bundle_entity->id(),
+              'entity_type' => $bundle_entity->getEntityTypeId() . '.' . $bundle_entity->bundle(),
+              'field_name' => $field->getName(),
+              'action' => $mode,
+            ];
+          }
+          else {
             // Could not anonymize/remove field. Record to errors list.
             // Prevent entity from being saved.
             $entity_success = FALSE;
@@ -94,6 +104,8 @@ class Anonymizer {
         }
       }
     }
+
+    $task->get('removal_log')->setValue($log);
 
     if (count($failures) === 0) {
       $tx = $this->db->startTransaction();

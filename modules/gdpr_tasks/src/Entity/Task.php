@@ -224,9 +224,8 @@ class Task extends ContentEntityBase implements TaskInterface {
       ->setSetting('handler', 'default')
       ->setTranslatable(TRUE)
       ->setDisplayOptions('view', [
-        'label' => 'hidden',
         'type' => 'author',
-        'weight' => 0,
+        'weight' => 5,
       ])
       ->setDisplayOptions('form', [
         'type' => 'hidden',

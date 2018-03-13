@@ -2,8 +2,10 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.field.gdpr_task.gdpr_remove.removal_log
     - gdpr_tasks.gdpr_task_type.gdpr_remove
   module:
+    - gdpr_tasks
     - options
     - user
 id: gdpr_task.gdpr_remove.default
@@ -11,6 +13,20 @@ targetEntityType: gdpr_task
 bundle: gdpr_remove
 mode: default
 content:
+  processed_by:
+    label: inline
+    type: author
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  removal_log:
+    type: gdpr_task_item
+    weight: 3
+    region: content
+    label: above
+    settings: {  }
+    third_party_settings: {  }
   status:
     type: list_default
     weight: 1
