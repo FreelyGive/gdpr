@@ -10,7 +10,7 @@ use Drupal\gdpr_dump\Sanitizer\GdprSanitizerBase;
  * Class TextSanitizer.
  *
  * @GdprSanitizer(
- *   id = "gpdr_date_sanitizer",
+ *   id = "gdpr_date_sanitizer",
  *   label = @Translation("Date sanitizer"),
  *   description=@Translation("Provides sanitation functionality intended to be used for datetime fields.")
  * )

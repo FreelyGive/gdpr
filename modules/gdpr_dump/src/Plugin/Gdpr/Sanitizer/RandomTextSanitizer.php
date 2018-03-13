@@ -10,7 +10,7 @@ use Drupal\gdpr_dump\Sanitizer\GdprSanitizerBase;
  * Class TextSanitizer.
  *
  * @GdprSanitizer(
- *   id = "gpdr_random_text_sanitizer",
+ *   id = "gdpr_random_text_sanitizer",
  *   label = @Translation("Random Text sanitizer"),
  *   description=@Translation("Provides sanitation functionality intended to be
  *   used for text fields.")

@@ -11,7 +11,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Class UsernameSanitizer.
  *
  * @GdprSanitizer(
- *   id = "gpdr_username_sanitizer",
+ *   id = "gdpr_username_sanitizer",
  *   label = @Translation("Username sanitizer"),
  *   description=@Translation("Provides sanitation functionality intended to be used for usernames.")
  * )

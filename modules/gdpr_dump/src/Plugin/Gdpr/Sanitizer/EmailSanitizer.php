@@ -11,7 +11,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Class EmailSanitizer.
  *
  * @GdprSanitizer(
- *   id = "gpdr_email_sanitizer",
+ *   id = "gdpr_email_sanitizer",
  *   label = @Translation("Email sanitizer"),
  *   description=@Translation("Provides sanitation functionality intended to be used for emails.")
  * )

@@ -180,7 +180,7 @@ class Anonymizer {
     if (!$sanitizer) {
       // No sanitizer defined directly on the field. Instead try and get one for the datatype.
       $sanitizers = [
-        'string' => 'gpdr_text_sanitizer',
+        'string' => 'gdpr_text_sanitizer',
         'datetime' => 'gdpr_date_sanitizer',
       ];
 

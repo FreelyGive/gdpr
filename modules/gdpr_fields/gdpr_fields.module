@@ -109,12 +109,15 @@ function gdpr_fields_form_field_config_edit_form_submit(array $form, FormStateIn
     $field->setThirdPartySetting('gdpr_fields', 'gdpr_fields_enabled', TRUE);
     $field->setThirdPartySetting('gdpr_fields', 'gdpr_fields_rta', $form_fields['gdpr_fields_rta']);
     $field->setThirdPartySetting('gdpr_fields', 'gdpr_fields_rtf', $form_fields['gdpr_fields_rtf']);
+    $field->setThirdPartySetting('gdpr_fields', 'gdpr_fields_sanitizer', $form_fields['gdpr_fields_sanitizer']);
     $field->save();
   }
   else {
     $field->unsetThirdPartySetting('gdpr_fields', 'gdpr_fields_enabled');
     $field->unsetThirdPartySetting('gdpr_fields', 'gdpr_fields_rta');
     $field->unsetThirdPartySetting('gdpr_fields', 'gdpr_fields_rtf');
+    $field->unsetThirdPartySetting('gdpr_fields', 'gdpr_fields_sanitizer');
+
     $field->save();
   }
 

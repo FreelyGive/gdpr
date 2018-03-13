@@ -11,7 +11,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Class PasswordSanitizer.
  *
  * @GdprSanitizer(
- *   id = "gpdr_password_sanitizer",
+ *   id = "gdpr_password_sanitizer",
  *   label = @Translation("Password sanitizer"),
  *   description=@Translation("Provides sanitation functionality intended to be used for passwords.")
  * )

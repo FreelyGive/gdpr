@@ -10,7 +10,7 @@ use Drupal\gdpr_dump\Sanitizer\GdprSanitizerBase;
  * Class LongTextSanitizer.
  *
  * @GdprSanitizer(
- *   id = "gpdr_long_text_sanitizer",
+ *   id = "gdpr_long_text_sanitizer",
  *   label = @Translation("Long text sanitizer"),
  *   description=@Translation("Provides sanitation functionality intended to be used for longer text.")
  * )
