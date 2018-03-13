@@ -46,6 +46,11 @@ class TaskLogItemWidget extends WidgetBase {
       '#title' => 'Action',
     ];
 
+    $element['sanitizer'] = [
+      '#type' => 'textfield',
+      '#title' => 'Sanitizer',
+    ];
+
     return $element;
   }
 }

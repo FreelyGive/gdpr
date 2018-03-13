@@ -24,7 +24,12 @@ class RandomTextSanitizer extends GdprSanitizerBase {
    * {@inheritdoc}
    */
   public function sanitize($input, FieldItemListInterface $field) {
-    $max_length = $field->getDataDefinition()->getSetting("max_length");
+    if ($field != NULL) {
+      $max_length = $field->getDataDefinition()->getSetting("max_length");
+    }
+    else {
+      $max_length = NULL;
+    }
 
     $value = '';
 

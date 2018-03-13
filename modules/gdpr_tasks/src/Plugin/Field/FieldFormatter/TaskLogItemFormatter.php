@@ -27,7 +27,7 @@ class TaskLogItemFormatter extends FormatterBase {
     foreach ($items as $key => $item) {
       $elements[$key] = [
         '#type' => 'markup',
-        '#markup' => "Entity type: {$item->entity_type} ID: {$item->entity_id} Field name: {$item->field_name} Action: {$item->action}",
+        '#markup' => "Entity type: {$item->entity_type} ID: {$item->entity_id} Field name: {$item->field_name} Action: {$item->action} Sanitizer: {$item->sanitizer}",
       ];
     }
 

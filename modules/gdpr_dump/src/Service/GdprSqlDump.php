@@ -294,7 +294,7 @@ class GdprSqlDump {
            * Also add a way to make exceptions
            * e.g option for 'don't alter uid 1 name', etc.
            */
-          $row[$column] = $this->pluginFactory->get($pluginId)->sanitize($row[$column]);
+          $row[$column] = $this->pluginFactory->get($pluginId)->sanitize($row[$column], NULL);
         }
         $insertQuery->values($row);
       }

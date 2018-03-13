@@ -35,6 +35,9 @@ class TaskLogItem extends FieldItemBase {
     $properties['action'] = DataDefinition::create('string')
       ->setLabel('Action');
 
+    $properties['sanitizer'] = DataDefinition::create('string')
+      ->setLabel('Sanitizer');
+
     return $properties;
   }
 
@@ -59,6 +62,10 @@ class TaskLogItem extends FieldItemBase {
           'type' => 'varchar',
           'length' => 20,
         ],
+        'sanitizer' => [
+          'type' => 'varchar',
+          'length' => 255,
+        ]
       ],
     ];
   }
