@@ -2,8 +2,6 @@
 
 namespace Drupal\gdpr_tasks;
 
-use Drupal\Component\Annotation\Plugin;
-use Drupal\Component\Plugin\Exception\PluginException;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -14,23 +12,52 @@ use Drupal\Core\TypedData\Exception\ReadOnlyException;
 use Drupal\gdpr_dump\Sanitizer\GdprSanitizerFactory;
 use Drupal\gdpr_fields\GDPRCollector;
 use Drupal\gdpr_tasks\Entity\TaskInterface;
-use Drupal\user\Entity\User;
 
 /**
  * Anonymizes or removes field values for GDPR.
  */
 class Anonymizer {
 
+  /**
+   * Collector used to retrieve properties to anonymise.
+   *
+   * @var \Drupal\gdpr_fields\GDPRCollector
+   */
   private $collector;
 
+  /**
+   * Database instance for the request.
+   *
+   * @var \Drupal\Core\Database\Connection
+   */
   private $db;
 
+  /**
+   * Entity Type manager used to retrieve field storage info.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
   private $entityTypeManager;
 
+  /**
+   * Drupal module handler for hooks.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
   private $moduleHandler;
 
+  /**
+   * The current user.
+   *
+   * @var \Drupal\Core\Session\AccountProxyInterface
+   */
   private $currentUser;
 
+  /**
+   * Factory used to retrieve sanitizer to use on a particular field.
+   *
+   * @var \Drupal\gdpr_dump\Sanitizer\GdprSanitizerFactory
+   */
   private $sanitizerFactory;
 
   /**
@@ -47,6 +74,15 @@ class Anonymizer {
 
   /**
    * Runs anonymization routines against a user.
+   *
+   * @param \Drupal\gdpr_tasks\Entity\TaskInterface $task
+   *   The current task being executed.
+   *
+   * @return array
+   *   Returns array containing any error messages.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Core\TypedData\Exception\ReadOnlyException
    */
   public function run(TaskInterface $task) {
     // Make sure we load a fresh copy of the entity (bypassing the cache)
@@ -139,6 +175,12 @@ class Anonymizer {
 
   /**
    * Removes the field value.
+   *
+   * @param \Drupal\Core\Field\FieldItemListInterface $field
+   *   The current field to process.
+   *
+   * @return array
+   *   First element is success boolean, second element is the error message.
    */
   private function remove(FieldItemListInterface $field) {
     try {
@@ -150,6 +192,17 @@ class Anonymizer {
     }
   }
 
+  /**
+   * Runs anonymise functionality against a field.
+   *
+   * @param \Drupal\Core\Field\FieldItemListInterface $field
+   *   The field to anonymise.
+   * @param \Drupal\Core\Entity\EntityInterface $bundle_entity
+   *   The parent entity.
+   *
+   * @return array
+   *   First element is success boolean, second element is the error message.
+   */
   private function anonymize(FieldItemListInterface $field, EntityInterface $bundle_entity) {
     $sanitizer_id = $this->getSanitizerId($field, $bundle_entity);
 
@@ -172,6 +225,17 @@ class Anonymizer {
 
   }
 
+  /**
+   * Gets the ID of the sanitizer plugin to use on this field.
+   *
+   * @param \Drupal\Core\Field\FieldItemListInterface $field
+   *   The field to anonymise.
+   * @param \Drupal\Core\Entity\EntityInterface $bundle_entity
+   *   The parent entity.
+   *
+   * @return string
+   *   The sanitizer ID or null.
+   */
   private function getSanitizerId(FieldItemListInterface $field, EntityInterface $bundle_entity) {
     // First check if this field has a sanitizer defined.
     $fieldDefinition = $field->getFieldDefinition();
@@ -181,7 +245,8 @@ class Anonymizer {
       ->getThirdPartySetting('gdpr_fields', 'gdpr_fields_sanitizer');
 
     if (!$sanitizer) {
-      // No sanitizer defined directly on the field. Instead try and get one for the datatype.
+      // No sanitizer defined directly on the field.
+      // Instead try and get one for the datatype.
       $sanitizers = [
         'string' => 'gdpr_text_sanitizer',
         'datetime' => 'gdpr_date_sanitizer',
@@ -193,9 +258,15 @@ class Anonymizer {
     return $sanitizer;
   }
 
-
   /**
    * Gets fields to anonymize/remove.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to anonymise.
+   *
+   * @return array
+   *   Array containing metadata about the entity.
+   *   Elements are entity_type, bundle, field and mode.
    */
   private function getFieldsToProcess(EntityInterface $entity) {
     $bundle_id = $entity->bundle();
@@ -231,7 +302,11 @@ class Anonymizer {
   /**
    * Re-fetches the user bypassing the cache.
    *
+   * @param string $user_id
+   *   The ID of the user to fetch.
+   *
    * @return \Drupal\user\Entity\User
+   *   The user that was fetched.
    *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    */

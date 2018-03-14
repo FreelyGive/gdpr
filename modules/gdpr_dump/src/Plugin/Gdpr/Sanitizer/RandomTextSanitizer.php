@@ -27,34 +27,19 @@ class RandomTextSanitizer extends GdprSanitizerBase {
     if ($field != NULL) {
       $max_length = $field->getDataDefinition()->getSetting("max_length");
     }
-    else {
-      $max_length = NULL;
-    }
 
     $value = '';
 
     if (!empty($input)) {
       // Generate a prefixed random string.
-      $value = "anon_" . $this->generateRandomString(4);
+      $rand = new Random();
+      $value = "anon_" . $rand->string(4);
       // If the value is too long, tirm it.
       if (isset($max_length) && strlen($input) > $max_length) {
         $value = substr(0, $max_length);
       }
     }
     return $value;
-  }
-
-  /**
-   * Generates a random string of the specified length.
-   */
-  private function generateRandomString($length) {
-    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    $charactersLength = strlen($characters);
-    $randomString = '';
-    for ($i = 0; $i < $length; $i++) {
-      $randomString .= $characters[rand(0, $charactersLength - 1)];
-    }
-    return $randomString;
   }
 
 }

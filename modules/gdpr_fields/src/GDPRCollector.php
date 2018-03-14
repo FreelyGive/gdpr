@@ -148,6 +148,7 @@ class GDPRCollector {
       }
 
       // Ignore links back to gdpr_task.
+      // @todo Remove this once we have solved how to deal with ignored/excluded relationships
       if ($related_entity_type == 'gdpr_task') {
         continue;
       }
