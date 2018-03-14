@@ -19,3 +19,13 @@ gdpr_tasks.request:
         type: string
       user:
         type: entity:user
+
+gdpr_tasks.remove_settings:
+  path: '/admin/config/gdpr/remove-settings'
+  defaults:
+    _form: '\Drupal\gdpr_tasks\Form\RemovalSettingsForm'
+    _title: 'Right to be Forgotten'
+  requirements:
+    _permission: 'access administration pages'
+  options:
+    _admin_route: TRUE

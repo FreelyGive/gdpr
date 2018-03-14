@@ -193,3 +193,27 @@ function gdpr_tasks_entity_presave(EntityInterface $entity) {
       break;
   }
 }
+
+/**
+ * Implements hook_entity_base_field_info_alter().
+ *
+ * Ensures that anonymize/removal settings are always set for username, email
+ * password and roles. These fields are not UI-editable so we set these in code.
+ */
+function gdpr_tasks_entity_base_field_info_alter(&$fields, \Drupal\Core\Entity\EntityTypeInterface $entity_type) {
+  if ($entity_type->id() == 'user') {
+    $fields['mail']['third_party_settings']['gdpr_fields']['gdpr_fields_enabled'] = TRUE;
+    $fields['mail']['third_party_settings']['gdpr_fields']['gdpr_fields_rta'] = 'inc';
+    $fields['mail']['third_party_settings']['gdpr_fields']['gdpr_fields_rtf'] = 'anonymise';
+    $fields['mail']['third_party_settings']['gdpr_fields']['gdpr_fields_sanitizer'] = 'gdpr_email_sanitizer';
+
+    $fields['name']['third_party_settings']['gdpr_fields']['gdpr_fields_enabled'] = TRUE;
+    $fields['name']['third_party_settings']['gdpr_fields']['gdpr_fields_rta'] = 'inc';
+    $fields['name']['third_party_settings']['gdpr_fields']['gdpr_fields_rtf'] = 'anonymise';
+    $fields['name']['third_party_settings']['gdpr_fields']['gdpr_fields_sanitizer'] = 'gdpr_random_text_sanitizer';
+
+    $fields['roles']['third_party_settings']['gdpr_fields']['gdpr_fields_enabled'] = TRUE;
+    $fields['roles']['third_party_settings']['gdpr_fields']['gdpr_fields_rta'] = 'no';
+    $fields['roles']['third_party_settings']['gdpr_fields']['gdpr_fields_rtf'] = 'remove';
+  }
+}

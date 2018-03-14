@@ -115,6 +115,36 @@ class Task extends ContentEntityBase implements TaskInterface {
   /**
    * {@inheritdoc}
    */
+  public function setProcessedBy(UserInterface $account) {
+    $this->set('processed_by', $account->id());
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setProcessedById($uid) {
+    $this->set('processed_by', $uid);
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getProcessedBy() {
+    return $this->get('processed_by')->entity;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getProcessedById() {
+    return $this->get('processed_by')->target_id;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function label() {
     $label = t('Task @id', ['@id' => $this->id()]);
     return $label;
@@ -184,7 +214,31 @@ class Task extends ContentEntityBase implements TaskInterface {
 
     $fields['complete'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))
-      ->setDescription(t('The time that the entity was last edited.'));
+      ->setDescription(t('The time that the task was completed.'));
+
+    $fields['processed_by'] = BaseFieldDefinition::create('entity_reference')
+      ->setLabel(t('Processed by'))
+      ->setDescription(t('The user who processed this task.'))
+      ->setRevisionable(TRUE)
+      ->setSetting('target_type', 'user')
+      ->setSetting('handler', 'default')
+      ->setTranslatable(TRUE)
+      ->setDisplayOptions('view', [
+        'type' => 'author',
+        'weight' => 5,
+      ])
+      ->setDisplayOptions('form', [
+        'type' => 'hidden',
+        'weight' => 5,
+        'settings' => [
+          'match_operator' => 'CONTAINS',
+          'size' => '60',
+          'autocomplete_type' => 'tags',
+          'placeholder' => '',
+        ],
+      ])
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
 
     return $fields;
   }

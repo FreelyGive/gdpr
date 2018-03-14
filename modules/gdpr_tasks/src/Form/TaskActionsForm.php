@@ -2,8 +2,10 @@
 
 namespace Drupal\gdpr_tasks\Form;
 
+use Drupal\Console\Bootstrap\Drupal;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\user\Entity\User;
 
 /**
  * Form controller for Task edit forms.
@@ -30,28 +32,9 @@ class TaskActionsForm extends ContentEntityForm {
   }
 
   /**
-   * {@inheritdoc}
+   * Performs the SAR export.
    */
-  protected function actions(array $form, FormStateInterface $form_state) {
-    $actions = parent::actions($form, $form_state);
-
-    if (isset($actions['delete'])) {
-      unset($actions['delete']);
-    }
-
-    if (isset($actions['submit'])) {
-      $actions['submit']['#value'] = 'Process';
-    }
-
-    return $actions;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
-    parent::submitForm($form, $form_state);
-
+  private function doSarExport(FormStateInterface $form_state): void {
     $entity = $this->entity;
     $manual = $form_state->getValue(['manual_data', 0, 'value']);
 
@@ -82,15 +65,70 @@ class TaskActionsForm extends ContentEntityForm {
   }
 
   /**
+   * Performs the removal request.
+   */
+  private function doRemoval(FormStateInterface $form_state) {
+    // @todo Should be injected
+    $anonymizer = \Drupal::service('gdpr_tasks.anonymizer');
+    $errors = $anonymizer->run($this->entity);
+    return $errors;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function actions(array $form, FormStateInterface $form_state) {
+    $actions = parent::actions($form, $form_state);
+
+    if (isset($actions['delete'])) {
+      unset($actions['delete']);
+    }
+
+    if (isset($actions['submit'])) {
+      if ($this->entity->bundle() == 'gdpr_remove') {
+        $actions['submit']['#value'] = 'Remove and Anonymise Data';
+        $actions['submit']['#name'] = 'remove';
+      }
+      else {
+        $actions['submit']['#value'] = 'Process';
+        $actions['submit']['#name'] = 'export';
+      }
+    }
+
+    return $actions;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
     /* @var $entity \Drupal\gdpr_tasks\Entity\Task */
     $entity = $this->entity;
-    $entity->status = 'closed';
 
-    \Drupal::messenger()->addStatus('Task has been processed.');
-    parent::save($form, $form_state);
+    if ($entity->bundle() == 'gdpr_remove') {
+      $errors = $this->doRemoval($form_state);
+      // Removals may have generated errors.
+      // If this happens, combine the error messages and display them.
+      if (count($errors) > 0) {
+        $should_save = FALSE;
+        \Drupal::messenger()->addError(implode(' ', $errors));
+        $form_state->setRebuild();
+      }
+      else {
+        $should_save = TRUE;
+      }
+    }
+    else {
+      $this->doSarExport($form_state);
+      $should_save = TRUE;
+    }
+
+    if ($should_save) {
+      $entity->status = 'closed';
+      $entity->setProcessedById(\Drupal::currentUser()->id());
+      \Drupal::messenger()->addStatus('Task has been processed.');
+      parent::save($form, $form_state);
+    }
   }
 
 }

@@ -36,5 +36,12 @@ content:
     region: content
     settings: {  }
     third_party_settings: {  }
+  processed_by:
+    type: author
+    weight: 5
+    region: content
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
 hidden:
   manual_data: true

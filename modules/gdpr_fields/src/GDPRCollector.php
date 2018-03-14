@@ -140,10 +140,16 @@ class GDPRCollector {
 
 
     foreach ($definitions as $definition_id => $definition) {
-      list($type, $definition_entity, ,) = explode(':', $definition_id);
+      list($type, $definition_entity, $related_entity_type,) = explode(':', $definition_id);
 
       // Ignore entity revisions for now.
       if ($definition_entity == 'entity_revision') {
+        continue;
+      }
+
+      // Ignore links back to gdpr_task.
+      // @todo Remove this once we have solved how to deal with ignored/excluded relationships
+      if ($related_entity_type == 'gdpr_task') {
         continue;
       }
 
@@ -308,6 +314,13 @@ class GDPRCollector {
 
         if ($rtf_value && $rtf_value !== 'no') {
           $fields[$key]['gdpr_rtf'] = $rtf_value;
+          // For 'maybes', provide a link to edit the entity.
+          if ($rtf_value == 'maybe') {
+            $fields[$key]['link'] = $entity->toLink('Edit', 'edit-form');
+          }
+          else {
+            $fields[$key]['link'] = '';
+          }
         }
         else {
           unset($fields[$key]);
