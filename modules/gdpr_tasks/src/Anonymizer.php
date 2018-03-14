@@ -359,7 +359,6 @@ class Anonymizer {
     $filename = $dir . '/' . $filename;
 
     // Don't serialize the whole entity as we don't need all fields.
-
     $output = [
       'task_id' => $task->id(),
       'owner_id' => $task->getOwnerId(),

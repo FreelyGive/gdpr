@@ -1,14 +1,19 @@
 <?php
 
-
 namespace Drupal\gdpr_tasks\Form;
-
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 
+/**
+ * Settings form for GDPR Removal task.
+ *
+ * @package Drupal\gdpr_tasks\Form
+ */
 class RemovalSettingsForm extends ConfigFormBase {
+
   const CONFIG_KEY = 'gdpr_tasks.settings';
+
   const EXPORT_DIRECTORY = 'export_directory';
 
   /**
@@ -33,7 +38,8 @@ class RemovalSettingsForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => 'Export Directory',
       '#description' => 'Specifies the path to the directory where Right to be Forgotten tasks are exported after being processed',
-      '#default_value' => $this->config(self::CONFIG_KEY)->get(self::EXPORT_DIRECTORY),
+      '#default_value' => $this->config(self::CONFIG_KEY)
+        ->get(self::EXPORT_DIRECTORY),
     ];
     return parent::buildForm($form, $form_state);
   }
