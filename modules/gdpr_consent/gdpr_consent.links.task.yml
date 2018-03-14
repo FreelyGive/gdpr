@@ -1,0 +1,22 @@
+# Consent Agreement routing definition
+gdpr_consent_agreement.settings_tab:
+  route_name: gdpr_consent_agreement.settings
+  title: 'Settings'
+  base_route: gdpr_consent_agreement.settings
+
+entity.gdpr_consent_agreement.canonical:
+  route_name: entity.gdpr_consent_agreement.canonical
+  base_route: entity.gdpr_consent_agreement.canonical
+  title: 'View'
+
+entity.gdpr_consent_agreement.edit_form:
+  route_name: entity.gdpr_consent_agreement.edit_form
+  base_route: entity.gdpr_consent_agreement.canonical
+  title: 'Edit'
+
+entity.gdpr_consent_agreement.delete_form:
+  route_name:  entity.gdpr_consent_agreement.delete_form
+  base_route:  entity.gdpr_consent_agreement.canonical
+  title: Delete
+  weight: 10
+
