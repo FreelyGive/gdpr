@@ -2,6 +2,7 @@
 
 namespace Drupal\gdpr_tasks;
 
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -12,6 +13,7 @@ use Drupal\Core\TypedData\Exception\ReadOnlyException;
 use Drupal\gdpr_dump\Sanitizer\GdprSanitizerFactory;
 use Drupal\gdpr_fields\GDPRCollector;
 use Drupal\gdpr_tasks\Entity\TaskInterface;
+use Drupal\gdpr_tasks\Form\RemovalSettingsForm;
 
 /**
  * Anonymizes or removes field values for GDPR.
@@ -61,15 +63,23 @@ class Anonymizer {
   private $sanitizerFactory;
 
   /**
+   * Config factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  private $configFactory;
+
+  /**
    * Anonymizer constructor.
    */
-  public function __construct(GDPRCollector $collector, Connection $db, EntityTypeManagerInterface $entity_manager, ModuleHandlerInterface $module_handler, AccountProxyInterface $current_user, GdprSanitizerFactory $sanitizer_factory) {
+  public function __construct(GDPRCollector $collector, Connection $db, EntityTypeManagerInterface $entity_manager, ModuleHandlerInterface $module_handler, AccountProxyInterface $current_user, GdprSanitizerFactory $sanitizer_factory, ConfigFactoryInterface $config_factory) {
     $this->collector = $collector;
     $this->db = $db;
     $this->entityTypeManager = $entity_manager;
     $this->moduleHandler = $module_handler;
     $this->currentUser = $current_user;
     $this->sanitizerFactory = $sanitizer_factory;
+    $this->configFactory = $config_factory;
   }
 
   /**
@@ -93,8 +103,11 @@ class Anonymizer {
     $entities = [];
     $successes = [];
     $failures = [];
-
     $log = [];
+
+    if (!$this->checkExportDirectoryExists()) {
+      $errors[] = 'An export directory has not been set. Please set this under Configuration -> GDPR -> Right to be Forgotten';
+    }
 
     $this->collector->getValueEntities($entities, 'user', $user);
 
@@ -163,6 +176,8 @@ class Anonymizer {
         $user = $this->refetchUser($task->getOwnerId());
         $user->block();
         $user->save();
+
+        $this->writeLogToFile($task, $log);
       }
       catch (\Exception $e) {
         $tx->rollBack();
@@ -313,6 +328,47 @@ class Anonymizer {
   private function refetchUser($user_id) {
     return $this->entityTypeManager->getStorage('user')
       ->loadUnchanged($user_id);
+  }
+
+  /**
+   * Checks that the export directory has been set.
+   *
+   * @return bool
+   *   Indicates whether the export directory has been configured and exists.
+   */
+  private function checkExportDirectoryExists() {
+    $directory = $this->configFactory->get(RemovalSettingsForm::CONFIG_KEY)
+      ->get(RemovalSettingsForm::EXPORT_DIRECTORY);
+
+    return !empty($directory) && file_prepare_directory($directory);
+  }
+
+  /**
+   * Stores the task log to the configured directory as JSON.
+   *
+   * @param \Drupal\gdpr_tasks\Entity\TaskInterface $task
+   *   The task in progress.
+   * @param array $log
+   *   Log of processed fields.
+   */
+  private function writeLogToFile(TaskInterface $task, array $log) {
+    $filename = 'GDPR_RTF_' . date('Y-m-d H-i-s') . '_' . $task->id() . '.json';
+    $dir = $this->configFactory->get(RemovalSettingsForm::CONFIG_KEY)
+      ->get(RemovalSettingsForm::EXPORT_DIRECTORY);
+
+    $filename = $dir . '/' . $filename;
+
+    // Don't serialize the whole entity as we don't need all fields.
+
+    $output = [
+      'task_id' => $task->id(),
+      'owner_id' => $task->getOwnerId(),
+      'created' => $task->getCreatedTime(),
+      'processed_by' => $this->currentUser->id(),
+      'log' => $log,
+    ];
+
+    file_put_contents($filename, json_encode($output));
   }
 
 }
