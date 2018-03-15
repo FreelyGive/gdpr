@@ -352,7 +352,7 @@ class Anonymizer {
    *   Log of processed fields.
    */
   private function writeLogToFile(TaskInterface $task, array $log) {
-    $filename = 'GDPR_RTF_' . date('Y-m-d H-i-s') . '_' . $task->id() . '.json';
+    $filename = 'GDPR_RTF_' . date('Y-m-d H-i-s') . '_' . $task->uuid() . '.json';
     $dir = $this->configFactory->get(RemovalSettingsForm::CONFIG_KEY)
       ->get(RemovalSettingsForm::EXPORT_DIRECTORY);
 
@@ -361,6 +361,7 @@ class Anonymizer {
     // Don't serialize the whole entity as we don't need all fields.
     $output = [
       'task_id' => $task->id(),
+      'task_uuid' => $task->uuid(),
       'owner_id' => $task->getOwnerId(),
       'created' => $task->getCreatedTime(),
       'processed_by' => $this->currentUser->id(),
