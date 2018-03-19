@@ -32,9 +32,9 @@ class ConsentWidget extends WidgetBase {
     $agreement = ConsentAgreement::load($agreement_id);
     $item = $items[$delta];
 
-    $element['consent_text'] = [
-      '#markup' => $agreement->get('description')->value . '<br />' . $agreement->toLink('View Details')->toString(),
-    ];
+    //    $element['consent_text'] = [
+    //      '#markup' => $agreement->get('description')->value . '<br />' . $agreement->toLink('View Details')->toString(),
+    //    ];
 
     $element['target_id'] = [
       '#type' => 'hidden',
@@ -46,13 +46,25 @@ class ConsentWidget extends WidgetBase {
       '#default_value' => isset($item->target_revision_id) ? $item->target_revision_id : $agreement->getRevisionId(),
     ];
 
-    if ($agreement->requiresExplicitAcceptance()) {
-      $element['agreed'] = [
-        '#type' => 'checkbox',
-        '#title' => 'I agree',
-        '#required' => TRUE,
-        '#default_value' => isset($item->agreed) && $item->agreed == TRUE,
-      ];
+    $element['agreed'] = [
+      '#type' => 'checkbox',
+      '#title' => $agreement->get('description')->value,
+      //put a question mark icon at the end of the label so that the description is hidden.
+      '#description' => $agreement->get('long_description')->value,
+      '#required' => TRUE,
+      '#default_value' => isset($item->agreed) && $item->agreed == TRUE,
+      '#attributes' => ['class' => ['gdpr_consent_agreement']],
+      '#attached' => [
+        'library' => [
+          'gdpr_consent/gdpr_consent_display',
+        ],
+      ],
+    ];
+
+    // If we only require implicit agreement, hide the checkbox and set it to true.
+    if (!$agreement->requiresExplicitAcceptance()) {
+      $element['#type'] = 'item';
+      $element['agreed']['#attributes']['class'][] = 'gdpr_consent_implicit';
     }
 
     return $element;
