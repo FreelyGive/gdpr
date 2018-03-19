@@ -174,4 +174,11 @@ class ConsentAgreementController extends ControllerBase implements ContainerInje
     return $build;
   }
 
+  function myAgreements($user) {
+    $build = [
+      '#markup' => t('Hello World!'),
+    ];
+    return $build;
+  }
+
 }
