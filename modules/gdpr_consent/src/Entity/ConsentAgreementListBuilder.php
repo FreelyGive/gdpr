@@ -1,15 +1,12 @@
 <?php
 
-
 namespace Drupal\gdpr_consent\Entity;
-
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityListBuilder;
 
-
 /**
- * Provies a list controller for gdpr_consent entities
+ * Provies a list controller for gdpr_consent entities.
  *
  * @ingroup gdpr_consent
  */
@@ -35,6 +32,20 @@ class ConsentAgreementListBuilder extends EntityListBuilder {
       'mode' => $entity->get('mode')->value,
     ];
     return $row + parent::buildRow($entity);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getDefaultOperations(EntityInterface $entity) {
+    $operations = [
+      $operations['view'] = [
+        'title' => $this->t('View'),
+        'weight' => 0,
+        'url' => $this->ensureDestination($entity->toUrl('canonical')),
+      ],
+    ];
+    return $operations + parent::getDefaultOperations($entity);
   }
 
 }

@@ -32,7 +32,7 @@ class ConsentFormatter extends FormatterBase {
 
       $output[$delta] = [
         'name' => [
-          '#markup' => $agreement->toLink($agreement->title->value)->toString() . ' on ' . $item->date,
+          '#markup' => $agreement->toLink($agreement->title->value, 'revision')->toString() . ' on ' . $item->date,
         ],
       ];
 
