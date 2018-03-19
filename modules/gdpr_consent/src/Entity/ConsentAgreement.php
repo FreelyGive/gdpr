@@ -25,7 +25,7 @@ use Drupal\user\UserInterface;
  *   revision_table = "gdpr_consent_agreement_revision",
  *   handlers = {
  *     "storage" = "Drupal\gdpr_consent\ConsentAgreementStorage",
- *     "list_builder" = "Drupal\Core\Entity\EntityListBuilder",
+ *     "list_builder" = "Drupal\gdpr_consent\Entity\ConsentAgreementListBuilder",
  *     "route_provider" = {
  *       "html" = "Drupal\gdpr_consent\ConsentAgreementHtmlRouteProvider"
  *     },

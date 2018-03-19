@@ -33,7 +33,7 @@ class ConsentWidget extends WidgetBase {
     $item = $items[$delta];
 
     $element['consent_text'] = [
-      '#markup' => 'By submitting this form you agree to the following privacy policy: ' . $agreement->get('description')->value,
+      '#markup' => $agreement->get('description')->value . '<br />' . $agreement->toLink('View Details')->toString(),
     ];
 
     $element['target_id'] = [

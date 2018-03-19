@@ -22,11 +22,23 @@ class ConsentFormatter extends FormatterBase {
    * {@inheritdoc}
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
-    $elements = [];
+    $output = [];
 
+    $storage = \Drupal::entityTypeManager()
+      ->getStorage('gdpr_consent_agreement');
 
+    foreach ($items as $delta => $item) {
+      $agreement = $storage->loadRevision($item->target_revision_id);
 
-    return $elements;
+      $output[$delta] = [
+        'name' => [
+          '#markup' => $agreement->toLink($agreement->title->value)->toString() . ' on ' . $item->date,
+        ],
+      ];
+
+    }
+
+    return $output;
   }
 
 }
