@@ -89,8 +89,13 @@ class ConsentWidget extends WidgetBase {
     // If we only require implicit agreement,
     // hide the checkbox and set it to true.
     if (!$agreement->requiresExplicitAcceptance()) {
-      $element['#type'] = 'item';
-      $element['agreed']['#attributes']['class'][] = 'gdpr_consent_implicit';
+      $element['agreed']['#title'] = '';
+      $element['agreed']['#type'] = 'item';
+      // Just render an empty span that the javascript can hook onto.
+      $element['agreed']['#markup'] =
+        '<span class="gdpr_consent_implicit">' . $agreement->get('description')->value . '</span>'
+        .
+      $element['agreed']['#default_value'] = TRUE;
     }
 
     // Only show the notes field if the user has permission.
