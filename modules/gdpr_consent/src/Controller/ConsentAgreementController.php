@@ -3,11 +3,15 @@
 namespace Drupal\gdpr_consent\Controller;
 
 use Drupal\Component\Utility\Xss;
+use Drupal\Console\Bootstrap\Drupal;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Url;
 use Drupal\gdpr_consent\Entity\ConsentAgreement;
 use Drupal\gdpr_consent\Entity\ConsentAgreementInterface;
+use Drupal\user\Entity\User;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class ConsentAgreementController.
@@ -15,6 +19,21 @@ use Drupal\gdpr_consent\Entity\ConsentAgreementInterface;
  *  Returns responses for Consent Agreement routes.
  */
 class ConsentAgreementController extends ControllerBase implements ContainerInjectionInterface {
+
+  /**
+   * The entity field manager for metadata.
+   *
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   */
+  private $entityFieldManager;
+
+  public function __construct(EntityFieldManagerInterface $entity_field_manager) {
+    $this->entityFieldManager = $entity_field_manager;
+  }
+
+  public static function create(ContainerInterface $container) {
+    return new static($container->get('entity_field.manager'));
+  }
 
   /**
    * Displays a Consent Agreement  revision.
@@ -71,8 +90,8 @@ class ConsentAgreementController extends ControllerBase implements ContainerInje
     $build['#title'] = $this->t('Revisions for %title', ['%title' => $agreement->label()]);
     $header = [$this->t('Revision'), $this->t('Operations')];
 
-    $revert_permission = (($account->hasPermission("revert all consent agreement revisions") || $account->hasPermission('administer consent agreement entities')));
-    $delete_permission = (($account->hasPermission("delete all consent agreement revisions") || $account->hasPermission('administer consent agreement entities')));
+    $revert_permission = $account->hasPermission('create gdpr agreements');
+    $delete_permission = $account->hasPermission('create gdpr agreements');
 
     $rows = [];
 
@@ -175,8 +194,45 @@ class ConsentAgreementController extends ControllerBase implements ContainerInje
   }
 
   function myAgreements($user) {
+    $map = $this->entityFieldManager->getFieldMapByFieldType('gdpr_user_consent');
+
+    $entity_type_manager = \Drupal::entityTypeManager();
+
+    foreach ($map as $entity_type => $fields) {
+      $field_names = array_keys($fields);
+
+      foreach($field_names as $field_name) {
+
+        $ids = \Drupal::entityQuery($entity_type)
+          ->condition(  $field_name . '.user_id', $user)
+          ->execute();
+
+        $entities = $entity_type_manager->getStorage($entity_type)->loadMultiple($ids);
+
+        foreach($entities as $entity) {
+//          $agreement = $entity->{$field_name}->target_id
+        }
+
+//        \Drupal::entityTypeManager()->in
+
+      }
+    }
+
+    //TODO: The actual query
+
+
+    $header = ['Agreement', 'Date Agreed', 'Operations'];
+
+    $rows=[];
+
     $build = [
-      '#markup' => t('Hello World!'),
+      //'#markup' => t('Hello World!'),
+      '#title' => 'Consent Agreements',
+      'table' => [
+        '#theme' => 'table',
+        '#rows' => $rows,
+        '#header' => $header,
+      ]
     ];
     return $build;
   }

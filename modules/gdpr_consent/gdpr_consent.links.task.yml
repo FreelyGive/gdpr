@@ -21,6 +21,14 @@ entity.gdpr_consent_agreement.delete_form:
   weight: 10
 
 gdpr_consent.agreements_tab:
-  title: GDPR Consent
+  title: Consent
   route_name: gdpr_consent.agreements
+  parent_id: gdpr.collected_user_data
   base_route: entity.user.canonical
+  weight: 100
+
+entity.gdpr_consent_agreement.collection:
+  route_name: entity.gdpr_consent_agreement.collection
+  title: 'Agreements'
+  base_route: gdpr_tasks.summary
+  weight: 100

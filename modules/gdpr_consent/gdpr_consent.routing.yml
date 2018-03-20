@@ -4,4 +4,4 @@ gdpr_consent.agreements:
     _controller: \Drupal\gdpr_consent\Controller\ConsentAgreementController::myAgreements
   requirements:
     _permission: 'administer users'
-    user: \d+
+    user_id: \d+

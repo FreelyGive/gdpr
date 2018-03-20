@@ -15,9 +15,10 @@ use Drupal\gdpr_consent\Entity\ConsentAgreement;
  * @FieldType(
  *   id = "gdpr_user_consent",
  *   label = @Translation("GDPR Consent"),
- *   description = @Translation("Stores user consent for a particular
- *   agreement"), category = @Translation("GDPR"), default_widget =
- *   "gdpr_consent_widget", default_formatter = "gdpr_consent_formatter",
+ *   description = @Translation("Stores user consent for a particular agreement"),
+ *   category = @Translation("GDPR"),
+ *   default_widget ="gdpr_consent_widget",
+ *   default_formatter = "gdpr_consent_formatter"
  * )
  */
 class UserConsentItem extends FieldItemBase {
@@ -51,13 +52,36 @@ class UserConsentItem extends FieldItemBase {
     $properties['user_id'] = DataReferenceTargetDefinition::create('integer')
       ->setLabel('User ID');
 
+    $properties['user_id_accepted'] = DataReferenceTargetDefinition::create('integer')
+      ->setLabel('User ID Accepted');
+
+    $properties['notes'] = DataReferenceTargetDefinition::create('string')
+      ->setLabel('Notes');
+
     return $properties;
   }
 
   /**
    * {@inheritdoc}
    */
+  public function preSave() {
+    $definition = $this->getFieldDefinition();
+
+    /* @var \Drupal\gdpr_consent\ConsentUserResolver\ConsentUserResolverPluginManager $plugin_manager */
+    $plugin_manager = \Drupal::service('plugin.manager.gdpr_consent_resolver');
+    $resolver = $plugin_manager->getForEntityType($definition->getTargetEntityTypeId(), $definition->getTargetBundle());
+    $user = $resolver->resolve($this->getEntity());
+
+    if ($user != NULL) {
+      $this->set('user_id', $user->id());
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function fieldSettingsForm(array $form, FormStateInterface $form_state) {
+
     $agreement_ids = \Drupal::entityQuery('gdpr_consent_agreement')
       ->condition('status', 1)
       ->sort('title')
@@ -67,17 +91,12 @@ class UserConsentItem extends FieldItemBase {
 
     $element = [];
 
-    $element['agreement'] = [
-      '#type' => 'details',
+    $element['target_id'] = [
+      '#type' => 'select',
       '#title' => 'Agreement',
-      '#open' => TRUE,
-      '#tree' => TRUE,
-      'agreement' => [
-        '#type' => 'select',
-        '#required' => TRUE,
-        '#options' => $agreements,
-        '#default_value' => $this->getSetting('target_id'),
-      ],
+      '#required' => TRUE,
+      '#options' => ['' => 'Please select'] + $agreements,
+      '#default_value' => $this->getSetting('target_id'),
     ];
 
     return $element;
@@ -112,7 +131,7 @@ class UserConsentItem extends FieldItemBase {
     ];
 
     $schema['columns']['user_id'] = [
-      'description' => 'The user ID',
+      'description' => 'ID of the user who has accepted.',
       'type' => 'int',
     ];
 
@@ -122,6 +141,16 @@ class UserConsentItem extends FieldItemBase {
       'length' => 20,
     ];
 
+    $schema['columns']['user_id_accepted'] = [
+      'description' => 'ID of the user who recorded the acceptance',
+      'type' => 'int',
+    ];
+
+    $schema['columns']['notes'] = [
+      'description' => 'Additional notes on the acceptance',
+      'type' => 'varchar',
+      'length' => '255',
+    ];
     return $schema;
   }
 

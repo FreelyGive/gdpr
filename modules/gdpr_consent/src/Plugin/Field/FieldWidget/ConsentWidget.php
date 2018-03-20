@@ -28,13 +28,18 @@ class ConsentWidget extends WidgetBase {
    * {@inheritdoc}
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
+    if (array_key_exists(0, $form['#parents']) && $form['#parents'][0] == 'default_value_input') {
+      // Don't show as part of the 'Default Value' form.
+      return [];
+    }
+
     $agreement_id = $items->getFieldDefinition()->getSetting('target_id');
+    if ($agreement_id == '') {
+      // Don't display if an agreement hasn't been configured for this field yet.
+      return [];
+    }
     $agreement = ConsentAgreement::load($agreement_id);
     $item = $items[$delta];
-
-    //    $element['consent_text'] = [
-    //      '#markup' => $agreement->get('description')->value . '<br />' . $agreement->toLink('View Details')->toString(),
-    //    ];
 
     $element['target_id'] = [
       '#type' => 'hidden',
@@ -75,8 +80,8 @@ class ConsentWidget extends WidgetBase {
    */
   public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
     for ($i = 0; $i < count($values); ++$i) {
-      if (!isset($values[$i]['user_id'])) {
-        $values[$i]['user_id'] = \Drupal::currentUser()->id();
+      if (!isset($values[$i]['user_id_accepted'])) {
+        $values[$i]['user_id_accepted'] = \Drupal::currentUser()->id();
       }
       if (!isset($values[$i]['date'])) {
         $values[$i]['date'] = date('Y-m-d H:i:s');
@@ -84,5 +89,4 @@ class ConsentWidget extends WidgetBase {
     }
     return $values;
   }
-
 }
