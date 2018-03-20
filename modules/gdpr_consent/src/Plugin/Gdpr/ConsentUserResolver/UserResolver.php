@@ -11,8 +11,8 @@ use Drupal\user\Entity\User;
  * Resolves user reference for a Profile entity.
  *
  * @GdprConsentUserResolver(
- *   id = "gdpr_consent_profile_resolver",
- *   label = "GDPR Consent Profile Resolver",
+ *   id = "gdpr_consent_user_resolver",
+ *   label = "GDPR Consent User Resolver",
  *   entityType = "user"
  * )
  * @package Drupal\gdpr_consent\Plugin\Gdpr\ConsentUserResolver
