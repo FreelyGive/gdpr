@@ -7,6 +7,7 @@ use Drupal\Console\Bootstrap\Drupal;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Url;
 use Drupal\gdpr_consent\Entity\ConsentAgreement;
 use Drupal\gdpr_consent\Entity\ConsentAgreementInterface;
@@ -27,12 +28,21 @@ class ConsentAgreementController extends ControllerBase implements ContainerInje
    */
   private $entityFieldManager;
 
+  /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  //private $entityTypeManager;
+
   public function __construct(EntityFieldManagerInterface $entity_field_manager) {
     $this->entityFieldManager = $entity_field_manager;
   }
 
   public static function create(ContainerInterface $container) {
-    return new static($container->get('entity_field.manager'));
+    return new static(
+      $container->get('entity_field.manager')
+    );
   }
 
   /**
@@ -157,9 +167,9 @@ class ConsentAgreementController extends ControllerBase implements ContainerInje
           $links['revert'] = [
             'title' => $this->t('Revert'),
             'url' => Url::fromRoute('entity.gdpr_consent_agreement.revision_revert', [
-                'gdpr_consent_agreement' => $agreement->id(),
-                'gdpr_consent_agreement_revision' => $vid,
-              ]),
+              'gdpr_consent_agreement' => $agreement->id(),
+              'gdpr_consent_agreement_revision' => $vid,
+            ]),
           ];
         }
 
@@ -195,44 +205,59 @@ class ConsentAgreementController extends ControllerBase implements ContainerInje
 
   function myAgreements($user) {
     $map = $this->entityFieldManager->getFieldMapByFieldType('gdpr_user_consent');
-
-    $entity_type_manager = \Drupal::entityTypeManager();
+    $agreement_storage = $this->entityTypeManager()->getStorage('gdpr_consent_agreement');
+    $rows = [];
 
     foreach ($map as $entity_type => $fields) {
       $field_names = array_keys($fields);
 
-      foreach($field_names as $field_name) {
+      foreach ($field_names as $field_name) {
 
         $ids = \Drupal::entityQuery($entity_type)
-          ->condition(  $field_name . '.user_id', $user)
+          ->condition($field_name . '.user_id', $user)
           ->execute();
 
-        $entities = $entity_type_manager->getStorage($entity_type)->loadMultiple($ids);
+        $entities = $this->entityTypeManager()->getStorage($entity_type)
+          ->loadMultiple($ids);
 
-        foreach($entities as $entity) {
-//          $agreement = $entity->{$field_name}->target_id
+        foreach ($entities as $entity) {
+          $agreement = $agreement_storage->loadRevision($entity->{$field_name}->target_revision_id);
+
+          $row = [];
+
+          $row[] = [
+            'data' => [
+              '#markup' => $agreement->toLink($agreement->title->value, 'revision')->toString()
+            ],
+          ];
+
+          $row[] = [
+            'data' => [
+              '#markup' => $entity->{$field_name}->date
+            ],
+          ];
+
+          $row[] = [
+            'date' => [
+              '#markup' => 'Ops'
+            ]
+          ];
+
+          $rows[] = $row;
         }
-
-//        \Drupal::entityTypeManager()->in
-
       }
     }
-
-    //TODO: The actual query
 
 
     $header = ['Agreement', 'Date Agreed', 'Operations'];
 
-    $rows=[];
-
     $build = [
-      //'#markup' => t('Hello World!'),
       '#title' => 'Consent Agreements',
       'table' => [
         '#theme' => 'table',
         '#rows' => $rows,
         '#header' => $header,
-      ]
+      ],
     ];
     return $build;
   }
