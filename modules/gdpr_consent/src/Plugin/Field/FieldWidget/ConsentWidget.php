@@ -76,7 +76,7 @@ class ConsentWidget extends WidgetBase {
       '#type' => 'checkbox',
       '#title' => $agreement->get('description')->value,
       '#description' => $agreement->get('long_description')->value,
-      '#required' => TRUE,
+      '#required' => $items->getFieldDefinition()->isRequired(),
       '#default_value' => isset($item->agreed) && $item->agreed == TRUE,
       '#attributes' => ['class' => ['gdpr_consent_agreement']],
       '#attached' => [
