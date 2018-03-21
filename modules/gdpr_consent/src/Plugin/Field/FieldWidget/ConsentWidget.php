@@ -101,8 +101,8 @@ class ConsentWidget extends WidgetBase {
     if ($can_edit_anyones_consent) {
       $element['notes'] = [
         '#type' => 'textarea',
-        '#title' => 'Notes',
-        '#required' => TRUE,
+        '#title' => 'GDPR Consent Notes',
+        '#required' => FALSE,
         '#default_value' => isset($item->notes) ? $item->notes : '',
       ];
     }
