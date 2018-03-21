@@ -1,0 +1,20 @@
+uuid: 97862999-d01d-4842-a9bc-405696ac3620
+langcode: en
+status: true
+dependencies:
+  module:
+    - gdpr_consent
+    - message
+id: message.agreement
+field_name: agreement
+entity_type: message
+type: entity_reference
+settings:
+  target_type: gdpr_consent_agreement
+module: core
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

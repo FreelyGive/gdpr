@@ -8,6 +8,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\TypedData\DataDefinition;
 use Drupal\Core\TypedData\DataReferenceTargetDefinition;
 use Drupal\gdpr_consent\Entity\ConsentAgreement;
+use Drupal\message\Entity\Message;
 
 /**
  * Plugin implementation of the 'gdpr_user_consent' field type.
@@ -15,10 +16,9 @@ use Drupal\gdpr_consent\Entity\ConsentAgreement;
  * @FieldType(
  *   id = "gdpr_user_consent",
  *   label = @Translation("GDPR Consent"),
- *   description = @Translation("Stores user consent for a particular agreement"),
- *   category = @Translation("GDPR"),
- *   default_widget ="gdpr_consent_widget",
- *   default_formatter = "gdpr_consent_formatter"
+ *   description = @Translation("Stores user consent for a particular
+ *   agreement"), category = @Translation("GDPR"), default_widget
+ *   ="gdpr_consent_widget", default_formatter = "gdpr_consent_formatter"
  * )
  */
 class UserConsentItem extends FieldItemBase {
@@ -74,6 +74,36 @@ class UserConsentItem extends FieldItemBase {
 
     if ($user != NULL) {
       $this->set('user_id', $user->id());
+    }
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function postSave($update) {
+    $should_log = FALSE;
+
+    if (!$update) {
+      // Always log on a create.
+      $should_log = TRUE;
+    }
+    else {
+      $field_name = $this->getFieldDefinition()->getName();
+      $original_value = $this->getEntity()->original->{$field_name}->agreed;
+      if ($original_value != $this->agreed) {
+        $should_log = TRUE;
+      }
+    }
+
+    if ($should_log) {
+      $msg = Message::create(['template' => 'consent_agreement_accepted']);
+      $msg->set('user', $this->user_id);
+      $msg->set('user_accepted', $this->user_id_accepted);
+      $msg->set('agreement', $this->target_id);
+      $msg->set('notes', $this->notes);
+      $msg->set('agreement_revision_id', $this->target_revision_id);
+      $msg->set('agreed', $this->agreed);
+      $msg->save();
     }
   }
 

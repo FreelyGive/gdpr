@@ -7,3 +7,4 @@ package: General Data Protection Regulation
 
 dependencies:
   - drupal:checklistapi
+  - drupal:message

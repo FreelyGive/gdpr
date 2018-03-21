@@ -237,19 +237,13 @@ class ConsentAgreementController extends ControllerBase implements ContainerInje
             ],
           ];
 
-          $row[] = [
-            'date' => [
-              '#markup' => 'Ops'
-            ]
-          ];
-
           $rows[] = $row;
         }
       }
     }
 
 
-    $header = ['Agreement', 'Date Agreed', 'Operations'];
+    $header = ['Agreement', 'Date Agreed'];
 
     $build = [
       '#title' => 'Consent Agreements',
