@@ -6,6 +6,25 @@
  */
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_toolbar_alter().
+ */
+function gdpr_fields_toolbar_alter(&$items) {
+  $user = \Drupal::currentUser();
+
+  if ($user->hasPermission('view gdpr fields')) {
+    $items['gdpr']['tray']['links']['#links']['fields'] = [
+      'title' => t('Field list'),
+      'url' => Url::fromRoute('gdpr_fields.fields_list'),
+      'attributes' => [
+        'title' => t('Field list'),
+      ],
+      'weight' => 100,
+    ];
+  }
+}
 
 /**
  * Implements hook_form_FORM_ID_alter().
