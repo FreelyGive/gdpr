@@ -19,7 +19,7 @@ function gdpr_help($path, $arg) {
  * Implements hook_menu().
  */
 function gdpr_menu() {
-  $items['user/%user/collected_data'] = [
+  $items['user/%user/gdpr'] = [
     'title' => 'All your data',
     'page callback' => 'gdpr_collected_user_data',
     'page arguments' => [1],

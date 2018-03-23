@@ -1,0 +1,87 @@
+<?php
+
+/**
+ * @file
+ * Install file for the GDPR Tasks module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function gdpr_tasks_schema() {
+  $schema['gdpr_task'] = array(
+    'description' => 'The base table for tasks.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The primary identifier for a task.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'type' => array(
+        'description' => 'The {gdpr_task_type} of this task.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'language' => array(
+        'description' => 'The {languages}.language of this task.',
+        'type' => 'varchar',
+        'length' => 12,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'user_id' => array(
+        'description' => 'The {users}.uid that requested this task.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'status' => array(
+        'description' => 'The text status of this task.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the task was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when the task was most recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'complete' => array(
+        'description' => 'The Unix timestamp when the task was completed.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'processed_by' => array(
+        'description' => 'The {users}.uid that processed this task.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('id'),
+    'foreign keys' => array(
+      'task_author' => array(
+        'table' => 'users',
+        'columns' => array('user_id' => 'uid'),
+      ),
+      'task_processor' => array(
+        'table' => 'users',
+        'columns' => array('user_id' => 'uid'),
+      ),
+    ),
+  );
+
+  return $schema;
+}
