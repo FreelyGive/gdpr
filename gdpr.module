@@ -31,7 +31,7 @@ function gdpr_menu() {
     'file path' => drupal_get_path('module', 'system'),
   ];
 
-  $items['user/%user/collected_data'] = [
+  $items['user/%user/gdpr'] = [
     'title' => 'All your data',
     'page callback' => 'gdpr_collected_user_data',
     'page arguments' => [1],

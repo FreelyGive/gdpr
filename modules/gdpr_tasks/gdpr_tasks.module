@@ -1,0 +1,235 @@
+<?php
+
+/**
+ * @file
+ * Module file for the GDPR Tasks module.
+ */
+
+/**
+ * Implements hook_entity_info().
+ */
+function gdpr_tasks_entity_info() {
+  return array(
+    'gdpr_task' => array(
+      'label' => t('Task'),
+      'base table' => 'gdpr_task',
+      'entity class' => 'GDPRTask',
+      'controller class' => 'GDPRTaskController',
+      'entity keys' => array(
+        'id' => 'id',
+        'bundle' => 'type',
+        'label' => 'id',
+        'language' => 'language',
+      ),
+      'bundle keys' => array(
+        'bundle' => 'type',
+      ),
+      'bundles' => array(
+        'gdpr_remove' => array(
+          'label' => 'Removal Request',
+          'admin' => array(
+            'path' => 'admin/structure/gdpr-tasks/manage/%',
+            'real path' => 'admin/structure/gdpr-tasks/manage/gdpr_remove',
+            'bundle argument' => 4,
+            'access arguments' => array('administer task entities'),
+          ),
+        ),
+        'gdpr_sar' => array(
+          'label' => 'SARs Request',
+          'admin' => array(
+            'path' => 'admin/structure/gdpr-tasks/manage/%',
+            'real path' => 'admin/structure/gdpr-tasks/manage/gdpr_sar',
+            'bundle argument' => 4,
+            'access arguments' => array('administer task entities'),
+          ),
+        ),
+      ),
+      'fieldable' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function gdpr_tasks_menu() {
+  // Task bundle menu items.
+  $items['admin/structure/gdpr-tasks'] = array(
+    'title' => 'GDPR Task Types',
+    'access arguments' => array('administer task entities'),
+    'page callback' => 'gdpr_task_type_list',
+    'file' => 'gdpr_tasks.admin.inc',
+  );
+  $items['admin/structure/gdpr-tasks/list'] = array( // As above.
+    'title' => 'List',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/structure/gdpr-tasks/manage/%'] = array(
+    'title' => 'Edit task type',
+    'access arguments' => array('administer task entities'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('gdpr_task_type_form', 4),
+    'type' => MENU_CALLBACK,
+    'file' => 'gdpr_tasks.admin.inc',
+  );
+  $items['admin/structure/gdpr-tasks/manage/%/edit'] = array( // As above.
+    'title' => 'Edit',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+
+  // Task entity menu items.
+  $items['admin/content/task'] = array(
+    'title' => 'Tasks',
+    'description' => 'List and edit GDPR Tasks.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('gdpr_task_admin_overview'),
+    'access arguments' => array('view gdpr tasks'),
+    'type' => MENU_LOCAL_TASK | MENU_NORMAL_ITEM,
+    'file' => 'gdpr_tasks.admin.inc',
+  );
+  $items['admin/content/task/%gdpr_task'] = array(
+    'title callback' => 'gdpr_task_title',
+    'title arguments' => array(3),
+    'access arguments' => array('view gdpr tasks'),
+    'page callback' => 'gdpr_task_page',
+    'page arguments' => array(3),
+    'file' => 'gdpr_tasks.admin.inc',
+  );
+  $items['admin/content/task/%gdpr_task/view'] = array( // As above.
+    'title' => 'View',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/content/task/%gdpr_task/edit'] = array( //page to edit your entities.
+    'title' => 'Edit',
+    'title callback' => 'entity_label',
+    'title arguments' => array('gdpr_task', 3),
+    'access arguments' => array('edit gdpr tasks'),
+    'page callback' => 'entity_ui_get_form',
+    'page arguments' => array('gdpr_task', 3),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  // User task menu items.
+  $items['user/%user/gdpr/list'] = array(
+    'title' => 'Summary',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+
+  $items['user/%user/gdpr/requests'] = array(
+    'title' => 'My data requests',
+    'access arguments' => array('view own gdpr tasks'),
+    'page callback' => 'gdpr_task_user_request',
+    'page arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'gdpr_tasks.pages.inc',
+  );
+
+  $items['user/%user/gdpr/requests/gdpr_remove/add'] = array(
+    'title' => 'Request data removal',
+    'page callback' => 'gdpr_tasks_request',
+    'page arguments' => array(1, 4),
+    'access arguments' => array('request gdpr tasks'),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'gdpr_tasks.pages.inc',
+  );
+  $items['user/%user/gdpr/requests/gdpr_sar/add'] = array(
+    'title' => 'Request data export',
+    'page callback' => 'gdpr_tasks_request',
+    'page arguments' => array(1, 4),
+    'access arguments' => array('request gdpr tasks'),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'gdpr_tasks.pages.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function gdpr_tasks_permission() {
+  $perms = array(
+    'administer task entities' => array(
+      'title' => t('Administer task entities'),
+      'restrict access' => TRUE,
+    ),
+    'view gdpr tasks' => array(
+      'title' => t('View gdpr tasks'),
+      'description' => t(''),
+    ),
+    'view own gdpr tasks' => array(
+      'title' => t('View you own gdpr tasks'),
+      'description' => t(''),
+    ),
+    'edit gdpr tasks' => array(
+      'title' => t('Edit gdpr tasks'),
+      'description' => t(''),
+    ),
+    'request gdpr tasks' => array(
+      'title' => t('Edit gdpr tasks'),
+      'description' => t(''),
+    ),
+  );
+
+  return $perms;
+}
+
+/**
+ * Load a GDPR Task entity.
+ *
+ * @param $id
+ *   The id of the task.
+ *
+ * @return GDPRTask|null
+ *   The fully loaded task entity if available.
+ */
+function gdpr_task_load($id) {
+  return entity_load_single('gdpr_task', $id);
+}
+
+/**
+ * Load tasks from the database.
+ *
+ * @param $ids
+ *   An array of task IDs.
+ * @param $conditions
+ *   (deprecated) An associative array of conditions on the {gdpr_task}
+ *   table, where the keys are the database fields and the values are the
+ *   values those fields must have. Instead, it is preferable to use
+ *   EntityFieldQuery to retrieve a list of entity IDs loadable by
+ *   this function.
+ * @param $reset
+ *   Whether to reset the internal static entity cache.
+ *
+ * @return
+ *   An array of task objects, indexed by task ID.
+ *
+ * @see entity_load()
+ * @see EntityFieldQuery
+ */
+function gdpr_task_load_multiple($ids = FALSE, $conditions = array(), $reset = FALSE) {
+  return entity_load('gdpr_task', $ids, $conditions, $reset);
+}
+
+
+function gdpr_tasks_get_user_tasks($user, $gdpr_task_type = NULL) {
+  $query = db_select('gdpr_task', 't')
+    ->fields('t', array('id'))
+    ->condition('user_id', $user->uid);
+
+  if ($gdpr_task_type) {
+    $query->condition('type', $gdpr_task_type);
+  }
+
+  $result = $query->execute()
+    ->fetchAssoc();
+
+  if (!empty($result)) {
+    return gdpr_task_load_multiple($result);
+  }
+
+  return $result;
+}
