@@ -79,21 +79,24 @@ class GDPRController extends ControllerBase {
    *   Return user to GDPR requests.
    */
   public function requestPage(AccountInterface $user, $gdpr_task_type) {
-      $tasks = $this->taskManager->getUserTasks($user, $gdpr_task_type);
+    $tasks = $this->taskManager->getUserTasks($user, $gdpr_task_type);
 
-      if (!empty($tasks)) {
-        $this->messenger->addWarning('You already have a pending task.');
-      }
-      else {
-        $values = [
-          'type' => $gdpr_task_type,
-          'user_id' => $user->id(),
-        ];
-        $this->entityTypeManager->getStorage('gdpr_task')->create($values)->save();
-        $this->messenger->addStatus('Your request has been logged');
-      }
+    if (!empty($tasks)) {
+      $this->messenger->addWarning('You already have a pending task.');
+    }
+    else {
+      $values = [
+        'type' => $gdpr_task_type,
+        'user_id' => $user->id(),
+      ];
+      $this->entityTypeManager->getStorage('gdpr_task')
+        ->create($values)
+        ->save();
+      $this->messenger->addStatus('Your request has been logged');
+    }
 
-    $response = new RedirectResponse(Url::fromRoute('view.gdpr_tasks_my_data_requests.page_1', ['user' => $user->id()])->toString());
+    $response = new RedirectResponse(Url::fromRoute('view.gdpr_tasks_my_data_requests.page_1', ['user' => $user->id()])
+      ->toString());
     return $response;
   }
 

@@ -10,6 +10,7 @@
         }
     ],
     "require": {
-        "drupal/checklistapi": "^1.0"
+        "drupal/checklistapi": "^1.0",
+        "drupal/entity_reference_revisions": "^1.4"
     }
 }

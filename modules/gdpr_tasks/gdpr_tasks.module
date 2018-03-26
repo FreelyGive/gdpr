@@ -15,65 +15,30 @@ use Drupal\gdpr_tasks\TaskManager;
 /**
  * Implements hook_toolbar().
  */
-function gdpr_tasks_toolbar() {
+function gdpr_tasks_toolbar_alter(&$items) {
   $user = \Drupal::currentUser();
 
-  $items = [];
-  $items['gdpr'] = [
-    '#cache' => [
-      'contexts' => [
-        'user',
-      ],
-    ],
-  ];
-
   if ($user->hasPermission('view gdpr tasks')) {
-    $links = [
-      'summary' => [
-        'title' => t('Summary'),
-        'url' => Url::fromRoute('gdpr_tasks.summary'),
-        'attributes' => [
-          'title' => t('GDPR Summary'),
-        ],
+    // Root menu url.
+    $items['gdpr']['tab']['#url'] = Url::fromRoute('gdpr_tasks.summary');
+
+    $items['gdpr']['tray']['links']['#links']['summary'] = [
+      'title' => t('Summary'),
+      'url' => Url::fromRoute('gdpr_tasks.summary'),
+      'attributes' => [
+        'title' => t('GDPR Summary'),
       ],
-      'tasks' => [
-        'title' => t('Tasks'),
-        'url' => Url::fromRoute('entity.gdpr_task.collection'),
-        'attributes' => [
-          'title' => t('GDPR Task list'),
-        ],
-      ],
+      'weight' => 0,
     ];
-    $items['gdpr'] += [
-      '#type' => 'toolbar_item',
-      'tab' => [
-        '#type' => 'link',
-        '#title' => t('GDPR'),
-        '#url' => Url::fromRoute('gdpr_tasks.summary'),
-        '#attributes' => [
-          'title' => t('GDPR'),
-          'class' => ['toolbar-icon', 'toolbar-icon-shortcut'],
-        ],
-      ],
-      'tray' => [
-        'links' => [
-          '#theme' => 'links',
-          '#links' => $links,
-          '#attributes' => [
-            'class' => ['toolbar-menu'],
-          ],
-        ],
-      ],
-      '#weight' => -10,
-      '#attached' => [
-        'library' => [
-          'shortcut/drupal.shortcut',
-        ],
+
+    $items['gdpr']['tray']['links']['#links']['tasks'] = [
+      'title' => t('Tasks'),
+      'url' => Url::fromRoute('entity.gdpr_task.collection'),
+      'attributes' => [
+        'title' => t('GDPR Task list'),
       ],
     ];
   }
-
-  return $items;
 }
 
 /**

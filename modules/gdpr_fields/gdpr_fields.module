@@ -6,6 +6,25 @@
  */
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_toolbar_alter().
+ */
+function gdpr_fields_toolbar_alter(&$items) {
+  $user = \Drupal::currentUser();
+
+  if ($user->hasPermission('view gdpr fields')) {
+    $items['gdpr']['tray']['links']['#links']['fields'] = [
+      'title' => t('Field list'),
+      'url' => Url::fromRoute('gdpr_fields.fields_list'),
+      'attributes' => [
+        'title' => t('Field list'),
+      ],
+      'weight' => 100,
+    ];
+  }
+}
 
 /**
  * Implements hook_form_FORM_ID_alter().
@@ -21,6 +40,11 @@ function gdpr_fields_form_field_config_edit_form_alter(&$form, FormStateInterfac
   /* @var \Drupal\Core\Field\FieldConfigInterface $field */
   $field = $form_state->getFormObject()->getEntity();
   // @todo Check that target entity is a content entity.
+
+  // Do not add GDPR settings to the GDPR Consent Agreement form.
+  if ($field->getType() == 'gdpr_user_consent') {
+    return;
+  }
 
   $form['field']['gdpr_fields'] = [
     '#type' => 'details',

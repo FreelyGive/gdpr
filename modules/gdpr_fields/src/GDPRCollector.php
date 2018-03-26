@@ -265,7 +265,8 @@ class GDPRCollector {
     $bundle_id = $entity->bundle();
     if ($bundle_type) {
       $bundle_storage = $this->entityTypeManager->getStorage($bundle_type);
-      $bundle_label = $bundle_storage->load($bundle_id)->label();
+      $bundle_entity = $bundle_storage->load($bundle_id);
+      $bundle_label = $bundle_entity == NULL ? '' : $bundle_entity->label();
     }
     else {
       $bundle_label = $entity->getEntityType()->getLabel();

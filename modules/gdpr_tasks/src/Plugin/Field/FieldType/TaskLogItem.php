@@ -13,6 +13,7 @@ use Drupal\Core\TypedData\DataDefinition;
  *   id = "gdpr_task_item",
  *   label = @Translation("GDPR Removal Task Item"),
  *   description = @Translation("GDPR Removal Task Item"),
+ *   category = @Translation("GDPR"),
  *   default_widget = "gdpr_task_item",
  *   default_formatter = "gdpr_task_item"
  * )
