@@ -55,11 +55,11 @@ class GDPRController extends ControllerBase {
       $output[$entity_type] = array(
         '#type' => 'details',
         '#title' => t($entity_type),
-        '#description' => t('@configure entity @entity_type for GDPR.', [
+        /*'#description' => t('@configure entity @entity_type for GDPR.', [
           // @todo Create ability to exclude entity type from GDPR in configuration.
           '@configure' => Link::fromTextAndUrl('Configure', Url::fromUri('internal:/'))->toString(),
           '@entity_type' => ucfirst($entity_type),
-        ]),
+        ]),*/
         '#open' => TRUE,
       );
 

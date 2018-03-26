@@ -5,3 +5,10 @@ gdpr_fields.fields_list:
     _title: 'Used in GDPR'
   requirements:
     _permission: 'view gdpr fields'
+
+gdpr_fields.edit_field:
+  path: '/admin/gdpr/fields/{entity_type}/{bundle_name}/{field_name}'
+  defaults:
+    _form: 'Drupal\gdpr_fields\Form\GdprFieldSettingsForm'
+  requirements:
+    _permission: 'view gdpr fields'
