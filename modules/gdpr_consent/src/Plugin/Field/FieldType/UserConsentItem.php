@@ -99,9 +99,8 @@ class UserConsentItem extends FieldItemBase {
       $msg = Message::create(['template' => 'consent_agreement_accepted']);
       $msg->set('user', $this->user_id);
       $msg->set('user_accepted', $this->user_id_accepted);
-      $msg->set('agreement', $this->target_id);
+      $msg->set('agreement', ['target_id' => $this->target_id, 'target_revision_id' => $this->target_revision_id]);
       $msg->set('notes', $this->notes);
-      $msg->set('agreement_revision_id', $this->target_revision_id);
       $msg->set('agreed', $this->agreed);
       $msg->save();
     }

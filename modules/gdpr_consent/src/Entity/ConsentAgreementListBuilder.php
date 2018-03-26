@@ -34,18 +34,4 @@ class ConsentAgreementListBuilder extends EntityListBuilder {
     return $row + parent::buildRow($entity);
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function getDefaultOperations(EntityInterface $entity) {
-    $operations = [
-      $operations['view'] = [
-        'title' => $this->t('View'),
-        'weight' => 0,
-        'url' => $this->ensureDestination($entity->toUrl('canonical')),
-      ],
-    ];
-    return $operations + parent::getDefaultOperations($entity);
-  }
-
 }

@@ -1,10 +1,12 @@
-uuid: 7c7f0457-3470-4c14-925a-0b71506ec410
+uuid: 000c8918-277d-4444-8dac-922d86366238
 langcode: en
 status: true
 dependencies:
   config:
     - field.storage.message.agreement
     - message.template.consent_agreement_accepted
+  module:
+    - entity_reference_revisions
 id: message.consent_agreement_accepted.agreement
 field_name: agreement
 entity_type: message
@@ -22,4 +24,4 @@ settings:
     sort:
       field: _none
     auto_create: false
-field_type: entity_reference
+field_type: entity_reference_revisions

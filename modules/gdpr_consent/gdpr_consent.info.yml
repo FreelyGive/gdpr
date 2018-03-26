@@ -8,3 +8,4 @@ dependencies:
   - gdpr:gdpr
   - token
   - message
+  - entity_reference_revisions
