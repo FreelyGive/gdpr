@@ -3,7 +3,7 @@ gdpr_fields.fields_list:
   defaults:
     _controller: '\Drupal\gdpr_fields\Controller\GDPRController::fieldsList'
     _title: 'Used in GDPR'
-    mode: ''
+    mode: 'all'
   requirements:
     _permission: 'view gdpr fields'
 

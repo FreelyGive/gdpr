@@ -294,7 +294,7 @@ class GdprFieldSettingsForm extends FormBase {
     );
 
     $config->save();
-    $this->messenger()->addMessage('Field settings saved.');
+    \Drupal::messenger()->addMessage('Field settings saved.');
     $form_state->setRedirect('gdpr_fields.fields_list');
   }
 

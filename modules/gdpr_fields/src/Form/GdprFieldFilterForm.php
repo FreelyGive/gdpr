@@ -43,7 +43,7 @@ class GdprFieldFilterForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $mode = $form_state->getValue('filter') == '1' ? 'all' : '';
+    $mode = $form_state->getValue('filter') == '1' ? 'all' : 'configured';
     $form_state->setRedirect('gdpr_fields.fields_list', ['mode' => $mode]);
   }
 }
