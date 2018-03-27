@@ -193,7 +193,7 @@ class GDPRCollector {
    * @return array
    *   GDPR entity field list.
    */
-  public function listFields($entity_type = 'user', $bundle_id) {
+  public function listFields($entity_type = 'user', $bundle_id, $include_not_configured) {
     $storage = $this->entityTypeManager->getStorage($entity_type);
     $entity_definition = $this->entityTypeManager->getDefinition($entity_type);
     $bundle_type = $entity_definition->getBundleEntityType();
@@ -209,6 +209,11 @@ class GDPRCollector {
 
     // Get fields for entity.
     $fields = [];
+
+    if (!$include_not_configured && $gdpr_settings == NULL) {
+      return $fields;
+    }
+
     foreach ($entity as $field_id => $field) {
       /** @var \Drupal\Core\Field\FieldItemListInterface $field */
       $field_definition = $field->getFieldDefinition();
@@ -229,6 +234,7 @@ class GDPRCollector {
         'type' => $field_definition->getType(),
         'gdpr_rta' => 'Not Configured',
         'gdpr_rtf' => 'Not Configured',
+        'notes' => '',
         'edit' => '',
       ];
 
@@ -245,6 +251,10 @@ class GDPRCollector {
         if ($field_settings->configured) {
           $fields[$key]['gdpr_rta'] = $field_settings->rtaDescription();
           $fields[$key]['gdpr_rtf'] = $field_settings->rtfDescription();
+          $fields[$key]['notes'] = $field_settings->notes;
+        }
+        elseif (!$field_settings->configured && !$include_not_configured) {
+          unset($fields[$key]);
         }
       }
     }
