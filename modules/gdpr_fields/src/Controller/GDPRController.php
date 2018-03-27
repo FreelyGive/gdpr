@@ -126,7 +126,7 @@ class GDPRController extends ControllerBase {
       ];
 
       $table[$i]['notes'] = [
-        '#markup' => '<span class="notes" data-icon="?"></span><div>' . $row['notes'] . '</div>',
+        '#markup' => empty($row['notes']) ? '' : '<span class="notes" data-icon="?"></span><div>' . $row['notes'] . '</div>',
       ];
 
       $table[$i]['edit'] = [
