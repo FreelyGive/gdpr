@@ -11,6 +11,7 @@ use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\TypedData\Exception\ReadOnlyException;
 use Drupal\gdpr_dump\Sanitizer\GdprSanitizerFactory;
+use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
 use Drupal\gdpr_fields\GDPRCollector;
 use Drupal\gdpr_tasks\Entity\TaskInterface;
 use Drupal\gdpr_tasks\Form\RemovalSettingsForm;
@@ -253,11 +254,12 @@ class Anonymizer {
    */
   private function getSanitizerId(FieldItemListInterface $field, EntityInterface $bundle_entity) {
     // First check if this field has a sanitizer defined.
+
+    $config = GdprFieldConfigEntity::load($bundle_entity->getEntityTypeId());
+    $field_config = $config->getField($bundle_entity->bundle(), $field->getName());
+    $sanitizer = $field_config->sanitizer;
     $fieldDefinition = $field->getFieldDefinition();
     $type = $fieldDefinition->getType();
-    $sanitizer = $fieldDefinition
-      ->getConfig($bundle_entity->bundle())
-      ->getThirdPartySetting('gdpr_fields', 'gdpr_fields_sanitizer');
 
     if (!$sanitizer) {
       // No sanitizer defined directly on the field.
@@ -285,20 +287,19 @@ class Anonymizer {
    */
   private function getFieldsToProcess(EntityInterface $entity) {
     $bundle_id = $entity->bundle();
+    $config = GdprFieldConfigEntity::load($entity->getEntityTypeId());
 
     // Get fields for entity.
     $fields = [];
     foreach ($entity as $field_id => $field) {
       /** @var \Drupal\Core\Field\FieldItemListInterface $field */
-      $field_definition = $field->getFieldDefinition();
+      $field_config = $config->getField($bundle_id, $field->getName());
 
-      $config = $field_definition->getConfig($bundle_id);
-
-      if (!$config->getThirdPartySetting('gdpr_fields', 'gdpr_fields_enabled', FALSE)) {
+      if (!$field_config->enabled) {
         continue;
       }
 
-      $rtf_value = $config->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rtf', FALSE);
+      $rtf_value = $field_config->rtf;
 
       if ($rtf_value && $rtf_value !== 'no') {
         $fields[] = [

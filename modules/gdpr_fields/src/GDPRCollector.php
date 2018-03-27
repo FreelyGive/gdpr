@@ -316,6 +316,7 @@ class GDPRCollector {
         'value' => $fieldValue,
         'entity' => $entity->getEntityType()->getLabel(),
         'bundle' => $bundle_label,
+        'notes' => $field_config->notes,
       ];
 
       if (empty($extra_fields)) {
@@ -328,6 +329,7 @@ class GDPRCollector {
 
         if ($rta_value && $rta_value !== 'no') {
           $fields[$key]['gdpr_rta'] = $rta_value;
+          //$fields[$key]['gdpr_rta_desc'] = $field_config->rtaDescription();
         }
         else {
           unset($fields[$key]);
@@ -338,6 +340,8 @@ class GDPRCollector {
 
         if ($rtf_value && $rtf_value !== 'no') {
           $fields[$key]['gdpr_rtf'] = $rtf_value;
+          //$fields[$key]['gdpr_rtf_desc'] = $field_config->rtfDescription();
+
           // For 'maybes', provide a link to edit the entity.
           if ($rtf_value == 'maybe') {
             $fields[$key]['link'] = $entity->toLink('Edit', 'edit-form');
