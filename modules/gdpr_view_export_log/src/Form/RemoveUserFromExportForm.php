@@ -1,14 +1,17 @@
 <?php
 
-
 namespace Drupal\gdpr_view_export_log\Form;
-
 
 use Drupal\Console\Bootstrap\Drupal;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\gdpr_view_export_log\Entity\ExportAudit;
 
+/**
+ * Form for removing a user from an export log.
+ *
+ * @package Drupal\gdpr_view_export_log\Form
+ */
 class RemoveUserFromExportForm extends FormBase {
 
   /**

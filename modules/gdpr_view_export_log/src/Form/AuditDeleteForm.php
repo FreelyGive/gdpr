@@ -5,6 +5,11 @@ namespace Drupal\gdpr_view_export_log\Form;
 use Drupal\Core\Entity\ContentEntityDeleteForm;
 use Drupal\Core\Form\FormStateInterface;
 
+/**
+ * Form for deleting an export audit.
+ *
+ * @package Drupal\gdpr_view_export_log\Form
+ */
 class AuditDeleteForm extends ContentEntityDeleteForm {
 
   /**

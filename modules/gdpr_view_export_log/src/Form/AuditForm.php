@@ -6,6 +6,11 @@ use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
+/**
+ * Form for creating an export audit.
+ *
+ * @package Drupal\gdpr_view_export_log\Form
+ */
 class AuditForm extends ContentEntityForm {
 
   /**
