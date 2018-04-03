@@ -22,8 +22,20 @@ class UserController extends ControllerBase {
    * @return \Drupal\Core\Access\AccessResultInterface
    *   The result.
    */
-  public function access(UserInterface $user) {
+  public function accessCollectedData(UserInterface $user) {
+    // Must have the appropriate permission to access the page.
+    // This allows site admins to completely disable the View My Data page.
+    if (!$this->currentUser()->hasPermission('view gdpr data summary')) {
+      return AccessResult::forbidden();
+    }
+
+    // If access to the page is enabled,
+    // only show the tab if we're viewing our OWN profile
+    // or we're a GDPR admin.
     if ((int) $user->id() === (int) $this->currentUser()->id()) {
+      return AccessResult::allowed();
+    }
+    elseif ($this->currentUser()->hasPermission('view task entities')) {
       return AccessResult::allowed();
     }
 

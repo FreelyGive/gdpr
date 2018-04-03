@@ -134,7 +134,7 @@ class TaskListBuilder extends EntityListBuilder {
       '#type' => 'table',
       '#header' => $this->buildHeader(),
       '#rows' => [],
-      '#empty' => $this->t('There is no closed @label yet.', ['@label' => $this->entityType->getLabel()]),
+      '#empty' => $this->t('There are no closed tasks yet.'),
       '#cache' => [
         'contexts' => $this->entityType->getListCacheContexts(),
         'tags' => $this->entityType->getListCacheTags(),
