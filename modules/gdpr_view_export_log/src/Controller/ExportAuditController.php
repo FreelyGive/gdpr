@@ -7,17 +7,40 @@ use Drupal\Core\Url;
 use Drupal\gdpr_view_export_log\Entity\ExportAudit;
 use Drupal\user\Entity\User;
 
+
+/**
+ * Class ExportAuditController.
+ *
+ * @package Drupal\gdpr_view_export_log\Controller
+ */
 class ExportAuditController extends ControllerBase {
 
+  /**
+   * Views the users that were part of an export audit.
+   *
+   * @param string $id
+   *   The audit id.
+   *
+   * @return array
+   *   Render array
+   */
   public function viewUsers($id) {
-    $audit = ExportAudit::load($id);
-    $ids = [];
+    $query = \Drupal::database()->select('gdpr_view_export_audit_user_ids', 'g');
 
-    foreach ($audit->get('user_ids') as $field) {
-      $ids[] = $field->value;
-    }
+    $count_query = clone $query;
+    $count_query->addExpression('count(g.id)');
 
-    $users = User::loadMultiple($ids);
+    $paged_query = $query->extend('Drupal\Core\Database\Query\PagerSelectExtender');
+    $paged_query->limit(50);
+    $paged_query->setCountQuery($count_query);
+    $paged_query->addJoin('left', 'users_field_data', 'u', 'g.user_id = u.uid');
+
+    $results = $paged_query->fields('g', ['user_id'])
+      ->fields('u', ['name'])
+      ->condition('g.log_id', $id)
+      ->execute()
+      ->fetchAll(\PDO::FETCH_ASSOC);
+
 
     $output = [
       'back' => [
@@ -28,28 +51,42 @@ class ExportAuditController extends ControllerBase {
 
       'table' => [
         '#type' => 'table',
-        '#header' => ['User', ''],
+        '#header' => ['ID', 'Username', ''],
         '#empty' => 'Could not locate any users in this export.',
+      ],
+
+      'pager' => [
+        '#theme' => 'pager',
+        '#weight' => 5,
+        '#element' => 0,
+        '#parameters' => [],
+        '#quantity' => 9,
+        '#route_name' => '<none>',
+        '#tags' => '',
       ],
     ];
 
 
-    foreach ($users as $user_id => $user) {
-      $output['table'][$user_id]['username'] = [
-        '#theme' => 'username',
-        '#account' => $user,
+    foreach ($results as $result) {
+      $output['table'][$result['user_id']]['userid'] = [
+        '#markup' => $result['user_id'],
       ];
 
-      $links['revert'] =
+      $output['table'][$result['user_id']]['username'] = [
+        '#type' => 'link',
+        '#url' => Url::fromRoute('entity.user.canonical', ['user' => $result['user_id']]),
+        '#title' => $result['name'],
+      ];
 
-      $output['table'][$user_id]['operations'] = [
+
+      $output['table'][$result['user_id']]['operations'] = [
         '#type' => 'operations',
         '#links' => [
           'remove' => [
             'title' => $this->t('Remove'),
             'url' => Url::fromRoute('gdpr_view_export_log.delete_user', [
               'id' => $id,
-              'user_id' => $user_id,
+              'user_id' => $result['user_id'],
             ]),
           ],
         ],
@@ -57,6 +94,6 @@ class ExportAuditController extends ControllerBase {
     }
 
     return $output;
-
   }
+
 }

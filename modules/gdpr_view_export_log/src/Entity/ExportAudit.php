@@ -123,12 +123,6 @@ class ExportAudit extends ContentEntityBase {
       ->setLabel(t('View'))
       ->setDescription(t('The name of the view'));
 
-    $fields['user_ids'] = BaseFieldDefinition::create('integer')
-      ->setCardinality(FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED)
-      ->setLabel('User IDs')
-
-      ->setDescription('IDs of users in the export');
-
     return $fields;
   }
 

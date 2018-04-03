@@ -8,31 +8,6 @@ use Drupal\views\ViewExecutable;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
- * Implements hook_install().
- */
-function gdpr_view_export_log_install() {
-  $config = \Drupal::service('config.factory')->getEditable('views.settings');
-  $display_extenders = $config->get('display_extenders') ?: [];
-  $display_extenders[] = 'gdpr_view_export_logging';
-  $config->set('display_extenders', $display_extenders);
-  $config->save();
-}
-
-/**
- * Implements hook_uninstall().
- */
-function gdpr_view_export_log_uninstall() {
-  $config = \Drupal::service('config.factory')->getEditable('views.settings');
-  $display_extenders = $config->get('display_extenders') ?: [];
-  $key = array_search('gdpr_view_export_logging', $display_extenders);
-  if ($key !== FALSE) {
-    unset($display_extenders[$key]);
-    $config->set('display_extenders', $display_extenders);
-    $config->save();
-  }
-}
-
-/**
  * Implements hook_toolbar_alter().
  */
 function gdpr_view_export_log_toolbar_alter(&$items) {
@@ -145,9 +120,22 @@ function gdpr_view_export_log_views_post_execute(ViewExecutable $view) {
         }
       }
 
-      $audit_entry->set('user_ids', $ids);
-      $audit_entry->save();
+      if (count($ids) > 0) {
+        $audit_entry->save();
+        // User IDs are stored in a custom table rather than an entity field.
+        // This is so that they can be lazily loaded for performance reasons,
+        // as we don't want to be loading thousands of users
+        // when looking up a log entry.
 
+        foreach($ids as $id) {
+          //@todo cache the user's name in here too?
+          \Drupal::database()->insert('gdpr_view_export_audit_user_ids')
+            ->fields([
+              'log_id' => $audit_entry->id(),
+              'user_id' => $id,
+            ])->execute();
+        }
+      }
     }
 
     $session->remove('gdpr_audit_id');
