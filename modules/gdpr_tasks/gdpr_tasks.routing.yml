@@ -10,7 +10,7 @@ gdpr_tasks.request:
   path: '/user/{user}/gdpr-request/{gdpr_task_type}'
   defaults:
     _controller: '\Drupal\gdpr_tasks\Controller\GDPRController::requestPage'
-    _title: 'GDPR Summary'
+    _title: 'Create Data Request'
   requirements:
     _permission: 'create gdpr tasks'
   options:
