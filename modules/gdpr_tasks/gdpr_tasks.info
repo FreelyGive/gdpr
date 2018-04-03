@@ -8,3 +8,6 @@ dependencies[] = entity
 files[] = src/Entity/GDPRTask.php
 files[] = src/Entity/GDPRTaskInterface.php
 files[] = src/Entity/GDPRTaskController.php
+files[] = src/Entity/GDPRTaskUIController.php
+files[] = src/Entity/GDPRTaskType.php
+files[] = src/Entity/GDPRTaskTypeUIController.php
