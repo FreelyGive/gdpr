@@ -64,6 +64,11 @@ class GDPRTask extends Entity implements GDPRTaskInterface {
    */
   public $processed_by;
 
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultLabel = TRUE;
+
 
   /**
    * {@inheritdoc}
