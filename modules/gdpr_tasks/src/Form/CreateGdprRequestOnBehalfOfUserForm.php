@@ -21,7 +21,6 @@ class CreateGdprRequestOnBehalfOfUserForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $x=1;
     return [
       '#title' => $this->t('Create request on behalf of user'),
       'notes' => [

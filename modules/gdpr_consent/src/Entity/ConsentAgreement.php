@@ -256,6 +256,20 @@ class ConsentAgreement extends RevisionableContentEntityBase implements ConsentA
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE);
 
+    $fields['notes'] = BaseFieldDefinition::create('string_long')
+      ->setLabel(t('Notes'))
+      ->setRevisionable(TRUE)
+      ->setDescription(t('This should contain the rationale behind the agreement.'))
+      ->setDisplayOptions('view', [
+        'type' => 'textarea',
+      ])
+      ->setDisplayOptions('form', [
+        'type' => 'textarea',
+        'weight' => 4,
+      ])
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
+
     $fields['status'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Publishing status'))
       ->setDescription(t('A boolean indicating whether the Consent Agreement is published.'))
@@ -316,6 +330,5 @@ class ConsentAgreement extends RevisionableContentEntityBase implements ConsentA
   public function __toString() {
     return $this->get('title')->getString();
   }
-
 
 }

@@ -94,11 +94,6 @@ function gdpr_tasks_entity_presave(EntityInterface $entity) {
     return;
   }
 
-  // Do not execute the export if this is a newly created entity.
-  if ($entity->isNew()) {
-    return;
-  }
-
   /* @var \Drupal\gdpr_tasks\Entity\TaskInterface $entity */
   switch ($entity->bundle()) {
     case 'gdpr_remove':
