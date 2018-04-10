@@ -1,0 +1,52 @@
+<?php
+
+/**
+ * @file
+ * Contains hook implementations and shared functions.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function gdpr_consent_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#gdpr_consent':
+      return t('Extends the GDPR module to record consent from users for certain agreements.');
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function gdpr_consent_menu() {
+  $items = array();
+
+  $items['user/%user/gdpr/collected_data/agreements'] = array(
+    'title' => 'Agreements',
+    'description' => 'List Agreement Entities',
+    'access callback' => TRUE,
+    'page callback' => 'gdpr_consent_collected_agreements',
+    'menu_name' => 'navigation',
+    'file' => 'includes/gdpr_consent.agreements.inc',
+  );
+
+  return $items;
+}
+
+
+/**
+ * Implements hook_entity_info().
+ */
+function gdpr_consent_entity_info() {
+  $info = array();
+  $info['gdpr_consent_agreement'] = array(
+    'label' => t('GDPR Consent Agreement'),
+    // Table for storing entity data, defined in hook_schema().
+    'base table' => 'gdpr_consent_agreement',
+    'entity keys' => array(
+      'id' => 'id',
+    ),
+  );
+
+  return $info;
+}
