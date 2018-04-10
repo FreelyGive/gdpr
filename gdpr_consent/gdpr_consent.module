@@ -41,11 +41,18 @@ function gdpr_consent_entity_info() {
   $info = array();
   $info['gdpr_consent_agreement'] = array(
     'label' => t('GDPR Consent Agreement'),
-    // Table for storing entity data, defined in hook_schema().
     'base table' => 'gdpr_consent_agreement',
+    'entity class' => 'Entity',
+    'controller class' => 'ConsentAgreementController',
+    'fieldable' => TRUE,
     'entity keys' => array(
       'id' => 'id',
+      'label' => 'title',
     ),
+    // Use the default label() and uri() functions
+    'label callback' => 'entity_class_label',
+    'uri callback' => 'entity_class_uri',
+    'module' => 'gdpr_consent',
   );
 
   return $info;
