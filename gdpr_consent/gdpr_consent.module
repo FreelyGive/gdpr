@@ -57,3 +57,62 @@ function gdpr_consent_entity_info() {
 
   return $info;
 }
+
+/**
+ * Implements hook_entity_property_info().
+ */
+function gdpr_consent_entity_property_info() {
+  $info = array();
+  $properties = &$info['gdpr_consent_agreement']['properties'];
+
+  $properties['id'] = array(
+    'label' => t('GDPR Consent Agreement ID'),
+    'description' => t('The uniquie ID of the consent agreement entity.'),
+    'type' => 'integer',
+    'schema field' => 'id',
+  );
+
+  $properties['title'] = array(
+    'label' => t('Title'),
+    'description' => t('Title of the agreement'),
+    'type' => 'text',
+    'schema field' => 'title',
+  );
+
+  $properties['description'] = array(
+    'label' => t('Description'),
+    'description' => t('Text displayed to the user on the form'),
+    'type' => 'text',
+    'schema field' => 'description',
+  );
+
+  $properties['created'] = array(
+    'label' => t('Created date'),
+    'description' => t('Date the consent agreement was created'),
+    'type' => 'date',
+    'schema field' => 'created',
+  );
+
+  $properties['changed'] = array(
+    'label' => t('Updated date'),
+    'description' => t('Date the consent agreement was last edited'),
+    'type' => 'date',
+    'schema field' => 'changed',
+  );
+
+  $properties['uid'] = array(
+    'label' => t('Authored by'),
+    'description' => t('The user ID of author of the Consent Agreement entity.'),
+    'type' => 'user',
+    'schema field' => 'uid',
+  );
+
+  $properties['status'] = array(
+    'label' => t('Publishing status'),
+    'description' => t('A boolean indicating whether the Consent Agreement is published.'),
+    'type' => 'boolean',
+    'schema field' => 'status',
+  );
+
+  return $info;
+}

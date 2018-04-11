@@ -34,6 +34,12 @@ function gdpr_consent_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'changed' => array(
+        'description' => 'The Unix timestamp the entity was last edited.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
       'uid' => array(
         'type' => 'int',
         'unsigned' => TRUE,
