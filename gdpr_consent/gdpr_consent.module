@@ -43,7 +43,8 @@ function gdpr_consent_entity_info() {
     'label' => t('GDPR Consent Agreement'),
     'base table' => 'gdpr_consent_agreement',
     'entity class' => 'Entity',
-    'controller class' => 'ConsentAgreementController',
+    'controller class' => 'EntityAPIController',
+    //'controller class' => 'ConsentAgreementController',
     'fieldable' => TRUE,
     'entity keys' => array(
       'id' => 'id',
@@ -52,6 +53,14 @@ function gdpr_consent_entity_info() {
     // Use the default label() and uri() functions
     'label callback' => 'entity_class_label',
     'uri callback' => 'entity_class_uri',
+    // Access callback to determine permisisons.
+    'access callback' => 'gdpr_consent_access_callback',
+    'admin ui' => array(
+      'path' => 'admin/consent',
+      //'controller class' => 'ConesentAgreementEntityUIController',
+      'menu wildcard' => '%entity_object',
+      'file' => 'includes/gdpr_consent.admin.inc',
+    ),
     'module' => 'gdpr_consent',
   );
 
@@ -115,4 +124,8 @@ function gdpr_consent_entity_property_info() {
   );
 
   return $info;
+}
+
+function gdpr_consent_access_callback($op, $entity = NULL, $account = NULL) {
+  return TRUE;
 }
