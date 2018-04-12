@@ -6,6 +6,6 @@ package: General Data Protection Regulation
 
 dependencies:
   - gdpr:gdpr
-  - token
-  - message
-  - entity_reference_revisions
+  - token:token
+  - message:message
+  - entity_reference_revisions:entity_reference_revisions

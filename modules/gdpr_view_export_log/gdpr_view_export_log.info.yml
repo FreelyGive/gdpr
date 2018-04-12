@@ -6,5 +6,5 @@ package: General Data Protection Regulation
 
 dependencies:
   - gdpr:gdpr
-  - views_data_export
-  - rules
+  - views_data_export:views_data_export
+  - rules:rules

@@ -6,4 +6,5 @@ package: General Data Protection Regulation
 
 dependencies:
   - gdpr:gdpr
-  - gdpr:dump
+  - gdpr:gdpr_dump
+  - gdpr:gdpr_fields
