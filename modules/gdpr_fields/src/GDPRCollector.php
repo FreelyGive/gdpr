@@ -136,9 +136,14 @@ class GDPRCollector {
     $entity_list[$entity_type][$entity->id()] = $entity;
 
     // Find relationships.
-    $context = new Context(new ContextDefinition("entity:{$entity_type}"));
-    $definitions = $this->relationshipManager->getDefinitionsForContexts([$context]);
+    $context_definition = new ContextDefinition("entity:{$entity_type}");
 
+    // @todo Error handling for broken bundles. (Eg. file module).
+    if ($entity->bundle() != 'undefined') {
+      $context_definition->addConstraint('Bundle', [$entity->bundle()]);
+    }
+    $context = new Context($context_definition);
+    $definitions = $this->relationshipManager->getDefinitionsForContexts([$context]);
 
     foreach ($definitions as $definition_id => $definition) {
       list($type, $definition_entity, $related_entity_type,) = explode(':', $definition_id);
