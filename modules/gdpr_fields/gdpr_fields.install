@@ -1,0 +1,59 @@
+<?php
+
+/**
+ * @file
+ * Install file for the GDPR Fields module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function gdpr_fields_schema() {
+  $schema['gdpr_fields_field_data'] = array(
+    'description' => 'Stores GDPR field data.',
+    'export' => array(
+      'key' => 'name',
+      'key name' => 'Name',
+//      'admin_title' => 'label',
+//      'admin_description' => 'description',
+      'primary key' => 'name',
+      'identifier' => 'field',
+      'default hook' => 'gdpr_fields_default_field_data',
+      'object' => 'GDPRFieldData',
+    ),
+    'fields' => array(
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'description' => 'Machine name for field.',
+      ),
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'description' => 'Entity type of field.',
+      ),
+      'entity_bundle' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'description' => 'Entity bundle of field.',
+      ),
+      'field_name' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'description' => 'Field name of field.',
+      ),
+      'settings' => array(
+        'type' => 'text',
+        'size' => 'big',
+        'description' => 'Additional settings.',
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('name'),
+    'keys' => array(
+      'enabled' => array('enabled'),
+    )
+  );
+
+  return $schema;
+}
