@@ -80,6 +80,13 @@ class GDPRTask extends Entity implements GDPRTaskInterface {
   /**
    * {@inheritdoc}
    */
+  public function getOwner() {
+    return user_load($this->user_id);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   protected function defaultLabel() {
     return "Task {$this->id}";
   }
