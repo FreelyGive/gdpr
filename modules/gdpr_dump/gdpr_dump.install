@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * @file
+ * Install file for the GDPR Dump module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function gdpr_dump_schema() {
+  $schema['gdpr_dump_sanitizers'] = array(
+    'description' => 'Stores GDPR Sanitizers.',
+    'export' => array(
+      'key' => 'name',
+      'key name' => 'Name',
+      'admin_title' => 'label',
+      'admin_description' => 'description',
+      'primary key' => 'name',
+      'identifier' => 'field',
+      'default hook' => 'gdpr_dump_default_sanitizer',
+      'object' => 'GDPRSanitizerDefault',
+    ),
+    'fields' => array(
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'description' => 'Machine name of sanitizer.',
+      ),
+      'label' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'description' => 'Label of sanitizer.',
+      ),
+      'description' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'description' => 'Description of sanitizer.',
+      ),
+      'settings' => array(
+        'type' => 'text',
+        'size' => 'big',
+        'description' => 'Additional settings.',
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('name'),
+    'keys' => array(
+      'enabled' => array('enabled'),
+    )
+  );
+
+  return $schema;
+}
