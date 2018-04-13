@@ -43,9 +43,9 @@ function gdpr_consent_entity_info() {
   $info['gdpr_consent_agreement'] = array(
     'label' => t('GDPR Consent Agreement'),
     'base table' => 'gdpr_consent_agreement',
+    'revision table' => 'gdpr_consent_agreement_revision',
     'entity class' => 'Entity',
-    'controller class' => 'EntityAPIController',
-    //'controller class' => 'ConsentAgreementController',
+    'controller class' => 'ConsentAgreementController',
     'fieldable' => TRUE,
     'bundles' => array(
       'gdpr_consent_agreement' => array(
@@ -59,15 +59,16 @@ function gdpr_consent_entity_info() {
     'entity keys' => array(
       'id' => 'id',
       'label' => 'title',
+      'revision' => 'revision_id',
     ),
-    // Use the default label() and uri() functions
+    // Use the default label() and uri() functions.
     'label callback' => 'entity_class_label',
     'uri callback' => 'entity_class_uri',
     // Access callback to determine permisisons.
     'access callback' => 'gdpr_consent_access_callback',
     'admin ui' => array(
       'path' => 'admin/consent',
-      //'controller class' => 'ConesentAgreementEntityUIController',
+      //'controller class' => 'ConsentAgreementEntityUIController',
       'menu wildcard' => '%entity_object',
       'file' => 'includes/gdpr_consent.admin.inc',
     ),
@@ -138,4 +139,23 @@ function gdpr_consent_entity_property_info() {
 
 function gdpr_consent_access_callback($op, $entity = NULL, $account = NULL) {
   return TRUE;
+}
+
+/**
+ * Custom controller for the gdpr_consent_agreement entity type.
+ */
+class ConsentAgreementController extends EntityAPIController {
+
+  public function save($entity, DatabaseTransaction $transaction = NULL) {
+    if (isset($entity->is_new)) {
+      $entity->created = REQUEST_TIME;
+    }
+
+    $entity->changed = REQUEST_TIME;
+
+    // Always save new revisions.
+    $entity->is_new_revision = TRUE;
+
+    return parent::save($entity, $transaction);
+  }
 }

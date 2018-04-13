@@ -14,15 +14,15 @@ function gdpr_consent_schema() {
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
+      'revision_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+        'default' => NULL,
+        'description' => 'The ID of consent agreement\'s default revision.',
+      ),
       'title' => array(
         'description' => 'Title of the consent agreement.',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'description' => array(
-        'description' => 'A description of the consent agreement.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
@@ -62,6 +62,32 @@ function gdpr_consent_schema() {
       ),
     ),
     'primary key' => array('id'),
+  );
+
+  $schema['gdpr_consent_agreement_revision'] = array(
+    'description' => 'GDPR Consent Agreement entity revisions.',
+    'fields' => array(
+      'id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+        'default' => NULL,
+        'description' => 'The ID of the attached entity.',
+      ),
+      'revision_id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique revision ID.',
+      ),
+      'description' => array(
+        'description' => 'A description of the consent agreement.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('revision_id'),
   );
 
   return $schema;
