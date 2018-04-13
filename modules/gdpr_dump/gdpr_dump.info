@@ -1,0 +1,9 @@
+name = General Data Protection Regulation (GDPR) - Obfuscated Data
+description = Provides tools for obfuscating GDPR data.
+core = 7.x
+
+dependencies[] = gdpr
+dependencies[] = ctools
+
+files[] = src/Plugins/GDPRSanitizerDefault.php
+files[] = src/GDPRUtilRandom.php
