@@ -21,11 +21,12 @@ function gdpr_consent_help($path, $arg) {
 function gdpr_consent_menu() {
   $items = array();
 
-  $items['user/%user/gdpr/collected_data/agreements'] = array(
+  $items['user/%user/collected_data/agreements'] = array(
     'title' => 'Agreements',
     'description' => 'List Agreement Entities',
     'access callback' => TRUE,
     'page callback' => 'gdpr_consent_collected_agreements',
+    'page arguments' => array(1),
     'menu_name' => 'navigation',
     'file' => 'includes/gdpr_consent.agreements.inc',
   );
@@ -46,6 +47,15 @@ function gdpr_consent_entity_info() {
     'controller class' => 'EntityAPIController',
     //'controller class' => 'ConsentAgreementController',
     'fieldable' => TRUE,
+    'bundles' => array(
+      'gdpr_consent_agreement' => array(
+        'label' => t('GDPR Consent Agreement'),
+        'admin' => array(
+          'path' => 'admin/consent',
+          'access arguments' => array('administer site configuration'),
+        ),
+      ),
+    ),
     'entity keys' => array(
       'id' => 'id',
       'label' => 'title',
