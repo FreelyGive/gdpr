@@ -19,16 +19,12 @@ function gdpr_help($path, $arg) {
  * Implements hook_menu().
  */
 function gdpr_menu() {
-  // Administration pages.
-  $items['admin/config/gdpr'] = [
+  $items['admin/gdpr'] = [
     'title' => 'GDPR',
-    'position' => 'left',
-    'page callback' => 'system_admin_menu_block_page',
-    'access arguments' => [
-      'administer site configuration',
-    ],
-    'file' => 'system.admin.inc',
-    'file path' => drupal_get_path('module', 'system'),
+    'description' => 'Administer settings.',
+    'page callback' => 'gdpr_dashboard_page',
+    'access arguments' => array('administer gdpr settings'),
+    'file' => 'includes/gdpr.admin.inc',
   ];
 
   $items['user/%user/gdpr'] = [
@@ -39,6 +35,7 @@ function gdpr_menu() {
     'access arguments' => [1],
     'type' => MENU_LOCAL_TASK,
   ];
+
   return $items;
 }
 
@@ -52,6 +49,20 @@ function gdpr_theme() {
       'path' => drupal_get_path('module', 'gdpr') . '/templates',
     ],
   ];
+}
+
+/**
+ * Implements hook_permission().
+ */
+function gdpr_permission() {
+  $perms = array(
+    'administer gdpr settings' => array(
+      'title' => t('Administer GDPR settings'),
+      'restrict access' => TRUE,
+    ),
+  );
+
+  return $perms;
 }
 
 /**
@@ -131,7 +142,7 @@ function gdpr_checklistapi_checklist_info() {
 
   $definitions['gdpr_checklist'] = [
     '#title' => t('GDPR Checklist'),
-    '#path' => 'admin/config/gdpr/checklist',
+    '#path' => 'admin/gdpr/checklist',
     '#description' => t('GDPR Checklist'),
     '#help' => t('<p>Complete this checklist to make your site GDPR-compliant.</p>'),
     'getting_started' => [
