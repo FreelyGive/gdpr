@@ -13,13 +13,7 @@ class GDPRTaskUIController extends EntityBundleableUIController {
     // Set this on the object so classes that extend hook_menu() can use it.
     $plural_label = isset($this->entityInfo['plural label']) ? $this->entityInfo['plural label'] : $this->entityInfo['label'] . 's';
 
-    $items[$this->path . '/types'] = array(
-      'title' => 'Task Types',
-      'type' => MENU_DEFAULT_LOCAL_TASK,
-      'weight' => -10,
-    );
-
-    $items[$this->path . '/list'] = array(
+    $items['admin/gdpr/task-list'] = array(
       'title' => $plural_label,
       'page callback' => 'drupal_get_form',
       'page arguments' => array($this->entityType . '_overview_form', $this->entityType),
@@ -27,11 +21,68 @@ class GDPRTaskUIController extends EntityBundleableUIController {
       'access callback' => 'entity_access',
       'access arguments' => array('view', $this->entityType),
       'file' => 'includes/entity.ui.inc',
-      'type' => MENU_LOCAL_TASK,
       'weight' => 10,
     );
 
     return $items;
+  }
+
+  /**
+   * Generates the render array for a overview tables for different statuses.
+   *
+   * @param $conditions
+   *   An array of conditions as needed by entity_load().
+
+   * @return array
+   *   A renderable array.
+   */
+  public function overviewTable($conditions = array()) {
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', $this->entityType);
+    $query->propertyOrderBy('created');
+
+    // Add all conditions to query.
+    foreach ($conditions as $key => $value) {
+      $query->propertyCondition($key, $value);
+    }
+
+    if ($this->overviewPagerLimit) {
+      $query->pager($this->overviewPagerLimit);
+    }
+
+    $results = $query->execute();
+
+    $ids = isset($results[$this->entityType]) ? array_keys($results[$this->entityType]) : array();
+    $entities = $ids ? entity_load($this->entityType, $ids) : array();
+    ksort($entities);
+
+    // Always show at least requested and complete tables.
+    $rows = array(
+      'requested' => array(),
+      'complete' => array(),
+    );
+    foreach ($entities as $entity) {
+      $rows[$entity->status][] = $this->overviewTableRow($conditions, entity_id($this->entityType, $entity), $entity);
+    }
+
+    $render = array();
+    foreach ($rows as $status => $status_rows) {
+      $render[$status] = array(
+        '#theme' => 'table',
+        '#header' => $this->overviewTableHeaders($conditions, $status_rows),
+        '#rows' => $status_rows,
+        '#caption' => t('Tasks with status - @status', array('@status' => ucfirst($status))),
+        '#empty' => t('No tasks.'),
+        '#weight' => 3,
+      );
+
+      // @todo Find a better way to order statuses.
+      if ($status == 'requested') {
+        $render[$status]['#weight'] = 0;
+      }
+    }
+
+    return $render;
   }
 
   /**
@@ -52,11 +103,15 @@ class GDPRTaskUIController extends EntityBundleableUIController {
    */
   protected function overviewTableRow($conditions, $id, $entity, $additional_cols = array()) {
     /* @var GDPRTask $entity */
+
+    $time_diff = REQUEST_TIME - $entity->created;
+    $created_ago = t('%time ago', array('%time' => format_interval($time_diff, 1)));
+
     $additional_cols = array(
       $entity->bundleLabel(),
       $entity->status,
       theme('username', array('account' => user_load($entity->user_id))),
-      format_date($entity->created, 'short'),
+      format_date($entity->created, 'short') . ' - ' . $created_ago,
     );
     $row = parent::overviewTableRow($conditions, $id, $entity, $additional_cols);
     // @todo Fix hardcoded links.

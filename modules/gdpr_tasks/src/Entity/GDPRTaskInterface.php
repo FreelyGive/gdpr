@@ -10,4 +10,9 @@ interface GDPRTaskInterface extends EntityInterface {
    */
   public function bundleLabel();
 
+  /**
+   * Gets the user that the task belongs to.
+   */
+  public function getOwner();
+
 }
