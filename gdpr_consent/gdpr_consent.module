@@ -106,6 +106,13 @@ function gdpr_consent_entity_property_info() {
     'schema field' => 'description',
   );
 
+  $properties['long_description'] = array(
+    'label' => t('Long Description'),
+    'description' => t('Text shown when the user clicks for more details'),
+    'type' => 'text',
+    'schema field' => 'description',
+  );
+
   $properties['created'] = array(
     'label' => t('Created date'),
     'description' => t('Date the consent agreement was created'),

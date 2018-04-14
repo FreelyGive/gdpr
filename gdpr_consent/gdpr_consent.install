@@ -9,10 +9,10 @@ function gdpr_consent_schema() {
     'description' => 'Base table for GDPR Consent Agreement entity.',
     'fields' => array(
       'id' => array(
-        'description' => 'Primary key of the GDPR Consent Agreement entity.',
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
+        'description' => 'Primary key of the GDPR Consent Agreement entity.',
       ),
       'revision_id' => array(
         'type' => 'int',
@@ -22,23 +22,23 @@ function gdpr_consent_schema() {
         'description' => 'The ID of consent agreement\'s default revision.',
       ),
       'title' => array(
-        'description' => 'Title of the consent agreement.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
+        'description' => 'Title of the consent agreement.',
       ),
       'created' => array(
-        'description' => 'The Unix timestamp of the entity creation time.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
+        'description' => 'The Unix timestamp of the entity creation time.',
       ),
       'changed' => array(
-        'description' => 'The Unix timestamp the entity was last edited.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
+        'description' => 'The Unix timestamp the entity was last edited.',
       ),
       'uid' => array(
         'type' => 'int',
@@ -48,11 +48,11 @@ function gdpr_consent_schema() {
         'description' => "The {users}.uid of the associated user.",
       ),
       'status' => array(
-        'description' => 'Entity status.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
         'size' => 'tiny',
+        'description' => 'Entity status.',
       ),
     ),
     'foreign keys' => array(
@@ -80,12 +80,18 @@ function gdpr_consent_schema() {
         'description' => 'Primary Key: Unique revision ID.',
       ),
       'description' => array(
-        'description' => 'A description of the consent agreement.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
+        'description' => 'A description of the consent agreement.',
       ),
+      'long_description' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+        'description' => 'A long description of the consent agreement.',
+      )
     ),
     'primary key' => array('revision_id'),
   );
