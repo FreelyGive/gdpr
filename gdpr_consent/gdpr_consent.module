@@ -99,6 +99,13 @@ function gdpr_consent_entity_property_info() {
     'schema field' => 'title',
   );
 
+  $properties['agreement_type'] = array(
+    'label' => t('Agreement Type'),
+    'description' => t('Whether consent is implicit or explicit. Set to "Explicit" if the user needs to explicitly agree, otherwise "Implicit'),
+    'type' => 'boolean',
+    'schema field' => 'agreement_type',
+  );
+
   $properties['description'] = array(
     'label' => t('Description'),
     'description' => t('Text displayed to the user on the form'),
@@ -110,7 +117,7 @@ function gdpr_consent_entity_property_info() {
     'label' => t('Long Description'),
     'description' => t('Text shown when the user clicks for more details'),
     'type' => 'text',
-    'schema field' => 'description',
+    'schema field' => 'long_description',
   );
 
   $properties['created'] = array(
@@ -129,7 +136,7 @@ function gdpr_consent_entity_property_info() {
 
   $properties['uid'] = array(
     'label' => t('Authored by'),
-    'description' => t('The user ID of author of the Consent Agreement entity.'),
+    'description' => t('The user ID of author of the Consent Agreement entity'),
     'type' => 'user',
     'schema field' => 'uid',
   );
@@ -155,7 +162,10 @@ class ConsentAgreementController extends EntityAPIController {
 
   public function save($entity, DatabaseTransaction $transaction = NULL) {
     if (isset($entity->is_new)) {
+      global $user;
+
       $entity->created = REQUEST_TIME;
+      $entity->uid = $user->uid;
     }
 
     $entity->changed = REQUEST_TIME;

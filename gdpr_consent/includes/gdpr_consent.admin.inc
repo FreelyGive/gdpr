@@ -8,15 +8,31 @@ function gdpr_consent_agreement_form($form, &$form_state, $entity = NULL) {
     '#title' => t('Title'),
     '#type' => 'textfield',
     '#default_value' => isset($entity->title) ? $entity->title : '',
-    '#description' => t('Agreement title.'),
+    '#description' => t('Agreement Title'),
     '#required' => TRUE,
     '#weight' => -50,
+  );
+  $form['agreement_type'] = array(
+    '#title' => t('Agreement Type'),
+    '#type' => 'select',
+    '#options' => array(
+      0 => t('Implicit'),
+      1 => t('Explicit'),
+    ),
+    '#default_value' => isset($entity->agreement_type) ? $entity->agreement_type : '',
+    '#description' => t('Whether consent is implicit or explicit. Set to "Explicit" if the user needs to explicitly agree, otherwise "Implicit'),
   );
   $form['description'] = array(
     '#title' => t('Description'),
     '#type' => 'textfield',
     '#default_value' => isset($entity->description) ? $entity->description : '',
-    '#description' => t('Agreement description.'),
+    '#description' => t('Text displayed to the user on the form'),
+  );
+  $form['long_description'] = array(
+    '#title' => t('Long Description'),
+    '#type' => 'textarea',
+    '#default_value' => isset($entity->long_description) ? $entity->long_description : '',
+    '#description' => t('Text shown when the user clicks for more details'),
   );
 
   field_attach_form('gdpr_consent_agreement', $entity, $form, $form_state);

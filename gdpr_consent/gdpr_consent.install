@@ -91,7 +91,14 @@ function gdpr_consent_schema() {
         'size' => 'medium',
         'not null' => TRUE,
         'description' => 'A long description of the consent agreement.',
-      )
+      ),
+      'agreement_type' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+        'description' => 'Consent agreement\'s type: implicit or explicit.',
+      ),
     ),
     'primary key' => array('revision_id'),
   );
