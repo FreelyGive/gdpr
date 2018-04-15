@@ -156,6 +156,136 @@ function gdpr_consent_access_callback($op, $entity = NULL, $account = NULL) {
 }
 
 /**
+ * Implements hook_field_info().
+ *
+ * Provides a user consent field type.
+ */
+function gdpr_consent_field_info() {
+  return array(
+    'gdpr_user_consent' => array(
+      'label' => t('GDPR Consent'),
+      'description' => t('Stores user consent for a particular agreement'),
+      'default_widget' => 'gdpr_consent_widget',
+      'default_formatter' => 'gdpr_consent_formatter',
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_validate().
+ */
+function gdpr_consent_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
+  $valid = TRUE;
+
+  foreach ($items as $delta => $item) {
+    if (!empty($item['target_id'])) {
+      if (!$valid) {
+        $errors[$field['field_name']][$langcode][$delta][] = array(
+          'error' => 'gdpr_user_consent_invalid',
+          'message' => t('Referenced consent agreement entity is invalid.'),
+        );
+      }
+    }
+  }
+}
+
+
+/**
+ * Implements hook_field_is_empty().
+ */
+function gdpr_consent_field_is_empty($item, $field) {
+  return empty($item['target_id']);
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function gdpr_consent_field_formatter_info() {
+  return array(
+    'gdpr_consent' => array(
+      'label' => t('GDPR user consent formatter'),
+      'field types' => array('gdpr_user_consent'),
+    ),
+  );
+}
+
+function gdpr_consent_field_settings_form($field, $instance, $has_data) {
+  $settings = $field['settings'];
+
+  $form['target_id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('User consent agreement entity id'),
+    '#default_value' => $settings['target_id'],
+    '#required' => FALSE,
+    '#element_validate' => array(
+      'element_validate_integer_positive',
+    ),
+    '#description' => t('The GDPR User Consent Agreement to display'),
+  );
+
+  return $form;
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function gdpr_consent_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  switch ($display['type']) {
+    case 'gdpr_consent':
+      foreach ($items as $delta => $item) {
+        $element[$delta] = array(
+          '#type' => 'html_tag',
+          '#tag' => 'p',
+          '#value' => t('User Consent ID: @entity', array('@entity' => $item['target_id'])),
+        );
+      }
+      break;
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_widget_info().
+ *
+ * Field widget to show consent information.
+ */
+function gdpr_consent_field_widget_info() {
+  return array(
+    'gdpr_consent_widget' => array(
+      'label' => t('GDPR Consent'),
+      'field types' => array('gdpr_user_consent'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $value = isset($items[$delta]['target_id']) ? $items[$delta]['target_id'] : '';
+
+  $widget = $element;
+  $widget['#delta'] = $delta;
+
+  switch ($instance['widget']['type']) {
+
+    case 'gdpr_consent_widget':
+      $widget += array(
+        '#type' => 'checkbox',
+        '#title' => 'Agree?',
+        '#description' => 'Description',
+      );
+      break;
+  }
+
+  $element['agree'] = $widget;
+  return $element;
+}
+
+/**
  * Custom controller for the gdpr_consent_agreement entity type.
  */
 class ConsentAgreementController extends EntityAPIController {
