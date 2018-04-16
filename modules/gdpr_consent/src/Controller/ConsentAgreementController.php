@@ -97,7 +97,7 @@ class ConsentAgreementController extends ControllerBase implements ContainerInje
     $account = $this->currentUser();
     $storage = $this->entityManager()->getStorage('gdpr_consent_agreement');
 
-    $build['#title'] = $this->t('Revisions for %title', ['%title' => $agreement->label()]);
+    $build['#title'] = $this->t('Revisions for %title', ['%title' => $agreement->title->value]);
     $header = [$this->t('Revision'), $this->t('Operations')];
 
     $revert_permission = $account->hasPermission('create gdpr agreements');

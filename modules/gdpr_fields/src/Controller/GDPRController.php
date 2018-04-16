@@ -46,37 +46,37 @@ class GDPRController extends ControllerBase {
    * @return array
    *   The Views plugins report page.
    */
-  public function fieldsList() {
+  public function fieldsList($mode) {
     $output = [];
     $entities = [];
+    $include_not_configured = $mode == 'all';
     $this->collector->getEntities($entities);
 
+    $output['filter'] = $this->formBuilder()->getForm('Drupal\gdpr_fields\Form\GdprFieldFilterForm');
+    $output['#attached']['library'][] = 'gdpr_fields/field-list';
+
+
     foreach ($entities as $entity_type => $bundles) {
-      $output[$entity_type] = array(
+      $output[$entity_type] = [
         '#type' => 'details',
         '#title' => t($entity_type),
-        '#description' => t('@configure entity @entity_type for GDPR.', [
-          // @todo Create ability to exclude entity type from GDPR in configuration.
-          '@configure' => Link::fromTextAndUrl('Configure', Url::fromUri('internal:/'))->toString(),
-          '@entity_type' => ucfirst($entity_type),
-        ]),
         '#open' => TRUE,
-      );
+      ];
 
       if (count($bundles) > 1) {
         foreach ($bundles as $bundle_id) {
-          $output[$entity_type][$bundle_id] = array(
+          $output[$entity_type][$bundle_id] = [
             '#type' => 'details',
             '#title' => t($bundle_id),
             '#open' => TRUE,
-          );
-          $output[$entity_type][$bundle_id]['fields'] = $this->buildFieldTable($entity_type, $bundle_id);
+          ];
+          $output[$entity_type][$bundle_id]['fields'] = $this->buildFieldTable($entity_type, $bundle_id, $include_not_configured);
         }
       }
       else {
         // Don't add another collapsible wrapper around single bundle entities.
         $bundle_id = reset($bundles);
-        $output[$entity_type][$bundle_id]['fields'] = $this->buildFieldTable($entity_type, $bundle_id);
+        $output[$entity_type][$bundle_id]['fields'] = $this->buildFieldTable($entity_type, $bundle_id, $include_not_configured);
       }
     }
 
@@ -94,18 +94,49 @@ class GDPRController extends ControllerBase {
    * @return array
    *   Renderable array for field list table.
    */
-  protected function buildFieldTable($entity_type, $bundle_id) {
-    $rows = $this->collector->listFields($entity_type, $bundle_id);
+  protected function buildFieldTable($entity_type, $bundle_id, $include_not_configured) {
+    $rows = $this->collector->listFields($entity_type, $bundle_id, $include_not_configured);
     // Sort rows by field name.
     ksort($rows);
 
-    return [
+    $table = [
       '#type' => 'table',
-      '#header' => [t('Name'), t('Type'), t('Right to access'), t('Right to be forgotten'), ''],
-      '#rows' => $rows,
+      '#header' => [t('Name'), t('Type'), t('Right to access'), t('Right to be forgotten'), t('Notes'), ''],
+    //  '#rows' => $rows,
       '#sticky' => TRUE,
       '#empty' => t('There are no GDPR fields for this entity.'),
     ];
+
+    $i = 0;
+    foreach ($rows as $row) {
+      $table[$i]['title'] = [
+        '#plain_text' => $row['title'],
+      ];
+
+      $table[$i]['type'] = [
+        '#plain_text' => $row['type'],
+      ];
+
+      $table[$i]['gdpr_rta'] = [
+        '#plain_text' => $row['gdpr_rta'],
+      ];
+
+      $table[$i]['gdpr_rtf'] = [
+        '#plain_text' => $row['gdpr_rtf'],
+      ];
+
+      $table[$i]['notes'] = [
+        '#markup' => empty($row['notes']) ? '' : '<span class="notes" data-icon="?"></span><div>' . $row['notes'] . '</div>',
+      ];
+
+      $table[$i]['edit'] = [
+        '#markup' => !empty($row['edit']) ? $row['edit']->toString() : '',
+      ];
+
+      $i++;
+    }
+
+    return $table;
   }
 
   /**

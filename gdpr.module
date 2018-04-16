@@ -489,7 +489,7 @@ function gdpr_toolbar() {
   // Just add the root menu item.
   // GDPR Tasks and GDPR Consent modules
   // will modify this in hook_toolbar_alter.
-  if ($user->hasPermission('view gdpr tasks') || $user->hasPermission('manage gdpr agreements')) {
+  if ($user->hasPermission('view task entities') || $user->hasPermission('manage gdpr agreements')) {
     $items['gdpr'] += [
       '#type' => 'toolbar_item',
       'tab' => [

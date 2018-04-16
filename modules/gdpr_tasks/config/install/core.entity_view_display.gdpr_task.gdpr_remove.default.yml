@@ -1,3 +1,4 @@
+uuid: 5b759d60-61ce-4d87-82f4-6b81433c1ca3
 langcode: en
 status: true
 dependencies:
@@ -8,23 +9,39 @@ dependencies:
     - gdpr_tasks
     - options
     - user
+_core:
+  default_config_hash: _19d0Pj6VIDv7zxT310E2eIpMDepNswpF3BBp07sH6k
 id: gdpr_task.gdpr_remove.default
 targetEntityType: gdpr_task
 bundle: gdpr_remove
 mode: default
 content:
+  notes:
+    type: basic_string
+    region: content
+    weight: 3
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
   processed_by:
     label: inline
     type: author
-    weight: 2
+    weight: 4
     region: content
     settings: {  }
     third_party_settings: {  }
   removal_log:
     type: gdpr_task_item
-    weight: 3
+    weight: 5
     region: content
-    label: above
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+  requested_by:
+    label: inline
+    type: author
+    weight: 2
+    region: content
     settings: {  }
     third_party_settings: {  }
   status:

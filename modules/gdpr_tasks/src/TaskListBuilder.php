@@ -59,6 +59,7 @@ class TaskListBuilder extends EntityListBuilder {
     $header['user'] = $this->t('User');
     $header['type'] = $this->t('Type');
     $header['created'] = $this->t('Requested');
+    $header['requested_by'] = $this->t('Requested by');
     return $header + parent::buildHeader();
   }
 
@@ -82,6 +83,7 @@ class TaskListBuilder extends EntityListBuilder {
       'granularity' => 1,
     ]) . ' ago';
 
+    $row['requested_by'] = $entity->requested_by->entity->toLink()->toString();
     return $row + parent::buildRow($entity);
   }
 
@@ -132,7 +134,7 @@ class TaskListBuilder extends EntityListBuilder {
       '#type' => 'table',
       '#header' => $this->buildHeader(),
       '#rows' => [],
-      '#empty' => $this->t('There is no closed @label yet.', ['@label' => $this->entityType->getLabel()]),
+      '#empty' => $this->t('There are no closed tasks yet.'),
       '#cache' => [
         'contexts' => $this->entityType->getListCacheContexts(),
         'tags' => $this->entityType->getListCacheTags(),

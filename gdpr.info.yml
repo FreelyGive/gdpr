@@ -6,5 +6,5 @@ configure: checklistapi.checklists.gdpr_checklist
 package: General Data Protection Regulation
 
 dependencies:
-  - drupal:checklistapi
-  - drupal:message
+  - checklistapi:checklistapi
+  - message:message

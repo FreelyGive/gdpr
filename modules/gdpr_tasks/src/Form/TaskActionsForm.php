@@ -5,6 +5,8 @@ namespace Drupal\gdpr_tasks\Form;
 use Drupal\Console\Bootstrap\Drupal;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\gdpr_tasks\Event\RightToAccessCompleteEvent;
+use Drupal\gdpr_tasks\Event\RightToBeForgottenCompleteEvent;
 use Drupal\user\Entity\User;
 
 /**
@@ -35,6 +37,8 @@ class TaskActionsForm extends ContentEntityForm {
    * Performs the SAR export.
    */
   private function doSarExport(FormStateInterface $form_state): void {
+    /* @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $dispatcher */
+    $dispatcher = \Drupal::service('event_dispatcher');
     $entity = $this->entity;
     $manual = $form_state->getValue(['manual_data', 0, 'value']);
 
@@ -62,6 +66,8 @@ class TaskActionsForm extends ContentEntityForm {
 
     // @todo Add headers to csv export.
     file_save_data($export, $file_uri, FILE_EXISTS_REPLACE);
+
+    $dispatcher->dispatch(RightToAccessCompleteEvent::EVENT_NAME, new RightToAccessCompleteEvent($entity->getOwner(), $file_uri));
   }
 
   /**
@@ -69,8 +75,18 @@ class TaskActionsForm extends ContentEntityForm {
    */
   private function doRemoval(FormStateInterface $form_state) {
     // @todo Should be injected
+    /* @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $dispatcher */
+    /* @var $entity \Drupal\gdpr_tasks\Entity\Task */
+    $entity = $this->entity;
+    $email = $entity->getOwner()->getEmail();
+    $dispatcher = \Drupal::service('event_dispatcher');
     $anonymizer = \Drupal::service('gdpr_tasks.anonymizer');
     $errors = $anonymizer->run($this->entity);
+
+    if (count($errors) == 0) {
+      $dispatcher->dispatch(RightToBeForgottenCompleteEvent::EVENT_NAME, new RightToBeForgottenCompleteEvent($email));
+    }
+
     return $errors;
   }
 

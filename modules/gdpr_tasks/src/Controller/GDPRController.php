@@ -75,8 +75,7 @@ class GDPRController extends ControllerBase {
    * @param $gdpr_task_type
    *   Type of task to be created.
    *
-   * @return \Symfony\Component\HttpFoundation\RedirectResponse
-   *   Return user to GDPR requests.
+   * @return
    */
   public function requestPage(AccountInterface $user, $gdpr_task_type) {
     $tasks = $this->taskManager->getUserTasks($user, $gdpr_task_type);
@@ -85,6 +84,16 @@ class GDPRController extends ControllerBase {
       $this->messenger->addWarning('You already have a pending task.');
     }
     else {
+      // If the current user is making a request for themselves, just create it.
+      // However, if we're a member of staff making a request on behalf
+      // of someone else, we need to collect further details
+      // so render a form to get the notes.
+      if ($this->currentUser()->id() != $user->id()) {
+        return [
+          'form' => $this->formBuilder()->getForm('\Drupal\gdpr_tasks\Form\CreateGdprRequestOnBehalfOfUserForm'),
+        ];
+      }
+
       $values = [
         'type' => $gdpr_task_type,
         'user_id' => $user->id(),
@@ -95,9 +104,7 @@ class GDPRController extends ControllerBase {
       $this->messenger->addStatus('Your request has been logged');
     }
 
-    $response = new RedirectResponse(Url::fromRoute('view.gdpr_tasks_my_data_requests.page_1', ['user' => $user->id()])
-      ->toString());
-    return $response;
+    return $this->redirect('view.gdpr_tasks_my_data_requests.page_1', ['user' => $user->id()]);
   }
 
 }

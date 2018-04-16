@@ -63,7 +63,7 @@ class Task extends ContentEntityBase implements TaskInterface {
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
     parent::preCreate($storage_controller, $values);
     $values += [
-      'user_id' => \Drupal::currentUser()->id(),
+      'requested_by' => \Drupal::currentUser()->id(),
     ];
   }
 
@@ -169,8 +169,8 @@ class Task extends ContentEntityBase implements TaskInterface {
     $fields = parent::baseFieldDefinitions($entity_type);
 
     $fields['user_id'] = BaseFieldDefinition::create('entity_reference')
-      ->setLabel(t('Requested by'))
-      ->setDescription(t('The user who requested this task.'))
+      ->setLabel(t('User'))
+      ->setDescription(t('The user whose data should be processed.'))
       ->setRevisionable(TRUE)
       ->setSetting('target_type', 'user')
       ->setSetting('handler', 'default')
@@ -236,6 +236,40 @@ class Task extends ContentEntityBase implements TaskInterface {
           'autocomplete_type' => 'tags',
           'placeholder' => '',
         ],
+      ])
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
+
+    $fields['requested_by'] = BaseFieldDefinition::create('entity_reference')
+      ->setLabel(t('Requested by'))
+      ->setDescription(t('The user who requested this task.'))
+      ->setRevisionable(TRUE)
+      ->setSetting('target_type', 'user')
+      ->setSetting('handler', 'default')
+      ->setTranslatable(TRUE)
+      ->setDisplayOptions('view', [
+        'type' => 'author',
+        'weight' => 6,
+      ])
+      ->setDisplayOptions('form', [
+        'type' => 'hidden',
+        'weight' => 6,
+        'settings' => [
+          'match_operator' => 'CONTAINS',
+          'size' => '60',
+          'autocomplete_type' => 'tags',
+          'placeholder' => '',
+        ],
+      ])
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
+
+    $fields['notes'] = BaseFieldDefinition::create('string_long')
+      ->setLabel(t('Notes'))
+      ->setDescription(t('Notes with this request'))
+      ->setRequired(FALSE)
+      ->setDisplayOptions('view', [
+        'type' => 'textfield',
       ])
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE);
