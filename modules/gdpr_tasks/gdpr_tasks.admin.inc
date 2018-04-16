@@ -171,7 +171,7 @@ function gdpr_task_edit_gdpr_remove_form_submit($form, &$form_state) {
   $errors = $anonymizer->run($task);
 
   // Copy log to form_state.
-  $form_state['values']['gdpr_tasks_removal_log'] = $task->removal_log;
+  $form_state['values']['gdpr_tasks_removal_log'] = $task->gdpr_tasks_removal_log;
 
   if (empty($errors)) {
     gdpr_task_form_submit($form, $form_state);

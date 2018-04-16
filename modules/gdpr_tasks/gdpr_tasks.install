@@ -82,9 +82,13 @@ function gdpr_tasks_schema() {
         'table' => 'users',
         'columns' => array('user_id' => 'uid'),
       ),
+      'task_requester' => array(
+        'table' => 'users',
+        'columns' => array('requested_by' => 'uid'),
+      ),
       'task_processor' => array(
         'table' => 'users',
-        'columns' => array('user_id' => 'uid'),
+        'columns' => array('processed_by' => 'uid'),
       ),
     ),
   );

@@ -167,7 +167,18 @@ class Anonymizer {
    */
   protected function clearField($field) {
     if ($field instanceof EntityValueWrapper) {
-      $field->set(NULL);
+      // @todo Add any other types that come up.
+      switch ($field->info()['type']) {
+        case 'text':
+          $field->set('');
+          break;
+
+        default:
+          $field->set(NULL);
+      }
+    }
+    elseif ($field instanceof EntityListWrapper) {
+      $field->set(array());
     }
     elseif ($field instanceof EntityStructureWrapper) {
       $list = $field->getPropertyInfo();

@@ -58,6 +58,13 @@ class GDPRTask extends Entity implements GDPRTaskInterface {
   public $complete;
 
   /**
+   * The users id that requested this task.
+   *
+   * @var integer
+   */
+  public $requested_by;
+
+  /**
    * The users id that processed this task.
    *
    * @var integer
