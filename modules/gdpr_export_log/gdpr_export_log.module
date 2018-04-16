@@ -1,0 +1,168 @@
+<?php
+
+/**
+ * @file
+ * Module file for the GDPR Export Log module.
+ */
+
+/**
+ * Implements hook_entity_info().
+ */
+function gdpr_export_log_entity_info() {
+  $entities =  array();
+
+  $entities['gdpr_export_log'] = array(
+    'label' => t('Export Log'),
+    'base table' => 'gdpr_export_log',
+    'entity class' => 'GDPRExportLog',
+    'controller class' => 'GDPRExportLogController',
+    'module' => 'gdpr_export_log',
+    'admin ui' => array(
+      'path' => 'admin/structure/gdpr-export-log',
+      'file' => 'gdpr_export_log.admin.inc',
+      'menu wildcard' => '%gdpr_export_log',
+      'controller class' => 'GDPRExportLogUIController',
+    ),
+    'bundles' => array(
+      'gdpr_export_log' => array(
+        'label' => t('Export Log'),
+        'admin' => array(
+          'path' => 'admin/structure/gdpr-export-log',
+          'access arguments' => array('administer export log entities'),
+        ),
+      ),
+    ),
+    'access callback' => 'gdpr_export_log_access',
+    'entity keys' => array(
+      'id' => 'id',
+      'label' => 'id',
+      'language' => 'language',
+    ),
+    'fieldable' => TRUE,
+  );
+
+  return $entities;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function gdpr_export_log_permission() {
+  // @todo IMPORTANT!! Permission review.
+  return array(
+    'administer export log entities' => array(
+      'title' => t('Administer Export Log entities'),
+      'restrict access' => TRUE,
+    ),
+    'view gdpr export logs' => array(
+      'title' => t('View GDPR export logs'),
+    ),
+    'edit gdpr export logs' => array(
+      'title' => t('Edit GDPR export logs'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function gdpr_export_log_views_api($module, $api) {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'gdpr_export_log'),
+  );
+}
+
+/**
+ * Implement hook_menu_alter().
+ */
+function gdpr_export_log_menu_alter(&$items) {
+  $views = views_get_applicable_views('uses views_data_export');
+  foreach ($views as $data) {
+    list($view, $display_id) = $data;
+    $view->set_display($display_id);
+    $include = FALSE;
+
+    if (isset($view->display_handler)) {
+      $include = $view->display_handler->get_option('gdpr_export_log_audit');
+    }
+
+    if ($include) {
+      $result = $view->execute_hook_menu($display_id, $items);
+      if (is_array($result)) {
+        foreach (array_keys($result) as $path) {
+          if (isset($items[$path])) {
+            $items[$path . '/gdpr_approved'] = $items[$path];
+            $items[$path]['page callback'] = 'gdpr_export_log_export_approval';
+            $items[$path]['module'] = 'gdpr_export_log';
+            $items[$path]['file'] = 'gdpr_export_log.admin.inc';
+          }
+        }
+      }
+    }
+  }
+
+  // Save memory: Destroy those views.
+  foreach ($views as $data) {
+    list($view, $display_id) = $data;
+    $view->destroy();
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function gdpr_export_log_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'menu_alter') {
+    $group = $implementations['gdpr_export_log'];
+    unset($implementations['gdpr_export_log']);
+    $implementations['gdpr_export_log'] = $group;
+  }
+}
+
+/**
+ * Load a GDPR Export Log entity.
+ *
+ * @param $id
+ *   The id of the log.
+ *
+ * @return GDPRExportLog|null
+ *   The fully loaded log entity if available.
+ */
+function gdpr_export_log_load($id) {
+  return entity_load_single('gdpr_export_log', $id);
+}
+
+/**
+ * Load logs from the database.
+ *
+ * @param $ids
+ *   An array of log IDs.
+ * @param $conditions
+ *   (deprecated) An associative array of conditions on the {gdpr_export_log}
+ *   table, where the keys are the database fields and the values are the
+ *   values those fields must have. Instead, it is preferable to use
+ *   EntityFieldQuery to retrieve a list of entity IDs loadable by
+ *   this function.
+ * @param $reset
+ *   Whether to reset the internal static entity cache.
+ *
+ * @return GDPRExportLog[]
+ *   An array of log objects, indexed by log ID.
+ *
+ * @see entity_load()
+ * @see EntityFieldQuery
+ */
+function gdpr_export_log_load_multiple($ids = FALSE, $conditions = array(), $reset = FALSE) {
+  return entity_load('gdpr_export_log', $ids, $conditions, $reset);
+}
+
+/**
+ * Access callback for export log entities.
+ */
+function gdpr_export_log_access($op, $export_log = NULL, $account = NULL) {
+  // @todo Support other operations.
+  if (user_access('administer export log entities', $account)) {
+    return TRUE;
+  }
+}
