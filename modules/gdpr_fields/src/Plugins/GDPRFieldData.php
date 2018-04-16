@@ -17,6 +17,12 @@ class GDPRFieldData {
   public $name;
 
   /**
+   * Plugin type of field.
+   * @var string
+   */
+  public $plugin_type;
+
+  /**
    * Human readable name for the field.
    * @var string
    */
@@ -69,12 +75,13 @@ class GDPRFieldData {
   public static function createFromPlugin(array $plugin) {
     $field = new static();
 
-    list($type, $name) = explode(':', $plugin['name']);
+    list($plugin_type, $name) = explode(':', $plugin['name']);
     list($entity_type, $entity_bundle, $field_name) = explode('|', $name);
     $field->entity_type = $entity_type;
     $field->entity_bundle = $entity_bundle;
     $field->field_name = $field_name;
     $field->name = $name;
+    $field->plugin_type = $plugin_type;
 
     // @todo Should computed properties be removed instead or disabled?
     if (!empty($plugin['computed'])) {

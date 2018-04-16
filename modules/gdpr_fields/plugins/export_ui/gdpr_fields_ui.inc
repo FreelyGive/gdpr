@@ -150,6 +150,10 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
  * Define the submit function for the add/edit form.
  */
 function gdpr_fields_field_data_export_ui_form_submit(&$form, &$form_state) {
-  $form_state['values']['settings']['label'] = $form_state['values']['field']['label'];
-  $form_state['values']['settings']['description'] = $form_state['values']['field']['description'];
+  if (isset($form_state['values']['field']['label'])) {
+    $form_state['values']['settings']['label'] = $form_state['values']['field']['label'];
+  }
+  if (isset($form_state['values']['field']['description'])) {
+    $form_state['values']['settings']['description'] = $form_state['values']['field']['description'];
+  }
 }

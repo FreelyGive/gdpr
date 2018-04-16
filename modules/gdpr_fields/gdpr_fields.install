@@ -27,6 +27,11 @@ function gdpr_fields_schema() {
         'length' => 255,
         'description' => 'Machine name for field.',
       ),
+      'plugin_type' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'description' => 'Plugin type of the field.',
+      ),
       'entity_type' => array(
         'type' => 'varchar',
         'length' => 32,

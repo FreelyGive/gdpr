@@ -73,9 +73,18 @@ function gdpr_fields_gdpr_fields_default_field_data() {
   $export =  array();
 
   $plugins = gdpr_fields_get_gdpr_data();
-
   foreach ($plugins as $name => $plugin) {
     $export[$name] = GDPRFieldData::createFromPlugin($plugin);
+  }
+
+  // Scan fields directory for default files.
+  $files = file_scan_directory(dirname(__FILE__) . '/default_fields', '/\.field.php/', array('key' => 'name'));
+  foreach ($files as $file) {
+    $field = new GDPRFieldData();
+    if ((include $file->uri) == 1) {
+      $name = $field->plugin_type . ':' . $field->name;
+      $export[$name] = $field;
+    }
   }
 
   return $export;
