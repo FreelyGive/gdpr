@@ -97,7 +97,13 @@ class GdprFieldSettingsForm extends FormBase {
    */
   private static function setConfig($entity_type, $bundle, $field_name, $enabled, $rta, $rtf, $sanitizer, $notes) {
     $config = GdprFieldConfigEntity::load($entity_type) ?? GdprFieldConfigEntity::create(['id' => $entity_type]);
-    $config->setField($bundle, $field_name, $enabled, $rta, $rtf, $sanitizer, $notes);
+    $config->setField($bundle, $field_name, [
+      'enabled' => $enabled,
+      'rta' => $rta,
+      'rtf' => $rtf,
+      'sanitizer' => $sanitizer,
+      'notes' => $notes,
+    ]);
     return $config;
   }
 

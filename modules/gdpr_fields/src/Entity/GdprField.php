@@ -82,19 +82,19 @@ class GdprField {
   /**
    * Creates a GdprField instance based on array data from the config entity.
    *
-   * @param array $array
+   * @param array $values
    *   The undlerying data.
    *
    * @return \Drupal\gdpr_fields\Entity\GdprField
    *   The field metadata instance.
    */
-  public static function create(array $array) {
-    $field = new GdprField($array['bundle'], $array['name']);
-    $field->rtf = $array['rtf'];
-    $field->rta = $array['rta'];
-    $field->enabled = $array['enabled'];
-    $field->sanitizer = $array['sanitizer'];
-    $field->notes = $array['notes'];
+  public static function create(array $values) {
+    $field = new static($values['bundle'], $values['name']);
+    $field->rtf = $values['rtf'];
+    $field->rta = $values['rta'];
+    $field->enabled = $values['enabled'];
+    $field->sanitizer = $values['sanitizer'];
+    $field->notes = $values['notes'];
     $field->configured = TRUE;
     return $field;
   }

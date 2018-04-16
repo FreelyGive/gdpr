@@ -45,29 +45,18 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
    *   Bundle.
    * @param string $field_name
    *   Field.
-   * @param bool $enabled
-   *   Enabled.
-   * @param string $rta
-   *   RTA setting.
-   * @param string $rtf
-   *   RTF setting.
-   * @param string $sanitizer
-   *   Sanitizer to use.
-   * @param string $notes
-   *   Notes.
+   * @param array $values
+   *   Additional values. Keys should be enabled, rtf, rta, sanitizer, notes.
    *
    * @return $this
    */
-  public function setField($bundle, $field_name, $enabled, $rta, $rtf, $sanitizer, $notes) {
-    $this->bundles[$bundle][$field_name] = [
-      'bundle' => $bundle,
-      'name' => $field_name,
-      'enabled' => $enabled,
-      'rta' => $rta,
-      'rtf' => $rtf,
-      'sanitizer' => $sanitizer,
-      'notes' => $notes,
-    ];
+  public function setField($bundle, $field_name, array $values) {
+    $values['bundle'] = $bundle;
+    $values['name'] = $field_name;
+
+    foreach ($values as $key => $value) {
+      $this->bundles[$bundle][$field_name][$key] = $value;
+    }
 
     return $this;
   }
