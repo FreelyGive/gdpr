@@ -1,0 +1,231 @@
+<?php
+
+/**
+ * @file
+ * Install file for the GDPR Export Log module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function gdpr_export_log_schema() {
+  $schema['gdpr_export_log'] = array(
+    'description' => 'The base table for export logs.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The primary identifier for this export log.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'language' => array(
+        'description' => 'The {languages}.language of this export log.',
+        'type' => 'varchar',
+        'length' => 12,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'export' => array(
+        'description' => 'The {views_view}.name of this export log.',
+        'type' => 'varchar',
+        'length' => 128,
+        'default' => ''
+      ),
+      'exported_by' => array(
+        'description' => 'The {users}.uid that exported the export.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'removed_by' => array(
+        'description' => 'The {users}.uid that removed the export.',
+        'type' => 'int',
+      ),
+      'status' => array(
+        'description' => 'The text status of this export log.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when this export log was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when this export log was most recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'removed' => array(
+        'description' => 'The Unix timestamp when this export log was removed.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('id'),
+    'foreign keys' => array(
+      'log_exporter' => array(
+        'table' => 'users',
+        'columns' => array('exported_by' => 'uid'),
+      ),
+      'log_remover' => array(
+        'table' => 'users',
+        'columns' => array('removed_by' => 'uid'),
+      ),
+    ),
+  );
+
+  $schema['gdpr_export_log_uid'] = array(
+    'description' => 'Stores the users included in an export.',
+    'fields' => array(
+      'export_id' => array(
+        'description' => 'The {gdpr_export_log}.id of the related export log.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'description' => 'The {users}.uid of the user included in the log.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'forgotten_by' => array(
+        'description' => 'The {users}.uid of the user who removed this user from log.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'forgotten' => array(
+        'description' => 'Whether the user has been removed from the log.',
+        'type' => 'int',
+        'size' => 'tiny',
+      ),
+    ),
+    'foreign keys' => array(
+      'export' => array(
+        'table' => 'gdpr_export_log',
+        'columns' => array('export_id' => 'id'),
+      ),
+      'user' => array(
+        'table' => 'users',
+        'columns' => array('uid' => 'uid'),
+      ),
+      'user_remover' => array(
+        'table' => 'users',
+        'columns' => array('forgotten_by' => 'uid'),
+      ),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_schema().
+ */
+function gdpr_export_log_install() {
+  $t = get_t();
+
+  // Add an export location field.
+  if (!field_info_field('gdpr_export_log_destination')) {
+    $field = array(
+      'field_name' => 'gdpr_export_log_destination',
+      'type' => 'text',
+      'locked' => TRUE,
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+  }
+  if (!field_info_instance('gdpr_export_log', 'gdpr_export_log_destination', 'gdpr_export_log')) {
+    $instance = array(
+      'label' => $t('Export storage destination'),
+      'description' => $t('Fill in the location where the export will be saved.'),
+      'field_name' => 'gdpr_export_log_destination',
+      'entity_type' => 'gdpr_export_log',
+      'bundle' => 'gdpr_export_log',
+      'required' => TRUE,
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+      'display' => array(
+        'default' => array(
+          'type' => 'text_default',
+        ),
+      ),
+    );
+    field_create_instance($instance);
+  }
+
+  // Add an export reason field.
+  if (!field_info_field('gdpr_export_log_reason')) {
+    $field = array(
+      'field_name' => 'gdpr_export_log_reason',
+      'type' => 'text_long',
+      'locked' => TRUE,
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+  }
+  if (!field_info_instance('gdpr_export_log', 'gdpr_export_log_reason', 'gdpr_export_log')) {
+    $instance = array(
+      'label' => $t('Reason for export'),
+      'description' => $t('Fill in the reason why the export is dealt with.'),
+      'field_name' => 'gdpr_export_log_reason',
+      'entity_type' => 'gdpr_export_log',
+      'bundle' => 'gdpr_export_log',
+      'required' => TRUE,
+      'widget' => array(
+        'type' => 'text_textarea',
+      ),
+      'display' => array(
+        'default' => array(
+          'type' => 'text_default',
+        ),
+      ),
+    );
+    field_create_instance($instance);
+  }
+
+  // Add an export lifetime field.
+  if (!field_info_field('gdpr_export_log_lifetime')) {
+    $field = array(
+      'field_name' => 'gdpr_export_log_lifetime',
+      'type' => 'number_integer',
+      'locked' => TRUE,
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+  }
+  if (!field_info_instance('gdpr_export_log', 'gdpr_export_log_lifetime', 'gdpr_export_log')) {
+    $instance = array(
+      'label' => $t('Export lifetime'),
+      'description' => $t('Fill in the length (in days) that the export should live for.'),
+      'field_name' => 'gdpr_export_log_lifetime',
+      'entity_type' => 'gdpr_export_log',
+      'bundle' => 'gdpr_export_log',
+      'required' => TRUE,
+      'default_value' => array(
+        array(
+          'value' => 90,
+        ),
+      ),
+      'widget' => array(
+        'type' => 'number',
+      ),
+      'display' => array(
+        'default' => array(
+          'type' => 'number_integer',
+        ),
+      ),
+      'settings' => array(
+        'suffix' => 'days',
+      ),
+    );
+    field_create_instance($instance);
+  }
+
+}
