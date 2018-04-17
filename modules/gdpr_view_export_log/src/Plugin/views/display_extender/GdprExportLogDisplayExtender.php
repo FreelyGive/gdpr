@@ -20,6 +20,12 @@ use Drupal\views\ViewExecutable;
  */
 class GdprExportLogDisplayExtender extends DisplayExtenderPluginBase {
 
+  /**
+   * Checks whether this is a data export.
+   *
+   * @return bool
+   *   Whether this view is a data export.
+   */
   private function isExportView() {
     return get_class($this->displayHandler) == ExportAudit::exportDisplayHandler();
   }
@@ -37,7 +43,7 @@ class GdprExportLogDisplayExtender extends DisplayExtenderPluginBase {
   }
 
   /**
-   * @inheritDoc
+   * {@inheritdoc}
    */
   public function optionsSummary(&$categories, &$options) {
     if ($this->isExportView()) {
@@ -54,12 +60,18 @@ class GdprExportLogDisplayExtender extends DisplayExtenderPluginBase {
     }
   }
 
+  /**
+   * Whether logging is enabled for this view.
+   *
+   * @return bool
+   *   Whether logging is enabled for this view.
+   */
   public function loggingEnabled() {
     return array_key_exists('gdpr_log', $this->options) && $this->options['gdpr_log']['log_exports'] == TRUE;
   }
 
   /**
-   * @inheritDoc
+   * {@inheritdoc}
    */
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     if ($form_state->get('section') == 'gdpr_log') {
@@ -77,15 +89,23 @@ class GdprExportLogDisplayExtender extends DisplayExtenderPluginBase {
   }
 
   /**
-   * @inheritDoc
+   * {@inheritdoc}
    */
   public function submitOptionsForm(&$form, FormStateInterface $form_state) {
     if ($form_state->get('section') == 'gdpr_log') {
-      //$should_log = $form_state->getValue('gdpr_log')['log_exports'];
       $this->options['gdpr_log'] = $form_state->getValue('gdpr_log');
     }
   }
 
+  /**
+   * Whether logging is enabled for a particular view.
+   *
+   * @param \Drupal\views\ViewExecutable $view
+   *   The view to check.
+   *
+   * @return bool
+   *   Whether logging is enabled.
+   */
   public static function isLoggingEnabled(ViewExecutable $view) {
     if (get_class($view->display_handler) == ExportAudit::exportDisplayHandler()) {
       $extenders = $view->getDisplay()->getExtenders();
