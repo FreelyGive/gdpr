@@ -209,13 +209,16 @@ function gdpr_consent_field_formatter_info() {
   );
 }
 
+/**
+ * Implements hook_field_settings_form().
+ */
 function gdpr_consent_field_settings_form($field, $instance, $has_data) {
   $settings = $field['settings'];
 
   $form['target_id'] = array(
     '#type' => 'textfield',
     '#title' => t('User consent agreement entity id'),
-    '#default_value' => $settings['target_id'],
+    '#default_value' => (isset($settings['target_id'])) ? $settings['target_id'] : '',
     '#required' => FALSE,
     '#element_validate' => array(
       'element_validate_integer_positive',
@@ -273,15 +276,18 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
   switch ($instance['widget']['type']) {
 
     case 'gdpr_consent_widget':
-      $widget += array(
+      $element['agreed'] = $widget + array(
         '#type' => 'checkbox',
         '#title' => 'Agree?',
         '#description' => 'Description',
       );
+      $element['date'] = $widget + array(
+        '#type' => 'hidden',
+        '#value' => REQUEST_TIME,
+      );
       break;
   }
 
-  $element['agree'] = $widget;
   return $element;
 }
 

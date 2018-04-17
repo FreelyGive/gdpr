@@ -105,3 +105,59 @@ function gdpr_consent_schema() {
 
   return $schema;
 }
+
+/**
+ * Implements hook_field_schema().
+ */
+function gdpr_consent_field_schema($field) {
+  $columns = array(
+    'target_id' => array(
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+    ),
+    'target_revision_id' => array(
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+    ),
+    'agreed' => array(
+      'type' => 'int',
+      'not null' => TRUE,
+      'default' => 0,
+      'size' => 'tiny',
+    ),
+    'date' => array(
+      'type' => 'int',
+      'not null' => TRUE,
+      'default' => 0,
+    ),
+    'user_id' => array(
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => FALSE,
+      'default' => NULL,
+    ),
+    'user_id_accepted' => array(
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => FALSE,
+      'default' => NULL,
+    ),
+    'notes' => array(
+      'type' => 'text',
+      'size' => 'medium',
+      'not null' => FALSE,
+    ),
+  );
+  $indexes = array(
+    'target_id' => array('target_id'),
+    'target_revision_id' => array('target_revision_id'),
+  );
+  return array(
+    'columns' => $columns,
+    'indexes' => $indexes,
+  );
+}
