@@ -69,7 +69,7 @@ function gdpr_consent_entity_info() {
       'gdpr_consent_agreement' => array(
         'label' => t('GDPR Consent Agreement'),
         'admin' => array(
-          'path' => 'admin/consent',
+          'path' => 'admin/gdpr/agreements',
           'access arguments' => array('administer site configuration'),
         ),
       ),
@@ -82,10 +82,9 @@ function gdpr_consent_entity_info() {
     // Use the default label() and uri() functions.
     'label callback' => 'entity_class_label',
     'uri callback' => 'entity_class_uri',
-    // Access callback to determine permisisons.
     'access callback' => 'gdpr_consent_access_callback',
     'admin ui' => array(
-      'path' => 'admin/consent',
+      'path' => 'admin/gdpr/agreements',
       //'controller class' => 'ConsentAgreementEntityUIController',
       'menu wildcard' => '%entity_object',
       'file' => 'includes/gdpr_consent.admin.inc',
