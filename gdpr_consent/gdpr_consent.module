@@ -169,7 +169,7 @@ function gdpr_consent_entity_property_info() {
 }
 
 function gdpr_consent_access_callback($op, $entity = NULL, $account = NULL) {
-  return TRUE;
+  return user_access('manage gdpr agreements');
 }
 
 /**
@@ -285,10 +285,17 @@ function gdpr_consent_field_widget_info() {
  * Implements hook_field_widget_form().
  */
 function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
-  $value = isset($items[$delta]['target_id']) ? $items[$delta]['target_id'] : '';
+  $agreed = isset($items[$delta]['agreed']) ? $items[$delta]['agreed'] : '';
+  $notes = isset($items[$delta]['notes']) ? $items[$delta]['notes'] : '';
 
   $widget = $element;
   $widget['#delta'] = $delta;
+
+  // Get current revision of the referenced agreement entity.
+  $entity_type = 'gdpr_consent_agreement';
+  $entity = entity_load_single('gdpr_consent_agreement', $field['settings']['target_id']);
+
+  list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
 
   switch ($instance['widget']['type']) {
 
@@ -296,12 +303,27 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
       $element['agreed'] = $widget + array(
         '#type' => 'checkbox',
         '#title' => 'Agree?',
+        '#default_value' => $agreed,
         '#description' => 'Description',
+      );
+      $element['notes'] = $widget + array(
+        '#type' => 'textfield',
+        '#title' => 'GDPR Consent Notes',
+        '#default_value' => $notes,
+      );
+      $element['target_id'] = $widget + array(
+        '#type' => 'hidden',
+        '#value' => $field['settings']['target_id'],
+      );
+      $element['target_revision_id'] = $widget + array(
+        '#type' => 'hidden',
+        '#value' => $vid,
       );
       $element['date'] = $widget + array(
         '#type' => 'hidden',
         '#value' => REQUEST_TIME,
       );
+
       break;
   }
 
