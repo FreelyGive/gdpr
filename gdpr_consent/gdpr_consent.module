@@ -285,6 +285,8 @@ function gdpr_consent_field_widget_info() {
  * Implements hook_field_widget_form().
  */
 function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  global $user;
+
   $agreed = isset($items[$delta]['agreed']) ? $items[$delta]['agreed'] : '';
   $notes = isset($items[$delta]['notes']) ? $items[$delta]['notes'] : '';
 
@@ -300,29 +302,36 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
   switch ($instance['widget']['type']) {
 
     case 'gdpr_consent_widget':
-      $element['agreed'] = $widget + array(
+      $element['agreed'] = array(
         '#type' => 'checkbox',
-        '#title' => 'Agree?',
+        '#title' => $entity->title,
         '#default_value' => $agreed,
-        '#description' => 'Description',
-      );
-      $element['notes'] = $widget + array(
+        '#weight' => 0,
+        '#description' => $entity->long_description,
+      ) + $widget;
+      $element['notes'] = array(
         '#type' => 'textfield',
         '#title' => 'GDPR Consent Notes',
         '#default_value' => $notes,
-      );
-      $element['target_id'] = $widget + array(
+        '#weight' => 10,
+        '#description' => '',
+      ) + $widget;
+      $element['target_id'] = array(
         '#type' => 'hidden',
         '#value' => $field['settings']['target_id'],
-      );
-      $element['target_revision_id'] = $widget + array(
+      ) + $widget;
+      $element['target_revision_id'] = array(
         '#type' => 'hidden',
         '#value' => $vid,
-      );
-      $element['date'] = $widget + array(
+      ) + $widget;
+      $element['date'] = array(
         '#type' => 'hidden',
         '#value' => REQUEST_TIME,
-      );
+      ) + $widget;
+      $element['user_id_accepted'] = array(
+        '#type' => 'hidden',
+        '#value' => $user->uid,
+      ) + $widget;
 
       break;
   }
