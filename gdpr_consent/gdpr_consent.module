@@ -34,6 +34,24 @@ function gdpr_consent_menu() {
   return $items;
 }
 
+/**
+ * Implements hook_permission().
+ */
+function gdpr_consent_permission() {
+  $permissions = array(
+    'manage gdpr agreements' => array(
+      'title' => t('Manage GDPR Agreements'),
+    ),
+    'grant any consent' => array(
+      'title' => t('Grant Any Consent'),
+    ),
+    'grant own consent' => array(
+      'title' => t('Grant Own Consent'),
+    ),
+  );
+
+  return $permissions;
+}
 
 /**
  * Implements hook_entity_info().
