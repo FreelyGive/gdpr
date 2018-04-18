@@ -21,7 +21,7 @@ function gdpr_consent_help($path, $arg) {
 function gdpr_consent_menu() {
   $items = array();
 
-  $items['user/%user/collected_data/agreements'] = array(
+  $items['user/%user/gdpr/agreements'] = array(
     'title' => 'Agreements',
     'description' => 'List Agreement Entities',
     'access callback' => TRUE,
