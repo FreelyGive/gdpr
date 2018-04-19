@@ -24,14 +24,43 @@ function gdpr_consent_menu() {
   $items['user/%user/gdpr/agreements'] = array(
     'title' => 'Agreements',
     'description' => 'List Agreement Entities',
-    'access callback' => TRUE,
     'page callback' => 'gdpr_consent_collected_agreements',
     'page arguments' => array(1),
+    'access arguments' => array('manage gdpr agreements'),
     'menu_name' => 'navigation',
+    'file' => 'includes/gdpr_consent.agreements.inc',
+  );
+  $items['admin/gdpr/agreements/%gdpr_consent_agreement'] = array(
+    'title' => 'Consent Agreement',
+    'page callback' => 'gdpr_consent_agreement_view_entity',
+    'page arguments' => array(3),
+    'access callback' => TRUE,
+    'file' => 'includes/gdpr_consent.agreements.inc',
+  );
+  $items['admin/gdpr/agreements/%gdpr_consent_agreement/%'] = array(
+    'title' => 'Consent Agreement revision',
+    'load arguments' => array(4),
+    'page callback' => 'gdpr_consent_agreement_view_revision',
+    'page arguments' => array(3),
+    'access callback' => TRUE,
     'file' => 'includes/gdpr_consent.agreements.inc',
   );
 
   return $items;
+}
+
+/**
+ * Menu autoloader for gdpr agreements.
+ */
+function gdpr_consent_agreement_load($id, $revision_id = NULL) {
+  if (is_numeric($revision_id)) {
+    $entity = entity_revision_load('gdpr_consent_agreement', $revision_id);
+    return $entity;
+  }
+  else {
+    $entity = entity_load('gdpr_consent_agreement', array($id));
+    return array_pop($entity);
+  }
 }
 
 /**
@@ -62,7 +91,7 @@ function gdpr_consent_entity_info() {
     'label' => t('GDPR Consent Agreement'),
     'base table' => 'gdpr_consent_agreement',
     'revision table' => 'gdpr_consent_agreement_revision',
-    'entity class' => 'Entity',
+    'entity class' => 'ConsentAgreement',
     'controller class' => 'ConsentAgreementController',
     'fieldable' => TRUE,
     'bundles' => array(
@@ -340,6 +369,18 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
 }
 
 /**
+ * Our custom entity class.
+ */
+class ConsentAgreement extends Entity {
+  /**
+   * Implement a custom default URI.
+   */
+  protected function defaultUri() {
+    return array('path' => 'admin/gdpr/agreements/' . $this->identifier());
+  }
+}
+
+/**
  * Custom controller for the gdpr_consent_agreement entity type.
  */
 class ConsentAgreementController extends EntityAPIController {
@@ -359,4 +400,26 @@ class ConsentAgreementController extends EntityAPIController {
 
     return parent::save($entity, $transaction);
   }
+
+  public function buildContent($entity, $view_mode = 'default', $langcode = NULL, $content = array()) {
+    $build = parent::buildContent($entity, $view_mode, $langcode, $content);
+
+    $build['description'] = array(
+      '#type' => 'markup',
+      '#markup' => $entity->description,
+    );
+
+    $build['long_description'] = array(
+      '#type' => 'markup',
+      '#markup' => $entity->long_description,
+    );
+
+    $build['agreement_type'] = array(
+      '#type' => 'markup',
+      '#markup' => $entity->agreement_type,
+    );
+
+    return $build;
+  }
+
 }
