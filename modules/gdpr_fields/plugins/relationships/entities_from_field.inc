@@ -95,7 +95,7 @@ function gdpr_fields_entities_from_field_get_children($parent_plugin, $parent) {
                     $name = $field_name . '-' . $to_entity . '-' . $from_entity;
                     $plugin_id = $parent . ':' . $name;
 
-                    $plugin['title'] = t('@from_entity from @to_entity (on @from_entity: @field_name)', $replacements);
+                    $plugin['title'] = t('@from_entity from @to_entity (on @from_entity: @field_label [@field_name])', $replacements);
                     $plugin['keyword'] = $to_entity;
                     $plugin['context name'] = $name;
                     $plugin['name'] = $plugin_id;
@@ -171,32 +171,58 @@ function gdpr_fields_entities_from_field_context($context, $conf) {
   if (isset($context->data->{$entity_info['entity keys']['id']})) {
     // Load the entity.
     $id = $context->data->{$entity_info['entity keys']['id']};
-    $entity = entity_load($from_entity, array($id));
-    $entity = $entity[$id];
-    if ($items = field_get_items($from_entity, $entity, $field_name)) {
-      if (isset($items[$delta])) {
-        ctools_include('fields');
-        $to_entity_info = entity_get_info($to_entity);
 
-        $plugin_info = ctools_get_relationship($conf['name']);
-        $to_entity_id = $items[$delta][$plugin_info['source key']];
-        $loaded_to_entity = entity_load($to_entity, array($to_entity_id));
-        $loaded_to_entity = array_shift($loaded_to_entity);
+    if (!$conf['reverse']) {
+      $entity = entity_load($from_entity, array($id));
+      $entity = $entity[$id];
+      if ($items = field_get_items($from_entity, $entity, $field_name)) {
+        if (isset($items[$delta])) {
+          ctools_include('fields');
+          $to_entity_info = entity_get_info($to_entity);
 
-        // Pass current user account and entity type to access callback.
-        if (isset($to_entity_info['access callback']) && function_exists($to_entity_info['access callback']) && !call_user_func($to_entity_info['access callback'], 'view', $loaded_to_entity, $account, $to_entity)) {
-          return ctools_context_create_empty('entity:' . $to_entity, NULL);
+          $plugin_info = ctools_get_relationship($conf['name']);
+
+          if (!isset($plugin_info['source key'])) {
+            dpm($conf['name']);
+            dpm($plugin_info);
+          }
+
+          $to_entity_id = $items[$delta][$plugin_info['source key']];
+          $loaded_to_entity = entity_load($to_entity, array($to_entity_id));
+          $loaded_to_entity = array_shift($loaded_to_entity);
+
+          // Pass current user account and entity type to access callback.
+          if (isset($to_entity_info['access callback']) && function_exists($to_entity_info['access callback']) && !call_user_func($to_entity_info['access callback'], 'view', $loaded_to_entity, $account, $to_entity)) {
+            return ctools_context_create_empty('entity:' . $to_entity, NULL);
+          }
+          else {
+            // Send it to ctools.
+            return ctools_context_create('entity:' . $to_entity, $to_entity_id);
+          }
         }
         else {
-          // Send it to ctools.
-          return ctools_context_create('entity:' . $to_entity, $to_entity_id);
+          // In case that delta was empty.
+          return ctools_context_create_empty('entity:' . $to_entity, NULL);
         }
       }
-      else {
-        // In case that delta was empty.
-        return ctools_context_create_empty('entity:' . $to_entity, NULL);
-      }
     }
+    else {
+      // @todo Do reverse context.
+//      $result = db_select($conf['base_table'], 'base')
+//        ->fields('base', array($conf['base_table_id']))
+//        ->condition($conf['base_table_key'], $id, '=')
+//        // @todo figure out performance improvement for more contexts.
+//        ->range(0,1)
+//        ->execute();
+//
+//      $contexts = array();
+//      while($record = $result->fetchAssoc()) {
+//        $contexts[] = ctools_context_create('entity:' . $to_entity, $record[$conf['base_table_id']]);
+//      }
+//
+//      return $contexts;
+    }
+
   }
 }
 

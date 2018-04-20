@@ -57,7 +57,9 @@ function gdpr_fields_gdpr_entity_property_get_children($plugin, $parent) {
         $child_plugin = $plugin;
         $child_plugin['name'] = $name;
         $child_plugin['label'] = $property['label'];
-        $child_plugin['description'] = $property['description'];
+
+        $child_plugin['description'] = isset($property['description']) ? $property['description'] : '';
+
         // @todo Should computed properties be removed instead or disabled?
         if (!empty($property['computed'])) {
           $child_plugin['computed'] = TRUE;

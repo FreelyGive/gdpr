@@ -70,11 +70,11 @@ class GDPRUtilRandom {
   public function word($length) {
     mt_srand((double) microtime() * 1000000);
 
-    $vowels = ["a", "e", "i", "o", "u"];
-    $cons = ["b", "c", "d", "g", "h", "j", "k", "l", "m", "n", "p", "r", "s", "t", "u", "v", "w", "tr",
+    $vowels = array("a", "e", "i", "o", "u");
+    $cons = array("b", "c", "d", "g", "h", "j", "k", "l", "m", "n", "p", "r", "s", "t", "u", "v", "w", "tr",
       "cr", "br", "fr", "th", "dr", "ch", "ph", "wr", "st", "sp", "sw", "pr",
       "sl", "cl", "sh",
-    ];
+    );
 
     $num_vowels = count($vowels);
     $num_cons = count($cons);

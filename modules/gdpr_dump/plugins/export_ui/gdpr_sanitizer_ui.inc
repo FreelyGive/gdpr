@@ -53,11 +53,11 @@ function gdpr_dump_sanitizer_export_ui_form(&$form, &$form_state) {
     '#tree' => TRUE,
   );
 
-  $form['settings']['notes'] = [
+  $form['settings']['notes'] = array(
     '#type' => 'textarea',
     '#title' => t('Notes'),
     '#default_value' => $sanitizer->getSetting('notes', ''),
-  ];
+  );
 }
 
 /**
