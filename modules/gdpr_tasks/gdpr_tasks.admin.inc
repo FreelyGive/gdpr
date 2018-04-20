@@ -197,7 +197,7 @@ function gdpr_task_edit_gdpr_sar_form_submit($form, &$form_state) {
   // @todo add getOwner method to Task.
   $data = gdpr_tasks_collect_rta_data(user_load($task->user_id));
 
-  $inc = [];
+  $inc = array();
   foreach ($data as $key => $values) {
     $rta = $values['rta'];
     unset($values['rat']);

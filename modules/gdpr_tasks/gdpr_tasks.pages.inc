@@ -28,11 +28,11 @@ function gdpr_tasks_request($account, $gdpr_task_type) {
   else {
     global $user;
 
-    $values = [
+    $values = array(
       'type' => $gdpr_task_type,
       'user_id' => $account->uid,
       'requested_by' => $user->uid,
-    ];
+    );
     $task = entity_create('gdpr_task', $values);
     $task->save();
 

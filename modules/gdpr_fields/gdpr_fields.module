@@ -134,6 +134,10 @@ function gdpr_fields_collect_gdpr_entities(&$entity_list, $entity_type, $entity)
   // Go through each relationship.
   foreach ($relationships as $rid => $relationship) {
     // For each relationship, see if there is a context that satisfies it.
+    if (!$context) {
+      var_dump($context);
+      var_dump($entity_type);
+    }
     if (ctools_context_filter(array($context), $relationship['required context'])) {
       $available_relationships[$rid] = $relationship;
     }
@@ -182,6 +186,9 @@ function gdpr_fields_collect_gdpr_entities(&$entity_list, $entity_type, $entity)
     foreach ($entity_contexts as $entity_context) {
       if (!empty($entity_context->data)) {
         list($plugin_type, $entity_type) = explode(':', $entity_context->plugin);
+        if (!$entity_type) {
+          var_dump($entity_context->plugin);
+        }
         gdpr_fields_collect_gdpr_entities($entity_list, $entity_type, $entity_context->data);
       }
     }

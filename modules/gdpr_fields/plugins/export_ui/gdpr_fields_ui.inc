@@ -98,28 +98,28 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
     '#tree' => TRUE,
   );
 
-  $form['settings']['gdpr_fields_rta'] = [
+  $form['settings']['gdpr_fields_rta'] = array(
     '#type' => 'select',
     '#title' => t('Right to access'),
-    '#options' => [
+    '#options' => array(
       'inc' => 'Included',
       'maybe' => 'Maybe',
       'no' => 'Not',
-    ],
+    ),
     '#default_value' => $field_data->getSetting('gdpr_fields_rta', 'no'),
-  ];
+  );
 
-  $form['settings']['gdpr_fields_rtf'] = [
+  $form['settings']['gdpr_fields_rtf'] = array(
     '#type' => 'select',
     '#title' => t('Right to be forgotten'),
-    '#options' => [
+    '#options' => array(
       'anonymise' => 'Anonymise',
       'remove' => 'Remove',
       'maybe' => 'Maybe',
       'no' => 'Not',
-    ],
+    ),
     '#default_value' => $field_data->getSetting('gdpr_fields_rtf', 'no'),
-  ];
+  );
 
   // @todo Filter by relevance.
   $sanitizer_options = array();
@@ -127,23 +127,23 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
     $sanitizer_options[$sanitizer->name] = $sanitizer->label;
   }
 
-  $form['settings']['gdpr_fields_sanitizer'] = [
+  $form['settings']['gdpr_fields_sanitizer'] = array(
     '#type' => 'select',
     '#title' => t('Sanitizer to use'),
     '#options' => $sanitizer_options,
     '#default_value' => $field_data->getSetting('gdpr_fields_sanitizer', ''),
-    '#states' => [
-      'visible' => [
-        ':input[name="settings[gdpr_fields_rtf]"]' => ['value' => 'anonymise'],
-      ],
-    ],
-  ];
+    '#states' => array(
+      'visible' => array(
+        ':input[name="settings[gdpr_fields_rtf]"]' => array('value' => 'anonymise'),
+      ),
+    ),
+  );
 
-  $form['settings']['notes'] = [
+  $form['settings']['notes'] = array(
     '#type' => 'textarea',
     '#title' => t('Notes'),
     '#default_value' => $field_data->getSetting('gdpr_fields_notes', ''),
-  ];
+  );
 }
 
 /**
