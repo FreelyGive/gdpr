@@ -22,6 +22,13 @@ class gdpr_export_log_views_plugin_display_extender_data_export extends views_pl
       return FALSE;
     }
 
+    // Check that user table is a base table.
+    if ($this->view->display_handler) {
+      if (!in_array('users', array_keys($this->view->get_base_tables()))) {
+        return FALSE;
+      }
+    }
+
     return TRUE;
   }
 

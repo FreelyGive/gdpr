@@ -13,3 +13,4 @@ files[] = src/Entity/GDPRTaskInterface.php
 files[] = src/Entity/GDPRTaskController.php
 files[] = src/Entity/GDPRTaskUIController.php
 files[] = src/Entity/GDPRTaskType.php
+files[] = views/handlers/gdpr_tasks_handler_operations_field.inc

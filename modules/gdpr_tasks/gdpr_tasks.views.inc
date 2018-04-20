@@ -40,4 +40,12 @@ function gdpr_tasks_views_data_alter(&$data) {
       'handler' => 'views_handler_filter_date',
     ),
   );
+
+  $data['gdpr_task']['operations'] = array(
+    'field' => array(
+      'title' => t('Operations links'),
+      'help' => t('Display all operations available for this task.'),
+      'handler' => 'gdpr_tasks_handler_operations_field',
+    ),
+  );
 }

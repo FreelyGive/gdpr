@@ -188,7 +188,16 @@ function gdpr_tasks_permission() {
  * Implements hook_views_api().
  */
 function gdpr_tasks_views_api($module, $api) {
-  return array('version' => 2);
+  return array('version' => 3);
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function gdpr_tasks_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'ctools' && $plugin_type == 'content_types') {
+    return 'plugins/' . $plugin_type;
+  }
 }
 
 /**
