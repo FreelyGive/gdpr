@@ -19,7 +19,16 @@ function gdpr_export_log_form($form, &$form_state) {
 
   field_attach_form('gdpr_export_log', $log, $form, $form_state);
 
-  $form['actions'] = array('#type' => 'actions');
+  $form['disclaimer'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Please only remove this export log if you have completely destroyed the export on the target computer and any copies of it.'),
+    '#weight' => 99,
+  );
+
+  $form['actions'] = array(
+    '#type' => 'actions',
+    '#weight' => 100,
+  );
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
@@ -30,6 +39,10 @@ function gdpr_export_log_form($form, &$form_state) {
   $form['actions']['remove'] = array(
     '#type' => 'submit',
     '#value' => t('Remove export'),
+    '#validate' => array(
+      'gdpr_export_log_form_validate',
+      'gdpr_export_log_form_validate_remove',
+    ),
     '#submit' => array(
       'gdpr_export_log_form_submit_remove',
       'gdpr_export_log_form_submit_save',
@@ -51,6 +64,15 @@ function gdpr_export_log_form_validate($form, &$form_state) {
   $log = $form_state['export_log'];
   field_attach_validate('gdpr_export_log', $log);
 }
+
+/**
+ * Validate handler for logs form.
+ */
+function gdpr_export_log_form_validate_remove($form, &$form_state) {
+  $log = $form_state['export_log'];
+  field_attach_validate('gdpr_export_log', $log);
+}
+
 
 /**
  * Submit handler for logs form.

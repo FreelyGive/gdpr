@@ -18,7 +18,7 @@ function gdpr_export_log_entity_info() {
     'controller class' => 'GDPRExportLogController',
     'module' => 'gdpr_export_log',
     'admin ui' => array(
-      'path' => 'admin/structure/gdpr-export-log',
+      'path' => 'admin/gdpr/gdpr-export-log',
       'file' => 'gdpr_export_log.admin.inc',
       'menu wildcard' => '%gdpr_export_log',
       'controller class' => 'GDPRExportLogUIController',
@@ -27,7 +27,7 @@ function gdpr_export_log_entity_info() {
       'gdpr_export_log' => array(
         'label' => t('Export Log'),
         'admin' => array(
-          'path' => 'admin/structure/gdpr-export-log',
+          'path' => 'admin/gdpr/gdpr-export-log',
           'access arguments' => array('administer export log entities'),
         ),
       ),

@@ -18,6 +18,9 @@ function gdpr_fields_ctools_plugin_type() {
   return $plugins;
 }
 
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
 function gdpr_fields_ctools_plugin_directory($owner, $plugin_type) {
   if ($owner == 'gdpr_fields') {
     return 'plugins/' . $plugin_type;

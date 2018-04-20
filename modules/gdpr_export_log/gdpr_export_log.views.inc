@@ -17,6 +17,7 @@ function gdpr_export_log_views_post_render(&$view, &$output, &$cache) {
 
   $uids = array();
   foreach ($view->result as $data) {
+    // uid will always be set if user table is base table.
     if (isset($data->uid)) {
       $uids[$data->uid] = $data->uid;
     }
