@@ -336,10 +336,17 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
         '#title' => $entity->title,
         '#default_value' => $agreed,
         '#weight' => 0,
+        '#attributes' => array(
+          'class' => array('gdpr_consent_agreement'),
+        ),
+        '#attached' => array(
+          'css' =>  array(drupal_get_path('module', 'gdpr_consent') . '/css/gdpr_consent.css'),
+          'js' =>  array(drupal_get_path('module', 'gdpr_consent') . '/js/gdpr_consent.js'),
+        ),
         '#description' => $entity->long_description,
       ) + $widget;
       $element['notes'] = array(
-        '#type' => 'textfield',
+        '#type' => 'textarea',
         '#title' => 'GDPR Consent Notes',
         '#default_value' => $notes,
         '#weight' => 10,
