@@ -80,8 +80,6 @@ function gdpr_consent_entity_info() {
       'revision' => 'revision_id',
     ),
     // Use the default label() and uri() functions.
-    'label callback' => 'entity_class_label',
-    'uri callback' => 'entity_class_uri',
     'access callback' => 'gdpr_consent_access_callback',
     'admin ui' => array(
       'path' => 'admin/gdpr/agreements',
@@ -210,7 +208,6 @@ function gdpr_consent_field_validate($entity_type, $entity, $field, $instance, $
   }
 }
 
-
 /**
  * Implements hook_field_is_empty().
  */
@@ -236,11 +233,18 @@ function gdpr_consent_field_formatter_info() {
 function gdpr_consent_field_settings_form($field, $instance, $has_data) {
   $settings = $field['settings'];
 
+  $agreements = array();
+
+  foreach (entity_load('gdpr_consent_agreement') as $agreement) {
+    $agreements[$agreement->id] = $agreement->title;
+  }
+
   $form['target_id'] = array(
-    '#type' => 'textfield',
-    '#title' => t('User consent agreement entity id'),
+    '#type' => 'select',
+    '#title' => t('User consent agreement'),
     '#default_value' => (isset($settings['target_id'])) ? $settings['target_id'] : '',
     '#required' => FALSE,
+    '#options' => $agreements,
     '#element_validate' => array(
       'element_validate_integer_positive',
     ),
@@ -315,10 +319,11 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
       ) + $widget;
       $element['notes'] = array(
         '#type' => 'textfield',
-        '#title' => 'GDPR Consent Notes',
+        '#title' => 'Consent Notes',
         '#default_value' => $notes,
         '#weight' => 10,
         '#description' => '',
+        '#access' => user_access('grant any consent', $user),
       ) + $widget;
       $element['target_id'] = array(
         '#type' => 'hidden',
@@ -366,5 +371,27 @@ class ConsentAgreementController extends EntityAPIController {
 }
 
 class ConsentAgreementEntityUIController extends EntityDefaultUIController {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function overviewTableHeaders($conditions, $rows, $additional_header = array()) {
+    $additional_header = array(
+      t('Type'),
+    );
+    return parent::overviewTableHeaders($conditions, $rows, $additional_header);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function overviewTableRow($conditions, $id, $entity, $additional_cols = array()) {
+    $additional_cols = array(
+      $entity->agreement_type ? 'Explicit' : 'Implicit',
+    );
+
+    $row = parent::overviewTableRow($conditions, $id, $entity, $additional_cols);
+    return $row;
+  }
 
 }
