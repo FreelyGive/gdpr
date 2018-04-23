@@ -1,0 +1,100 @@
+<?php
+
+/**
+ * @file
+ * Module file for the GDPR Fields module.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * @todo Find a better way of editing field GDPR settings as lots of fields are not UI configurable.
+ * @todo Check user edit permission for GDPR fields.
+ */
+function gdpr_fields_form_field_config_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  /* @var \Drupal\Core\Field\FieldConfigInterface $field */
+  $field = $form_state->getFormObject()->getEntity();
+  // @todo Check that target entity is a content entity.
+
+  $enabled = $field->getThirdPartySetting('gdpr_fields', 'gdpr_fields_enabled', FALSE);
+  $form['field']['gdpr_fields'] = [
+    '#type' => 'details',
+    '#title' => t('GDPR field settings'),
+    '#open' => $enabled,
+  ];
+
+  $form['field']['gdpr_fields']['gdpr_fields_enabled'] = [
+    '#type' => 'checkbox',
+    '#title' => t('This is a GDPR field'),
+    '#default_value' => $enabled,
+  ];
+
+  $form['field']['gdpr_fields']['gdpr_fields_rta'] = [
+    '#type' => 'select',
+    '#title' => t('Right to access'),
+    '#options' => [
+      'inc' => 'Included',
+      'maybe' => 'Maybe',
+      'no' => 'Not',
+    ],
+    '#default_value' => $field->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rta', 'no'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="gdpr_fields_enabled"]' => array(
+          'checked' => TRUE,
+        ),
+      ),
+    ),
+  ];
+
+  $form['field']['gdpr_fields']['gdpr_fields_rtf'] = [
+    '#type' => 'select',
+    '#title' => t('Right to be forgotten'),
+    '#options' => [
+      'obfuscate' => 'Obfuscate',
+      'remove' => 'Remove',
+      'maybe' => 'Maybe',
+      'no' => 'Not',
+    ],
+    '#default_value' => $field->getThirdPartySetting('gdpr_fields', 'gdpr_fields_rtf', 'no'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="gdpr_fields_enabled"]' => array(
+          'checked' => TRUE,
+        ),
+      ),
+    ),
+  ];
+  $form['actions']['submit']['#submit'][] = 'gdpr_fields_form_field_config_edit_form_submit';
+}
+
+/**
+ * Form submission handler for gdpr_fields_form_field_config_edit_form_alter.
+ *
+ * @param array $form
+ *   The form array.
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *   The form state.
+ */
+function gdpr_fields_form_field_config_edit_form_submit(array $form, FormStateInterface $form_state) {
+  /* @var \Drupal\Core\Field\FieldConfigInterface $field */
+  $field = $form_state->getFormObject()->getEntity();
+  $form_fields = &$form_state->getValues();
+
+  // If the private option is checked, update settings.
+  if ($form_fields['gdpr_fields_enabled']) {
+    $field->setThirdPartySetting('gdpr_fields', 'gdpr_fields_enabled', TRUE);
+    $field->setThirdPartySetting('gdpr_fields', 'gdpr_fields_rta', $form_fields['gdpr_fields_rta']);
+    $field->setThirdPartySetting('gdpr_fields', 'gdpr_fields_rtf', $form_fields['gdpr_fields_rtf']);
+    $field->save();
+  }
+  else {
+    $field->unsetThirdPartySetting('gdpr_fields', 'gdpr_fields_enabled');
+    $field->unsetThirdPartySetting('gdpr_fields', 'gdpr_fields_rta');
+    $field->unsetThirdPartySetting('gdpr_fields', 'gdpr_fields_rtf');
+    $field->save();
+  }
+
+}
