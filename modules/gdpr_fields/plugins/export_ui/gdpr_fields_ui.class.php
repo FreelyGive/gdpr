@@ -60,8 +60,22 @@ class gdpr_fields_ui extends ctools_export_ui {
 //    $row['data'][] = array('data' => check_plain($item->entity_type), 'class' => array('ctools-export-ui-entity-type'));
 //    $row['data'][] = array('data' => check_plain($item->entity_bundle), 'class' => array('ctools-export-ui-entity-bundle'));
 //    $row['data'][] = array('data' => check_plain($item->field_name), 'class' => array('ctools-export-ui-field-name'));
-    $row['data'][] = array('data' => check_plain($item->getSetting('gdpr_fields_rta', 'none')), 'class' => array('ctools-export-ui-rta'));
-    $row['data'][] = array('data' => check_plain($item->getSetting('gdpr_fields_rtf', 'none')), 'class' => array('ctools-export-ui-rtf'));
+
+    $rta_labels = array(
+      '' => 'Not configured',
+      'inc' => 'Included',
+      'maybe' => 'Maybe included',
+      'no' => 'Not included',
+    );
+    $rtf_labels = array(
+      '' => 'Not configured',
+      'anonymise' => 'Anonymise',
+      'remove' => 'Remove',
+      'maybe' => 'Maybe included',
+      'no' => 'Not included',
+    );
+    $row['data'][] = array('data' => $rta_labels[$item->getSetting('gdpr_fields_rta', '')], 'class' => array('ctools-export-ui-rta'));
+    $row['data'][] = array('data' => $rtf_labels[$item->getSetting('gdpr_fields_rtf', '')], 'class' => array('ctools-export-ui-rtf'));
 
     $ops = theme('links__ctools_dropbutton', array('links' => $operations, 'attributes' => array('class' => array('links', 'inline'))));
 
@@ -102,7 +116,6 @@ class gdpr_fields_ui extends ctools_export_ui {
   public function list_render(&$form_state) {
     $tables = array();
     $table_data = '';
-    drupal_add_library('system', 'drupal.collapse');
 
     foreach ($this->rows as $name => $row) {
       list($entity_type, $entity_bundle, $field_name) = explode('|', $name);
@@ -110,37 +123,102 @@ class gdpr_fields_ui extends ctools_export_ui {
     }
 
     foreach ($tables as $entity_type => $entities) {
-      foreach ($entities as $bundle => $rows) {
+      $fieldset_entity = array(
+        'element' => array(
+          '#title' => t('Entity: @entity', array(
+            '@entity' => $entity_type,
+          )),
+          '#value' => '',
+          '#children' => '<div>',
+          '#attributes' => array (
+            'class' => array(
+              'collapsible',
+            ),
+          ),
+        ),
+      );
+
+      if (count($entities) === 1) {
+        $rows = reset($entities);
         $table = array(
           'header' => $this->list_table_header(),
           'rows' => $rows,
-          'attributes' => array('id' => 'ctools-export-ui-list-items'),
           'empty' => $this->plugin['strings']['message']['no items'],
         );
+        $fieldset_entity['element']['#value'] = theme('table', $table);
+      }
+      else {
+        foreach ($entities as $bundle => $rows) {
+          $table = array(
+            'header' => $this->list_table_header(),
+            'rows' => $rows,
+            'empty' => $this->plugin['strings']['message']['no items'],
+          );
 
-        $fieldset_vars = array(
-          'element' => array(
-            '#title' => t('@entity: @bundle', array(
-              '@entity' => $entity_type,
-              '@bundle' => $bundle,
-            )),
-            '#value' => theme('table', $table),
-            '#children' => '<div>',
-            '#attributes' => array (
-              'class' => array(
-                'collapsible',
-//                'collapsed',
+          $fieldset_bundle = array(
+            'element' => array(
+              '#title' => t('Bundle: @bundle', array(
+                '@bundle' => $bundle,
+              )),
+              '#value' => theme('table', $table),
+              '#children' => '<div>',
+              '#attributes' => array (
+                'class' => array(
+                  'collapsible',
+//                  'collapsed',
+                ),
               ),
             ),
-          ),
-        );
-
-        $table_data .= theme('fieldset', $fieldset_vars);
+          );
+          $fieldset_entity['element']['#value'] .= theme('fieldset', $fieldset_bundle);
+        }
       }
+
+      $table_data .= theme('fieldset', $fieldset_entity);
     }
 
+    $content = array(
+      '#type' => 'container',
+      '#attributes' => array (
+        'id' => 'ctools-export-ui-list-items',
+      ),
+      'data' => array('#markup' => !empty($table_data) ? $table_data : $this->plugin['strings']['message']['no items']),
+    );
 
-    return $table_data;
+    return drupal_render($content);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function list_form(&$form, &$form_state) {
+    parent::list_form($form, $form_state);
+
+    $entities = array();
+    foreach (entity_get_info() as $key => $entity_info) {
+      $entities[$key] = $entity_info['label'];
+    }
+
+    $form['top row']['gdpr_entity'] = array(
+      '#type' => 'select',
+      '#title' => t('Entity'),
+      '#options' => $entities,
+      '#multiple' => TRUE,
+      '#default_value' => array(),
+    );
+
+    $form['#attached']['library'][] = array('system', 'drupal.collapse');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function list_filter($form_state, $item) {
+    if (!empty($form_state['values']['gdpr_entity']) && !in_array($item->entity_type, $form_state['values']['gdpr_entity'])) {
+      return TRUE;
+    }
+
+    parent::list_filter($form_state, $item);
   }
 
 }

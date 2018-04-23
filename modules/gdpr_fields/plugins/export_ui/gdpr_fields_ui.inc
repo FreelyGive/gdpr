@@ -18,7 +18,7 @@ $plugin = array(
 
   'title singular' => t('field'),
   'title singular proper' => t('Field'),
-  'title plural' => t('field'),
+  'title plural' => t('fields'),
   'title plural proper' => t('Fields'),
 
   'form' => array(
@@ -26,19 +26,11 @@ $plugin = array(
     'submit' => 'gdpr_fields_field_data_export_ui_form_submit',
   ),
   'handler' => 'gdpr_fields_ui',
-//  'handler' => array(
-//    'class' => 'gdpr_fields_ui',
-//    'parent' => 'ctools_export_ui',
-//  ),
   'strings' => array(
     'confirmation' => array(
       'revert' => array(
-        'information' => t('This action will permanently remove any customizations made to this view.'),
-        'success' => t('The view has been reverted.'),
-      ),
-      'delete' => array(
-        'information' => t('This action will permanently remove the view from your database.'),
-        'success' => t('The view has been deleted.'),
+        'information' => t('This action will permanently remove any customizations made to this field.'),
+        'success' => t('The field has been reverted.'),
       ),
     ),
   ),
@@ -98,6 +90,19 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
     '#tree' => TRUE,
   );
 
+  $form['settings']['gdpr_fields_enabled'] = array(
+    '#type' => 'select',
+    '#title' => t('GDPR Field'),
+    '#description' => t('Is this a GDPR field'),
+    '#options' => array(
+      '' => 'Not defined',
+      '1' => 'Yes',
+      '0' => 'No',
+    ),
+    '#default_value' => $field_data->getSetting('gdpr_fields_enabled', ''),
+  );
+
+
   $form['settings']['gdpr_fields_rta'] = array(
     '#type' => 'select',
     '#title' => t('Right to access'),
@@ -107,6 +112,11 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
       'no' => 'Not',
     ),
     '#default_value' => $field_data->getSetting('gdpr_fields_rta', 'no'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="settings[gdpr_fields_enabled]"]' => array('value' => 1),
+      ),
+    ),
   );
 
   $form['settings']['gdpr_fields_rtf'] = array(
@@ -119,6 +129,11 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
       'no' => 'Not',
     ),
     '#default_value' => $field_data->getSetting('gdpr_fields_rtf', 'no'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="settings[gdpr_fields_enabled]"]' => array('value' => 1),
+      ),
+    ),
   );
 
   // @todo Filter by relevance.
@@ -139,10 +154,15 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
     ),
   );
 
-  $form['settings']['notes'] = array(
+  $form['settings']['gdpr_fields_notes'] = array(
     '#type' => 'textarea',
     '#title' => t('Notes'),
     '#default_value' => $field_data->getSetting('gdpr_fields_notes', ''),
+    '#states' => array(
+      'invisible' => array(
+        ':input[name="settings[gdpr_fields_enabled]"]' => array('value' => ''),
+      ),
+    ),
   );
 }
 
@@ -150,6 +170,17 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
  * Define the submit function for the add/edit form.
  */
 function gdpr_fields_field_data_export_ui_form_submit(&$form, &$form_state) {
+  if ($form_state['values']['settings']['gdpr_fields_enabled'] === '') {
+    // Clear all settings.
+    $form_state['values']['settings'] = array();
+  }
+  elseif ($form_state['values']['settings']['gdpr_fields_enabled'] === '0') {
+    // Clear field settings, leave notes.
+    unset($form_state['values']['settings']['gdpr_fields_rta']);
+    unset($form_state['values']['settings']['gdpr_fields_rtf']);
+    unset($form_state['values']['settings']['gdpr_fields_sanitizer']);
+  }
+
   if (isset($form_state['values']['field']['label'])) {
     $form_state['values']['settings']['label'] = $form_state['values']['field']['label'];
   }
