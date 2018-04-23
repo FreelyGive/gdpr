@@ -55,5 +55,5 @@ function gdpr_consent_agreement_form_submit($form, &$form_state) {
   $entity = entity_ui_form_submit_build_entity($form, $form_state);
   $entity->save();
   drupal_set_message(t('@title agreement has been saved.', array('@title' => $entity->title)));
-  $form_state['redirect'] = 'admin/consent';
+  $form_state['redirect'] = 'admin/gdpr/agreements';
 }
