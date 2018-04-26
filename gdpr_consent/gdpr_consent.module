@@ -37,13 +37,53 @@ function gdpr_consent_menu() {
     'access callback' => TRUE,
     'file' => 'includes/gdpr_consent.agreements.inc',
   );
-  $items['admin/gdpr/agreements/%gdpr_consent_agreement/%'] = array(
-    'title' => 'Consent Agreement revision',
-    'load arguments' => array(4),
-    'page callback' => 'gdpr_consent_agreement_view_revision',
+  // 'View' tab for an individual entity.
+  $items['admin/gdpr/agreements/%gdpr_consent_agreement/view'] = array(
+    'title' => 'View',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  // 'Edit' tab for an individual entity.
+  $items['admin/gdpr/agreements/%gdpr_consent_agreement/edit'] = array(
+    'title' => 'Edit',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('gdpr_consent_agreement_form', 3),
+    'access arguments' => array('manage gdpr agreements'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -5,
+    'file' => 'includes/gdpr_consent.admin.inc',
+  );
+  // 'Revisions' tab for an individual entity.
+  $items['admin/gdpr/agreements/%gdpr_consent_agreement/revisions'] = array(
+    'title' => 'Revisions',
+    'load arguments' => array(5),
+    'page callback' => 'gdpr_consent_agreement_view_revisions',
+    'page arguments' => array(4),
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('manage gdpr agreements'),
+    'file' => 'includes/gdpr_consent.admin.inc',
+    'weight' => -3,
+  );
+  // An individual revision view page.
+  $items['admin/gdpr/agreements/%gdpr_consent_agreement/revisions/%/view'] = array(
+    'title' => 'Revision',
+    'load arguments' => array(5),
+    'page callback' => 'gdpr_consent_agreement_view_entity',
     'page arguments' => array(3),
-    'access callback' => TRUE,
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('manage gdpr agreements'),
     'file' => 'includes/gdpr_consent.agreements.inc',
+    'weight' => -3,
+  );
+  // 'Delete' tab for an individual entity.
+  $items['admin/gdpr/agreements/%gdpr_consent_agreement/delete'] = array(
+    'title' => 'Delete',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('gdpr_consent_agreement_form', 3),
+    'access arguments' => array('manage gdpr agreements'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'includes/gdpr_consent.admin.inc',
+    'weight' => 0,
   );
 
   return $items;
