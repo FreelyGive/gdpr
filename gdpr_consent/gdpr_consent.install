@@ -99,6 +99,12 @@ function gdpr_consent_schema() {
         'size' => 'tiny',
         'description' => 'Consent agreement\'s type: implicit or explicit.',
       ),
+      'notes' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => FALSE,
+        'description' => 'Notes for staff to put their rationale for why they have done this for auditors.',
+      ),
     ),
     'primary key' => array('revision_id'),
   );

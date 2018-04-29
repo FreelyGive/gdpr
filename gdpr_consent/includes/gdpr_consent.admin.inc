@@ -34,6 +34,12 @@ function gdpr_consent_agreement_form($form, &$form_state, $entity = NULL) {
     '#default_value' => isset($entity->long_description) ? $entity->long_description : '',
     '#description' => t('Text shown when the user clicks for more details'),
   );
+  $form['notes'] = array(
+    '#title' => t('Notes'),
+    '#type' => 'textarea',
+    '#default_value' => isset($entity->notes) ? $entity->notes : '',
+    '#description' => t('This should contain the rationale behind the agreement.'),
+  );
 
   field_attach_form('gdpr_consent_agreement', $entity, $form, $form_state);
 

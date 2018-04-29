@@ -33,6 +33,7 @@ function gdpr_consent_menu() {
   $items['admin/gdpr/agreements/%gdpr_consent_agreement'] = array(
     'title' => 'Consent Agreement',
     'page callback' => 'gdpr_consent_agreement_view_entity',
+    //'page callback' => 'entity_ui_entity_page_view',
     'page arguments' => array(3),
     'access callback' => TRUE,
     'file' => 'includes/gdpr_consent.agreements.inc',
@@ -56,9 +57,8 @@ function gdpr_consent_menu() {
   // 'Revisions' tab for an individual entity.
   $items['admin/gdpr/agreements/%gdpr_consent_agreement/revisions'] = array(
     'title' => 'Revisions',
-    'load arguments' => array(5),
     'page callback' => 'gdpr_consent_agreement_view_revisions',
-    'page arguments' => array(4),
+    'page arguments' => array(3),
     'type' => MENU_LOCAL_TASK,
     'access arguments' => array('manage gdpr agreements'),
     'file' => 'includes/gdpr_consent.admin.inc',
@@ -204,6 +204,13 @@ function gdpr_consent_entity_property_info() {
     'description' => t('Text shown when the user clicks for more details'),
     'type' => 'text',
     'schema field' => 'long_description',
+  );
+
+  $properties['notes'] = array(
+    'label' => t('Notes'),
+    'description' => t('This should contain the rationale behind the agreement.'),
+    'type' => 'text',
+    'schema field' => 'notes',
   );
 
   $properties['created'] = array(
@@ -459,6 +466,11 @@ class ConsentAgreementController extends EntityAPIController {
     $build['long_description'] = array(
       '#type' => 'markup',
       '#markup' => $entity->long_description,
+    );
+
+    $build['notes'] = array(
+      '#type' => 'markup',
+      '#markup' => $entity->notes,
     );
 
     $build['agreement_type'] = array(
