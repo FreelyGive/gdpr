@@ -284,6 +284,21 @@ function gdpr_consent_field_validate($entity_type, $entity, $field, $instance, $
 
 
 /**
+ * Implements hook_field_insert().
+ */
+function gdpr_consent_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  $message = message_create('consent_agreement_accepted', array('uid' => $entity->uid));
+  $wrapper = entity_metadata_wrapper('message', $message);
+
+  $wrapper->user->set($field['user_id_accepted']);
+  $wrapper->agreement->set(array($field['target_id'], $field['target_revision_id']));
+  $wrapper->notes->set($field['notes']);
+  $wrapper->agreed->set($field['agreed']);
+
+  $wrapper->save();
+}
+
+/**
  * Implements hook_field_is_empty().
  */
 function gdpr_consent_field_is_empty($item, $field) {
@@ -429,8 +444,8 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
 function gdpr_consent_default_message_type() {
   $items = array();
 
-  $items['gdpr_consent_agreement'] = entity_import('message_type', '{
-    "name" : "gdpr_consent_agreement",
+  $items['consent_agreement_accepted'] = entity_import('message_type', '{
+    "name" : "consent_agreement_accepted",
     "description" : "GDPR Consent Agreement",
     "argument_keys" : [],
     "argument" : [],
