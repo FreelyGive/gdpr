@@ -67,9 +67,8 @@ function gdpr_consent_menu() {
   // An individual revision view page.
   $items['admin/gdpr/agreements/%gdpr_consent_agreement/revisions/%/view'] = array(
     'title' => 'Revision',
-    'load arguments' => array(5),
-    'page callback' => 'gdpr_consent_agreement_view_entity',
-    'page arguments' => array(3),
+    'page callback' => 'gdpr_consent_agreement_view_revision',
+    'page arguments' => array(5),
     'access arguments' => array('manage gdpr agreements'),
     'file' => 'includes/gdpr_consent.agreements.inc',
     'weight' => -3,
@@ -503,6 +502,7 @@ class ConsentAgreementController extends EntityAPIController {
 
     // Always save new revisions.
     $entity->is_new_revision = TRUE;
+    $entity->timestamp = REQUEST_TIME;
 
     return parent::save($entity, $transaction);
   }

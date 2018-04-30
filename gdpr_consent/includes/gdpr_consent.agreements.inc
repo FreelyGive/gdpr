@@ -82,7 +82,8 @@ function gdpr_consent_agreement_view_entity($entity, $view_mode = 'default') {
 /**
  * Callback for /admin/gdpr/agreements/{gdpr_consent_agreement ID}/{revision ID} page.
  */
-function gdpr_consent_agreement_view_revision($agreement) {
+function gdpr_consent_agreement_view_revision($revision_id) {
+  $agreement = entity_revision_load('gdpr_consent_agreement', $revision_id);
   $output = gdpr_consent_agreement_view_entity($agreement);
   drupal_set_title(t('@title revision @id', array('@title' => $agreement->title, '@id' => $agreement->revision_id)));
 
