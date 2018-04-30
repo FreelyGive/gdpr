@@ -65,6 +65,7 @@ function gdpr_consent_entity_info() {
     'entity class' => 'Entity',
     'controller class' => 'ConsentAgreementController',
     'fieldable' => TRUE,
+    'exportable' => TRUE,
     'bundles' => array(
       'gdpr_consent_agreement' => array(
         'label' => t('GDPR Consent Agreement'),
@@ -76,6 +77,7 @@ function gdpr_consent_entity_info() {
     ),
     'entity keys' => array(
       'id' => 'id',
+      'name' => 'name',
       'label' => 'title',
       'revision' => 'revision_id',
     ),
@@ -170,9 +172,32 @@ function gdpr_consent_access_callback($op, $entity = NULL, $account = NULL) {
   return user_access('manage gdpr agreements');
 }
 
+/**
+ * Loads agreements.
+ */
 function gdpr_consent_agreement_load($id) {
   return entity_load_single('gdpr_consent_agreement', $id);
 }
+
+/**
+ * Loads multiple agreements.
+ */
+function gdpr_consent_agreement_load_multiple($ids = array(), $conditions = array(), $reset = FALSE) {
+  if (empty($ids)) {
+    $ids = FALSE;
+  }
+
+  return entity_load('gdpr_consent_agreement', $ids, $conditions, $reset);
+}
+
+/**
+ * Gets an array of all agreements, keyed by the machine name.
+ */
+function gdpr_consent_agreement_load_multiple_by_name($name = NULL) {
+  $signups = entity_load_multiple_by_name('gdpr_consent_agreement', isset($name) ? array($name) : FALSE);
+  return isset($name) ? reset($signups) : $signups;
+}
+
 
 /**
  * Implements hook_field_info().
@@ -351,8 +376,11 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
 /**
  * Custom controller for the gdpr_consent_agreement entity type.
  */
-class ConsentAgreementController extends EntityAPIController {
+class ConsentAgreementController extends EntityAPIControllerExportable {
 
+  /**
+   * {@inheritdoc}
+   */
   public function save($entity, DatabaseTransaction $transaction = NULL) {
     if (isset($entity->is_new)) {
       global $user;
@@ -367,6 +395,21 @@ class ConsentAgreementController extends EntityAPIController {
     $entity->is_new_revision = TRUE;
 
     return parent::save($entity, $transaction);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function export($entity, $prefix = '') {
+    $vars = get_object_vars($entity);
+    unset($vars[$this->statusKey], $vars[$this->moduleKey], $vars['is_new']);
+    if ($this->nameKey != $this->idKey) {
+      unset($vars[$this->idKey]);
+    }
+    if ($this->revisionKey) {
+      unset($vars[$this->revisionKey]);
+    }
+    return entity_var_json_export($vars, $prefix);
   }
 }
 
