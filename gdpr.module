@@ -184,7 +184,7 @@ function gdpr_checklistapi_checklist_info() {
     'content_related_suggestions' => array(
       '#title' => t('Content related suggestions'),
       '#description' => t('<p>Automated search performed on uploaded content of site.</p>')
-      . $content_discovery_description,
+        . $content_discovery_description,
       'privacy_policy_page' => array(
         '#title' => t('I have checked through the uploaded content and verified that a page containing <em>Privacy Policy</em> exists and has been published to this site.'),
         '#description' => t('No nodes with the following terms have been found: "Privacy Policy", "Terms of Use", "About us" or "Impressum". Please verify manually that such content of similar titles exists and has been published.'),
@@ -204,17 +204,17 @@ function gdpr_checklistapi_checklist_info() {
       'external_traffic_measurement' => array(
         '#title' => t("Yes, I'm aware there are external traffic measurement and user tracking services integrated on this site"),
         '#description' => t('As the owner and/or maintainer of the site I have, to the best of my knowledge, taken the necessary measures to set up these 3rd-party data collecting tools to ensure maximum compliance with GDPR regulations.')
-        . _get_module_list('tracking'),
+          . _get_module_list('tracking'),
       ),
       'social_media_connections' => array(
         '#title' => t("Yes, I'm aware there are connections established between this site and some social media platforms"),
         '#description' => t('As many social media platforms collects identifiable personal data, I acknowledge that the owner of this site is responsible for setting up these connections to ensure maximum compliance with GDPR regulations.')
-        . _get_module_list('social'),
+          . _get_module_list('social'),
       ),
       'module_data_collection' => array(
         '#title' => t('I confirm that all Drupal core, community, and custom modules have been revised as to not gather any unnecessary personal data of site visitors'),
         '#description' => t('Owner and/or maintainer of the site has to ensure that the modules listed below have been revised as to gather only necessary (i.e. not needed for provision of service) personal data of site visitors.')
-        . _get_module_list('collect'),
+          . _get_module_list('collect'),
       ),
       'user_role_permissions' => array(
         '#title' => t('I have examined all aspects of displayed personal data, associated with this site, to ensure that all users can access only permitted types of information according to their role'),
@@ -464,16 +464,15 @@ function gdpr_search_content() {
       ->propertyCondition('title', $pattern, 'RLIKE')
       ->execute();
 
-  if (!empty($results['node'])) {
-    $nids = array_keys($results['node']);
-    $nodes = node_load_multiple($nids);
-    return $nodes;
+    if (!empty($results['node'])) {
+      $nids = array_keys($results['node']);
+      $nodes = node_load_multiple($nids);
+      return $nodes;
+    }
+    else {
+      return array();
+    }
   }
-  else {
-    return array();
-  }
-
-  return $nodes;
 }
 
 /**
