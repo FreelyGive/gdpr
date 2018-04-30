@@ -35,7 +35,7 @@ class GDPRSanitizerName extends GDPRSanitizerDefault {
 
     $random = new GDPRUtilRandom();
     return array(
-      'given' => $random->word(rand(self::MIN_LENGTH, self::MAX_LENGTH)),
+      'given' => 'anon_' . $random->word(rand(self::MIN_LENGTH, self::MAX_LENGTH)),
       'family' => $random->word(rand(self::MIN_LENGTH, self::MAX_LENGTH)),
     );
   }
