@@ -29,6 +29,6 @@ class GDPRSanitizerUsername extends GDPRSanitizerDefault {
     }
 
     $random = new GDPRUtilRandom();
-    return $random->name(self::NAME_LENGTH);
+    return 'anon_' . $random->name(self::NAME_LENGTH);
   }
 }
