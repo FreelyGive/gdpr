@@ -57,7 +57,7 @@ function gdpr_consent_menu() {
   // 'Revisions' tab for an individual entity.
   $items['admin/gdpr/agreements/%gdpr_consent_agreement/revisions'] = array(
     'title' => 'Revisions',
-    'page callback' => 'gdpr_consent_agreement_view_revisions',
+    'page callback' => 'gdpr_consent_agreement_revision_overview',
     'page arguments' => array(3),
     'type' => MENU_LOCAL_TASK,
     'access arguments' => array('manage gdpr agreements'),
@@ -70,7 +70,6 @@ function gdpr_consent_menu() {
     'load arguments' => array(5),
     'page callback' => 'gdpr_consent_agreement_view_entity',
     'page arguments' => array(3),
-    'type' => MENU_LOCAL_TASK,
     'access arguments' => array('manage gdpr agreements'),
     'file' => 'includes/gdpr_consent.agreements.inc',
     'weight' => -3,
@@ -131,7 +130,6 @@ function gdpr_consent_entity_info() {
     'label' => t('GDPR Consent Agreement'),
     'base table' => 'gdpr_consent_agreement',
     'revision table' => 'gdpr_consent_agreement_revision',
-    'uri callback' => 'entity_class_uri',
     'entity class' => 'ConsentAgreement',
     'controller class' => 'ConsentAgreementController',
     'fieldable' => TRUE,
@@ -149,6 +147,7 @@ function gdpr_consent_entity_info() {
       'label' => 'title',
       'revision' => 'revision_id',
     ),
+    'uri callback' => 'entity_class_uri',
     'access callback' => 'gdpr_consent_access_callback',
     'admin ui' => array(
       'path' => 'admin/gdpr/agreements',
