@@ -422,6 +422,39 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
   return $element;
 }
 
+
+/**
+ * Implements hook_default_message_type().
+ */
+function gdpr_consent_default_message_type() {
+  $items = array();
+
+  $items['gdpr_consent_agreement'] = entity_import('message_type', '{
+    "name" : "gdpr_consent_agreement",
+    "description" : "GDPR Consent Agreement",
+    "argument_keys" : [],
+    "argument" : [],
+    "category" : "message_type",
+    "data" : {
+      "token options" : { "clear" : 0 },
+      "purge" : { "override" : 1, "enabled" : 1, "quota" : "1000", "days" : "30" }
+    },
+    "language" : "",
+    "arguments" : null,
+    "message_text" : { "und" : [
+        {
+          "value" : "\u003Cp\u003EAgreement: \u003Ca href=\u0022[message:agreement:entity:url]\/revisions\/[message:agreement:target_revision_id]\/view\u0022\u003E[message:agreement:entity:title]\u003C\/a\u003E\u003Cbr \/\u003E\r\nAgreed: [message:agreed]\u003Cbr \/\u003E\r\nNotes: [message:notes]\u003C\/p\u003E",
+          "format" : "filtered_html",
+          "safe_value" : "\u003Cp\u003EAgreement: \u003Ca href=\u0022url]\/revisions\/[message:agreement:target_revision_id]\/view\u0022\u003E[message:agreement:entity:title]\u003C\/a\u003E\u003Cbr \/\u003E\nAgreed: [message:agreed]\u003Cbr \/\u003E\nNotes: [message:notes]\u003C\/p\u003E\n"
+        }
+      ]
+    },
+    "rdf_mapping" : []
+  }');
+
+  return $items;
+}
+
 /**
  * Our custom entity class.
  */
