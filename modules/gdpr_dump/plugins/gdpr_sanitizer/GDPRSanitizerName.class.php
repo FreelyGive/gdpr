@@ -8,12 +8,12 @@ class GDPRSanitizerName extends GDPRSanitizerDefault {
   /**
    * {@inheritdoc}
    */
-  var $name = 'gdpr_sanitizer_name';
+  public $name = 'gdpr_sanitizer_name';
 
   /**
    * {@inheritdoc}
    */
-  var $label = 'Name field sanitizer';
+  public $label = 'Name field sanitizer';
 
   /**
    * Constant for name length.
@@ -39,4 +39,5 @@ class GDPRSanitizerName extends GDPRSanitizerDefault {
       'family' => $random->word(rand(self::MIN_LENGTH, self::MAX_LENGTH)),
     );
   }
+
 }

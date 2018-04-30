@@ -47,7 +47,7 @@ function gdpr_dump_schema() {
     'primary key' => array('name'),
     'keys' => array(
       'enabled' => array('enabled'),
-    )
+    ),
   );
 
   return $schema;

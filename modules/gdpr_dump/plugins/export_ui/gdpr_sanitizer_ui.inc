@@ -23,7 +23,6 @@ $plugin = array(
 
   'form' => array(
     'settings' => 'gdpr_dump_sanitizer_export_ui_form',
-//    'submit' => 'gdpr_dump_sanitizer_export_ui_form_submit',
   ),
   'handler' => 'gdpr_sanitizer_ui',
   'strings' => array(
@@ -47,7 +46,7 @@ function gdpr_dump_sanitizer_export_ui_form(&$form, &$form_state) {
   /* @var GDPRSanitizerDefault $sanitizer */
   $sanitizer = $form_state['item'];
 
-   $form['settings'] = array(
+  $form['settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('Settings'),
     '#tree' => TRUE,
@@ -59,8 +58,3 @@ function gdpr_dump_sanitizer_export_ui_form(&$form, &$form_state) {
     '#default_value' => $sanitizer->getSetting('notes', ''),
   );
 }
-
-/**
- * Define the submit function for the add/edit form.
- */
-//function gdpr_dump_sanitizer_export_ui_form_submit(&$form, &$form_state) {}

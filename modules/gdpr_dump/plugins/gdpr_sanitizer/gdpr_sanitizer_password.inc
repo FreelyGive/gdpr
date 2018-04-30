@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Contains the gdpr_sanitizer_password plugin definition.
+ */
+
+/**
  * Contains the gdpr_sanitizer_password plugin definition.
  */
 $plugin = array(

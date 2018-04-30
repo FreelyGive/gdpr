@@ -8,12 +8,12 @@ class GDPRSanitizerText extends GDPRSanitizerDefault {
   /**
    * {@inheritdoc}
    */
-  var $name = 'gdpr_sanitizer_text';
+  public $name = 'gdpr_sanitizer_text';
 
   /**
    * {@inheritdoc}
    */
-  var $label = 'Text sanitizer';
+  public $label = 'Text sanitizer';
 
   /**
    * {@inheritdoc}
@@ -23,8 +23,7 @@ class GDPRSanitizerText extends GDPRSanitizerDefault {
   public function sanitize($input, $field = NULL) {
     if ($field != NULL) {
       /* @var EntityValueWrapper $field */
-//      dpm($field->info());
-//      $max_length = $entity['settings']['max_length'];
+      // @todo Get max length from field settings.
     }
 
     $value = '';
@@ -40,4 +39,5 @@ class GDPRSanitizerText extends GDPRSanitizerDefault {
     }
     return $value;
   }
+
 }

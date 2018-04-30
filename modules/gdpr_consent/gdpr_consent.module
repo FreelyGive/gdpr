@@ -168,6 +168,9 @@ function gdpr_consent_entity_property_info() {
   return $info;
 }
 
+/**
+ * Access callback for agreements.
+ */
 function gdpr_consent_access_callback($op, $entity = NULL, $account = NULL) {
   return user_access('manage gdpr agreements');
 }
@@ -197,7 +200,6 @@ function gdpr_consent_agreement_load_multiple_by_name($name = NULL) {
   $signups = entity_load_multiple_by_name('gdpr_consent_agreement', isset($name) ? array($name) : FALSE);
   return isset($name) ? reset($signups) : $signups;
 }
-
 
 /**
  * Implements hook_field_info().
@@ -411,8 +413,12 @@ class ConsentAgreementController extends EntityAPIControllerExportable {
     }
     return entity_var_json_export($vars, $prefix);
   }
+
 }
 
+/**
+ * Custom UI controller for the gdpr_consent_agreement entity type.
+ */
 class ConsentAgreementEntityUIController extends EntityDefaultUIController {
 
   /**

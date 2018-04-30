@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Contains the GDPRSanitizerDate plugin definition.
+ */
+
+/**
  * Contains the gdpr_sanitizer_date plugin definition.
  */
 $plugin = array(

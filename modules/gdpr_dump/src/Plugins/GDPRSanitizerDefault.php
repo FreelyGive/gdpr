@@ -12,33 +12,38 @@ class GDPRSanitizerDefault {
 
   /**
    * The machine name for this field.
+   *
    * @var string
    */
   public $name;
 
   /**
    * Human readable name for the field.
+   *
    * @var string
    */
   public $label;
 
   /**
    * Short description for the field.
+   *
    * @var string
    */
   public $description;
 
   /**
    * Whether this finder is disabled.
+   *
+   * @var bool
    */
   public $disabled = FALSE;
 
   /**
    * Additional settings.
+   *
    * @var array
    */
   public $settings;
-
 
   /**
    * Initialize plugin from definition.
@@ -107,7 +112,6 @@ class GDPRSanitizerDefault {
    *   The sanitized input.
    */
   public function sanitize($input, $field = NULL) {
-
     return $input;
   }
 

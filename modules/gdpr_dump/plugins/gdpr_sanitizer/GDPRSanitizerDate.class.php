@@ -8,12 +8,12 @@ class GDPRSanitizerDate extends GDPRSanitizerDefault {
   /**
    * {@inheritdoc}
    */
-  var $name = 'gdpr_sanitizer_date';
+  public $name = 'gdpr_sanitizer_date';
 
   /**
    * {@inheritdoc}
    */
-  var $label = 'Date sanitizer';
+  public $label = 'Date sanitizer';
 
   /**
    * {@inheritdoc}

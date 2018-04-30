@@ -8,12 +8,12 @@ class GDPRSanitizerUsername extends GDPRSanitizerDefault {
   /**
    * {@inheritdoc}
    */
-  var $name = 'gdpr_sanitizer_username';
+  public $name = 'gdpr_sanitizer_username';
 
   /**
    * {@inheritdoc}
    */
-  var $label = 'Username sanitizer';
+  public $label = 'Username sanitizer';
 
   /**
    * Constant for username length.
@@ -31,4 +31,5 @@ class GDPRSanitizerUsername extends GDPRSanitizerDefault {
     $random = new GDPRUtilRandom();
     return 'anon_' . $random->name(self::NAME_LENGTH);
   }
+
 }

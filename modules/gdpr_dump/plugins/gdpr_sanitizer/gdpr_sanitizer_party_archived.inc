@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Contains the GDPRSanitizerPartyArchived plugin definition.
+ */
+
+/**
  * Contains the gdpr_sanitizer_party_archived plugin definition.
  *
  * @todo Move to a party specific module.

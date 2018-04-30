@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Admin pages file for the GDPR Consent module.
+ */
+
+/**
  * Form for managing a consent agreement entity.
  */
 function gdpr_consent_agreement_form($form, &$form_state, $entity = NULL) {

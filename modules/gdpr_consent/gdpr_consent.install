@@ -1,4 +1,10 @@
 <?php
+
+/**
+ * @file
+ * Install file for the GDPR Consent module.
+ */
+
 /**
  * Implements hook_schema().
  */
@@ -70,7 +76,7 @@ function gdpr_consent_schema() {
     'foreign keys' => array(
       'uid' => array(
         'table' => 'users',
-        'columns' => array('uid' => 'uid')
+        'columns' => array('uid' => 'uid'),
       ),
     ),
     'primary key' => array('id'),

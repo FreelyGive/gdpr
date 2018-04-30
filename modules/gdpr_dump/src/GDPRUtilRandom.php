@@ -60,12 +60,15 @@ class GDPRUtilRandom {
   }
 
   /**
-   * Generate a string that looks like a word (letters only, alternating consonants and vowels).
+   * Generate a string that looks like a word.
+   *
+   * A word is letters only, alternating consonants and vowels.
    *
    * @param int $length
    *   The desired word length.
    *
    * @return string
+   *   Randomly generated word.
    */
   public function word($length) {
     mt_srand((double) microtime() * 1000000);

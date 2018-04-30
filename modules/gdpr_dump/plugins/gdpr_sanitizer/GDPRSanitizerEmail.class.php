@@ -8,12 +8,12 @@ class GDPRSanitizerEmail extends GDPRSanitizerDefault {
   /**
    * {@inheritdoc}
    */
-  var $name = 'gdpr_sanitizer_email';
+  public $name = 'gdpr_sanitizer_email';
 
   /**
    * {@inheritdoc}
    */
-  var $label = 'Email sanitizer';
+  public $label = 'Email sanitizer';
 
   /**
    * Constant for email length.
@@ -33,4 +33,5 @@ class GDPRSanitizerEmail extends GDPRSanitizerDefault {
     $random = new GDPRUtilRandom();
     return $random->word(self::EMAIL_LENGTH) . '@example.com';
   }
+
 }

@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Contains the GDPRSanitizerText plugin definition.
+ */
+
+/**
  * Contains the gdpr_sanitizer_text plugin definition.
  */
 $plugin = array(

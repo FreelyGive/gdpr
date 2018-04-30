@@ -10,12 +10,12 @@ class GDPRSanitizerPartyArchived extends GDPRSanitizerDefault {
   /**
    * {@inheritdoc}
    */
-  var $name = 'gdpr_sanitizer_party_archived';
+  public $name = 'gdpr_sanitizer_party_archived';
 
   /**
    * {@inheritdoc}
    */
-  var $label = 'Archive party sanitizer';
+  public $label = 'Archive party sanitizer';
 
   /**
    * {@inheritdoc}

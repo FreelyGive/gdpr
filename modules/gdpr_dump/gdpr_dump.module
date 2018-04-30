@@ -197,6 +197,9 @@ function gdpr_dump_ctools_plugin_type() {
   return $plugins;
 }
 
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
 function gdpr_dump_ctools_plugin_directory($owner, $plugin_type) {
   if ($owner == 'gdpr_dump') {
     return 'plugins/' . $plugin_type;
@@ -218,6 +221,9 @@ function gdpr_dump_get_gdpr_sanitizers() {
   return ctools_get_plugins('gdpr_dump', 'gdpr_sanitizer');
 }
 
+/**
+ * Fetch metadata for context plugins by id.
+ */
 function gdpr_dump_get_gdpr_sanitizer($plugin_id) {
   ctools_include('plugins');
 
@@ -230,7 +236,7 @@ function gdpr_dump_get_gdpr_sanitizer($plugin_id) {
  * Default hook for building field data plugins.
  */
 function gdpr_dump_gdpr_dump_default_sanitizer() {
-  $export =  array();
+  $export = array();
 
   $plugins = gdpr_dump_get_gdpr_sanitizers();
 
@@ -255,4 +261,3 @@ function gdpr_dump_permission() {
 
   return $perms;
 }
-
