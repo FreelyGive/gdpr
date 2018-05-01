@@ -1,15 +1,31 @@
 <?php
 
 /**
+ * @file
+ * Admin pages file for the GDPR Consent module.
+ */
+
+/**
  * Form for managing a consent agreement entity.
  */
-function gdpr_consent_agreement_form($form, &$form_state, $entity = NULL) {
+function gdpr_consent_agreement_form($form, &$form_state, ConsentAgreement $entity = NULL) {
   $form['title'] = array(
     '#title' => t('Title'),
     '#type' => 'textfield',
     '#default_value' => isset($entity->title) ? $entity->title : '',
     '#description' => t('Agreement Title'),
     '#required' => TRUE,
+    '#weight' => -50,
+  );
+  $form['name'] = array(
+    '#type' => 'machine_name',
+    '#default_value' => isset($entity->name) ? $entity->name : '',
+    '#disabled' => $entity->hasStatus(ENTITY_IN_CODE),
+    '#machine_name' => array(
+      'exists' => 'gdpr_consent_agreement_load_multiple_by_name',
+      'source' => array('title'),
+    ),
+    '#description' => t('A unique machine-readable name for this agreement. It must only contain lowercase letters, numbers, and underscores.'),
     '#weight' => -50,
   );
   $form['agreement_type'] = array(
