@@ -69,7 +69,7 @@ function gdpr_consent_agreement_form($form, &$form_state, $entity = NULL) {
 /**
  * Submit handler for consent agreement entity form.
  */
-function gdpr_consent_agreement_form_submit($form, &$form_state) {
+function gdpr_consent_agreement_form_submit(&$form, &$form_state) {
   $entity = entity_ui_form_submit_build_entity($form, $form_state);
   $entity->save();
   drupal_set_message(t('@title agreement has been saved.', array('@title' => $entity->title)));

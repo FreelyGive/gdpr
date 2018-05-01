@@ -47,8 +47,8 @@ function gdpr_consent_menu() {
   // 'Edit' tab for an individual entity.
   $items['admin/gdpr/agreements/%gdpr_consent_agreement/edit'] = array(
     'title' => 'Edit',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('gdpr_consent_agreement_form', 3),
+    'page callback' => 'entity_ui_get_form',
+    'page arguments' => array('gdpr_consent_agreement', 3),
     'access arguments' => array('manage gdpr agreements'),
     'type' => MENU_LOCAL_TASK,
     'weight' => -5,
@@ -129,7 +129,7 @@ function gdpr_consent_entity_info() {
     'label' => t('GDPR Consent Agreement'),
     'base table' => 'gdpr_consent_agreement',
     'revision table' => 'gdpr_consent_agreement_revision',
-    'entity class' => 'ConsentAgreement',
+    'entity class' => 'Entity',
     'controller class' => 'ConsentAgreementController',
     'fieldable' => TRUE,
     'bundles' => array(
@@ -146,7 +146,7 @@ function gdpr_consent_entity_info() {
       'label' => 'title',
       'revision' => 'revision_id',
     ),
-    'uri callback' => 'entity_class_uri',
+    'uri callback' => 'gdpr_consent_entity_uri_callback',
     'access callback' => 'gdpr_consent_access_callback',
     'admin ui' => array(
       'path' => 'admin/gdpr/agreements',
@@ -473,16 +473,11 @@ function gdpr_consent_default_message_type() {
   return $items;
 }
 
-/**
- * Our custom entity class.
- */
-class ConsentAgreement extends Entity {
-  /**
-   * Implement a custom default URI.
-   */
-  protected function defaultUri() {
-    return array('path' => 'admin/gdpr/agreements/' . $this->identifier());
-  }
+function gdpr_consent_entity_uri_callback($entity) {
+  return array(
+    'path' => 'admin/gdpr/agreements/' . $entity->id,
+    'options' => array(),
+  );
 }
 
 /**
