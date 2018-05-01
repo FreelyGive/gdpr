@@ -24,11 +24,64 @@ function gdpr_consent_menu() {
   $items['user/%user/gdpr/agreements'] = array(
     'title' => 'Agreements',
     'description' => 'List Agreement Entities',
-    'access callback' => TRUE,
     'page callback' => 'gdpr_consent_collected_agreements',
     'page arguments' => array(1),
+    'access arguments' => array('manage gdpr agreements'),
     'menu_name' => 'navigation',
     'file' => 'includes/gdpr_consent.agreements.inc',
+  );
+  $items['admin/gdpr/agreements/%gdpr_consent_agreement'] = array(
+    'title' => 'Consent Agreement',
+    'page callback' => 'gdpr_consent_agreement_view_entity',
+    //'page callback' => 'entity_ui_entity_page_view',
+    'page arguments' => array(3),
+    'access callback' => TRUE,
+    'file' => 'includes/gdpr_consent.agreements.inc',
+  );
+  // 'View' tab for an individual entity.
+  $items['admin/gdpr/agreements/%gdpr_consent_agreement/view'] = array(
+    'title' => 'View',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  // 'Edit' tab for an individual entity.
+  $items['admin/gdpr/agreements/%gdpr_consent_agreement/edit'] = array(
+    'title' => 'Edit',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('gdpr_consent_agreement_form', 3),
+    'access arguments' => array('manage gdpr agreements'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -5,
+    'file' => 'includes/gdpr_consent.admin.inc',
+  );
+  // 'Revisions' tab for an individual entity.
+  $items['admin/gdpr/agreements/%gdpr_consent_agreement/revisions'] = array(
+    'title' => 'Revisions',
+    'page callback' => 'gdpr_consent_agreement_revision_overview',
+    'page arguments' => array(3),
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('manage gdpr agreements'),
+    'file' => 'includes/gdpr_consent.admin.inc',
+    'weight' => -3,
+  );
+  // An individual revision view page.
+  $items['admin/gdpr/agreements/%gdpr_consent_agreement/revisions/%/view'] = array(
+    'title' => 'Revision',
+    'page callback' => 'gdpr_consent_agreement_view_revision',
+    'page arguments' => array(5),
+    'access arguments' => array('manage gdpr agreements'),
+    'file' => 'includes/gdpr_consent.agreements.inc',
+    'weight' => -3,
+  );
+  // 'Delete' tab for an individual entity.
+  $items['admin/gdpr/agreements/%gdpr_consent_agreement/delete'] = array(
+    'title' => 'Delete',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('gdpr_consent_agreement_form', 3),
+    'access arguments' => array('manage gdpr agreements'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'includes/gdpr_consent.admin.inc',
+    'weight' => 0,
   );
 
   return $items;
@@ -62,7 +115,7 @@ function gdpr_consent_entity_info() {
     'label' => t('GDPR Consent Agreement'),
     'base table' => 'gdpr_consent_agreement',
     'revision table' => 'gdpr_consent_agreement_revision',
-    'entity class' => 'Entity',
+    'entity class' => 'ConsentAgreement',
     'controller class' => 'ConsentAgreementController',
     'fieldable' => TRUE,
     'exportable' => TRUE,
@@ -81,7 +134,7 @@ function gdpr_consent_entity_info() {
       'label' => 'title',
       'revision' => 'revision_id',
     ),
-    // Use the default label() and uri() functions.
+    'uri callback' => 'entity_class_uri',
     'access callback' => 'gdpr_consent_access_callback',
     'admin ui' => array(
       'path' => 'admin/gdpr/agreements',
@@ -137,6 +190,13 @@ function gdpr_consent_entity_property_info() {
     'schema field' => 'long_description',
   );
 
+  $properties['notes'] = array(
+    'label' => t('Notes'),
+    'description' => t('This should contain the rationale behind the agreement.'),
+    'type' => 'text',
+    'schema field' => 'notes',
+  );
+
   $properties['created'] = array(
     'label' => t('Created date'),
     'description' => t('Date the consent agreement was created'),
@@ -176,10 +236,17 @@ function gdpr_consent_access_callback($op, $entity = NULL, $account = NULL) {
 }
 
 /**
- * Loads agreements.
+ * Menu autoloader for gdpr agreements.
  */
-function gdpr_consent_agreement_load($id) {
-  return entity_load_single('gdpr_consent_agreement', $id);
+function gdpr_consent_agreement_load($id, $revision_id = NULL) {
+  if (is_numeric($revision_id)) {
+    $entity = entity_revision_load('gdpr_consent_agreement', $revision_id);
+    return $entity;
+  }
+  else {
+    $entity = entity_load_single('gdpr_consent_agreement', $id);
+  }
+  return $entity;
 }
 
 /**
@@ -233,6 +300,21 @@ function gdpr_consent_field_validate($entity_type, $entity, $field, $instance, $
       }
     }
   }
+}
+
+/**
+ * Implements hook_field_insert().
+ */
+function gdpr_consent_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  $message = message_create('consent_agreement_accepted', array('uid' => $entity->uid));
+  $wrapper = entity_metadata_wrapper('message', $message);
+
+  $wrapper->user->set($field['user_id_accepted']);
+  $wrapper->agreement->set(array($field['target_id'], $field['target_revision_id']));
+  $wrapper->notes->set($field['notes']);
+  $wrapper->agreed->set($field['agreed']);
+
+  $wrapper->save();
 }
 
 /**
@@ -342,6 +424,13 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
         '#title' => $entity->title,
         '#default_value' => $agreed,
         '#weight' => 0,
+        '#attributes' => array(
+          'class' => array('gdpr_consent_agreement'),
+        ),
+        '#attached' => array(
+          'css' =>  array(drupal_get_path('module', 'gdpr_consent') . '/css/gdpr_consent.css'),
+          'js' =>  array(drupal_get_path('module', 'gdpr_consent') . '/js/gdpr_consent.js'),
+        ),
         '#description' => $entity->long_description,
       ) + $widget;
       $element['notes'] = array(
@@ -376,6 +465,52 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
 }
 
 /**
+ * Implements hook_default_message_type().
+ */
+function gdpr_consent_default_message_type() {
+  $items = array();
+
+  $items['consent_agreement_accepted'] = entity_import('message_type', '{
+    "name" : "consent_agreement_accepted",
+    "description" : "GDPR Consent Agreement",
+    "argument_keys" : [],
+    "argument" : [],
+    "category" : "message_type",
+    "data" : {
+      "token options" : { "clear" : 0 },
+      "purge" : { "override" : 1, "enabled" : 1, "quota" : "1000", "days" : "30" }
+    },
+    "language" : "",
+    "arguments" : null,
+    "message_text" : { "und" : [
+        {
+          "value" : "\u003Cp\u003EAgreement: \u003Ca href=\u0022[message:agreement:entity:url]\/revisions\/[message:agreement:target_revision_id]\/view\u0022\u003E[message:agreement:entity:title]\u003C\/a\u003E\u003Cbr \/\u003E\r\nAgreed: [message:agreed]\u003Cbr \/\u003E\r\nNotes: [message:notes]\u003C\/p\u003E",
+          "format" : "filtered_html",
+          "safe_value" : "\u003Cp\u003EAgreement: \u003Ca href=\u0022url]\/revisions\/[message:agreement:target_revision_id]\/view\u0022\u003E[message:agreement:entity:title]\u003C\/a\u003E\u003Cbr \/\u003E\nAgreed: [message:agreed]\u003Cbr \/\u003E\nNotes: [message:notes]\u003C\/p\u003E\n"
+        }
+      ]
+    },
+    "rdf_mapping" : []
+  }');
+
+  return $items;
+}
+
+/**
+ * Our custom entity class.
+ */
+class ConsentAgreement extends Entity {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function defaultUri() {
+    return array('path' => 'admin/gdpr/agreements/' . $this->identifier());
+  }
+
+}
+
+/**
  * Custom controller for the gdpr_consent_agreement entity type.
  */
 class ConsentAgreementController extends EntityAPIControllerExportable {
@@ -395,6 +530,7 @@ class ConsentAgreementController extends EntityAPIControllerExportable {
 
     // Always save new revisions.
     $entity->is_new_revision = TRUE;
+    $entity->timestamp = REQUEST_TIME;
 
     return parent::save($entity, $transaction);
   }
@@ -420,6 +556,35 @@ class ConsentAgreementController extends EntityAPIControllerExportable {
  * Custom UI controller for the gdpr_consent_agreement entity type.
  */
 class ConsentAgreementEntityUIController extends EntityDefaultUIController {
+
+  /**
+   * {@inheritdoc}
+   */
+  public function buildContent($entity, $view_mode = 'default', $langcode = NULL, $content = array()) {
+    $build = parent::buildContent($entity, $view_mode, $langcode, $content);
+
+    $build['description'] = array(
+      '#type' => 'markup',
+      '#markup' => $entity->description,
+    );
+
+    $build['long_description'] = array(
+      '#type' => 'markup',
+      '#markup' => $entity->long_description,
+    );
+
+    $build['notes'] = array(
+      '#type' => 'markup',
+      '#markup' => $entity->notes,
+    );
+
+    $build['agreement_type'] = array(
+      '#type' => 'markup',
+      '#markup' => $entity->agreement_type,
+    );
+
+    return $build;
+  }
 
   /**
    * {@inheritdoc}
