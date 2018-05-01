@@ -464,7 +464,6 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
   return $element;
 }
 
-
 /**
  * Implements hook_default_message_type().
  */

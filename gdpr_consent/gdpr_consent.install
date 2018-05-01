@@ -1,4 +1,10 @@
 <?php
+
+/**
+ * @file
+ * Install file for the GDPR Consent module.
+ */
+
 /**
  * Implements hook_schema().
  */
