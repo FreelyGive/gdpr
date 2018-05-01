@@ -9,7 +9,7 @@
  * Implements hook_menu().
  */
 function gdpr_dump_menu() {
-  $items['admin/config/gdpr/dump-settings'] = [
+  $items['admin/gdpr/dump-settings'] = [
     'title' => 'SQL Dump settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['gdpr_dump_settings_form'],
@@ -36,7 +36,7 @@ function gdpr_dump_settings_form($form, &$form_state) {
 
   $plugins = [];
   // @todo: implement sanitize plugins
-  foreach (gdpr_dump_get_sanitizer_plugins() as $plugin_name => $plugin) {
+  foreach (gdpr_dump_get_gdpr_sanitizers() as $plugin_name => $plugin) {
     $plugins[$plugin_name] = $plugin['title'];
   }
 
@@ -171,116 +171,6 @@ function gdpr_get_complete_schema() {
 }
 
 /**
- * Implements hook_ctools_plugin_directory().
- */
-function gdpr_dump_ctools_plugin_directory($module, $plugin) {
-  if ($module == 'gdpr_dump' && \array_key_exists($plugin, gdpr_dump_ctools_plugin_type())) {
-    return 'plugins/' . $plugin;
-  }
-}
-
-/**
- * Implements hook_ctools_plugin_type().
- */
-function gdpr_dump_ctools_plugin_type() {
-  return [
-    'sanitizer' => [
-      'label' => 'sanitizer',
-      'use hooks' => FALSE,
-    ],
-  ];
-}
-
-/**
- * Helper function for listing gdpr sanitizer plugins.
- */
-function gdpr_dump_get_sanitizer_plugins($id = NULL) {
-  return ctools_get_plugins('gdpr_dump', 'sanitizer', $id);
-}
-
-/**
- * Random word generator function.
- */
-function gdpr_random_word($length = 8) {
-  mt_srand((double) microtime() * 1000000);
-  $vowels = [
-    "a",
-    "e",
-    "i",
-    "o",
-    "u",
-  ];
-  $cons = [
-    "b",
-    "c",
-    "d",
-    "g",
-    "h",
-    "j",
-    "k",
-    "l",
-    "m",
-    "n",
-    "p",
-    "r",
-    "s",
-    "t",
-    "u",
-    "v",
-    "w",
-    "tr",
-    "cr",
-    "br",
-    "fr",
-    "th",
-    "dr",
-    "ch",
-    "ph",
-    "wr",
-    "st",
-    "sp",
-    "sw",
-    "pr",
-    "sl",
-    "cl",
-    "sh",
-  ];
-  $num_vowels = count($vowels);
-  $num_cons = count($cons);
-  $word = '';
-  while (strlen($word) < $length) {
-    $word .= $cons[mt_rand(0, $num_cons - 1)] . $vowels[mt_rand(0, $num_vowels - 1)];
-  }
-  return substr($word, 0, $length);
-}
-
-/**
- * Random sentence generator.
- */
-function gdpr_random_sentence($word_count) {
-  $output_array = [];
-
-  for ($i = 0; $i < $word_count; $i++) {
-    $output_array[] = gdpr_random_word(rand(1, 12));
-  }
-
-  $output = implode(' ', $output_array);
-
-  return ucfirst($output) . '.';
-}
-
-/**
- * Random paragraph generator.
- */
-function gdpr_random_paragraphs($paragraph_count) {
-  $output = '';
-  for ($i = 1; $i <= $paragraph_count; $i++) {
-    $output .= gdpr_random_sentence(mt_rand(20, 60)) . "\n\n";
-  }
-  return $output;
-}
-
-/**
  * Helper function to load gdpr dump service.
  */
 function gdpr_dump_service() {
@@ -292,4 +182,82 @@ function gdpr_dump_service() {
   }
 
   return $service;
+}
+
+/**
+ * Implements hook_ctools_plugin_type().
+ */
+function gdpr_dump_ctools_plugin_type() {
+  $plugins['gdpr_sanitizer'] = array(
+    'classes' => array('handler'),
+    'child plugins' => TRUE,
+    'use hooks' => TRUE,
+  );
+
+  return $plugins;
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function gdpr_dump_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'gdpr_dump') {
+    return 'plugins/' . $plugin_type;
+  }
+  if ($owner == 'ctools' && $plugin_type == 'export_ui') {
+    return 'plugins/' . $plugin_type;
+  }
+}
+
+/**
+ * Fetch metadata for all context plugins.
+ *
+ * @return array
+ *   An array of arrays with information about all available panel contexts.
+ */
+function gdpr_dump_get_gdpr_sanitizers() {
+  ctools_include('plugins');
+
+  return ctools_get_plugins('gdpr_dump', 'gdpr_sanitizer');
+}
+
+/**
+ * Fetch metadata for context plugins by id.
+ */
+function gdpr_dump_get_gdpr_sanitizer($plugin_id) {
+  ctools_include('plugins');
+
+  return ctools_get_plugins('gdpr_dump', 'gdpr_sanitizer', $plugin_id);
+}
+
+/**
+ * Implements hook_gdpr_dump_default_field_data().
+ *
+ * Default hook for building field data plugins.
+ */
+function gdpr_dump_gdpr_dump_default_sanitizer() {
+  $export = array();
+
+  $plugins = gdpr_dump_get_gdpr_sanitizers();
+
+  foreach ($plugins as $name => $plugin) {
+    $class = ctools_plugin_get_class($plugin, 'handler');
+    $export[$name] = $class::create($plugin);
+  }
+
+  return $export;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function gdpr_dump_permission() {
+  $perms = array(
+    'administer gdpr sanitizers' => array(
+      'title' => t('Administer GDPR sanitizer settings'),
+      'restrict access' => TRUE,
+    ),
+  );
+
+  return $perms;
 }

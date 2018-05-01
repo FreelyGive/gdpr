@@ -3,5 +3,8 @@ description = Provides a drush command for obfuscating database dumps.
 core = 7.x
 dependencies[] = gdpr
 dependencies[] = ctools
-configure = admin/config/gdpr/dump-settings
+configure = admin/gdpr/dump-settings
 package = General Data Protection Regulation
+
+files[] = src/Plugins/GDPRSanitizerDefault.php
+files[] = src/GDPRUtilRandom.php
