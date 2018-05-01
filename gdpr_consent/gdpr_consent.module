@@ -88,20 +88,6 @@ function gdpr_consent_menu() {
 }
 
 /**
- * Menu autoloader for gdpr agreements.
- */
-function gdpr_consent_agreement_load($id, $revision_id = NULL) {
-  if (is_numeric($revision_id)) {
-    $entity = entity_revision_load('gdpr_consent_agreement', $revision_id);
-    return $entity;
-  }
-  else {
-    $entity = entity_load('gdpr_consent_agreement', array($id));
-    return array_pop($entity);
-  }
-}
-
-/**
  * Implements hook_permission().
  */
 function gdpr_consent_permission() {
@@ -132,6 +118,7 @@ function gdpr_consent_entity_info() {
     'entity class' => 'ConsentAgreement',
     'controller class' => 'ConsentAgreementController',
     'fieldable' => TRUE,
+    'exportable' => TRUE,
     'bundles' => array(
       'gdpr_consent_agreement' => array(
         'label' => t('GDPR Consent Agreement'),
@@ -143,6 +130,7 @@ function gdpr_consent_entity_info() {
     ),
     'entity keys' => array(
       'id' => 'id',
+      'name' => 'name',
       'label' => 'title',
       'revision' => 'revision_id',
     ),
@@ -240,8 +228,44 @@ function gdpr_consent_entity_property_info() {
   return $info;
 }
 
+/**
+ * Access callback for agreements.
+ */
 function gdpr_consent_access_callback($op, $entity = NULL, $account = NULL) {
   return user_access('manage gdpr agreements');
+}
+
+/**
+ * Menu autoloader for gdpr agreements.
+ */
+function gdpr_consent_agreement_load($id, $revision_id = NULL) {
+  if (is_numeric($revision_id)) {
+    $entity = entity_revision_load('gdpr_consent_agreement', $revision_id);
+    return $entity;
+  }
+  else {
+    $entity = entity_load_single('gdpr_consent_agreement', $id);
+  }
+  return $entity;
+}
+
+/**
+ * Loads multiple agreements.
+ */
+function gdpr_consent_agreement_load_multiple($ids = array(), $conditions = array(), $reset = FALSE) {
+  if (empty($ids)) {
+    $ids = FALSE;
+  }
+
+  return entity_load('gdpr_consent_agreement', $ids, $conditions, $reset);
+}
+
+/**
+ * Gets an array of all agreements, keyed by the machine name.
+ */
+function gdpr_consent_agreement_load_multiple_by_name($name = NULL) {
+  $signups = entity_load_multiple_by_name('gdpr_consent_agreement', isset($name) ? array($name) : FALSE);
+  return isset($name) ? reset($signups) : $signups;
 }
 
 /**
@@ -477,19 +501,24 @@ function gdpr_consent_default_message_type() {
  * Our custom entity class.
  */
 class ConsentAgreement extends Entity {
+
   /**
-   * Implement a custom default URI.
+   * {@inheritdoc}
    */
   protected function defaultUri() {
     return array('path' => 'admin/gdpr/agreements/' . $this->identifier());
   }
+
 }
 
 /**
  * Custom controller for the gdpr_consent_agreement entity type.
  */
-class ConsentAgreementController extends EntityAPIController {
+class ConsentAgreementController extends EntityAPIControllerExportable {
 
+  /**
+   * {@inheritdoc}
+   */
   public function save($entity, DatabaseTransaction $transaction = NULL) {
     if (isset($entity->is_new)) {
       global $user;
@@ -507,9 +536,31 @@ class ConsentAgreementController extends EntityAPIController {
     return parent::save($entity, $transaction);
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function export($entity, $prefix = '') {
+    $vars = get_object_vars($entity);
+    unset($vars[$this->statusKey], $vars[$this->moduleKey], $vars['is_new']);
+    if ($this->nameKey != $this->idKey) {
+      unset($vars[$this->idKey]);
+    }
+    if ($this->revisionKey) {
+      unset($vars[$this->revisionKey]);
+    }
+    return entity_var_json_export($vars, $prefix);
+  }
+
 }
 
+/**
+ * Custom UI controller for the gdpr_consent_agreement entity type.
+ */
 class ConsentAgreementEntityUIController extends EntityDefaultUIController {
+
+  /**
+   * {@inheritdoc}
+   */
   public function buildContent($entity, $view_mode = 'default', $langcode = NULL, $content = array()) {
     $build = parent::buildContent($entity, $view_mode, $langcode, $content);
 
