@@ -3,3 +3,4 @@ description = Allow tracking of GDPR Consent
 core = 7.x
 dependencies[] = entity
 dependencies[] = gdpr
+dependencies[] = message
