@@ -115,12 +115,14 @@ function gdpr_consent_agreement_revision_overview($agreement) {
     $operations = array();
 
     if ($revision->current_revision > 0) {
-      $row[] = array('data' => t('!date by !username', array('!date' => l(format_date($revision->timestamp, 'short'), "admin/gdpr/agreements/$agreement->id"), '!username' => theme('username', array('account' => $revision)))),
+      $row[] = array('data' => t('!date by !username', array('!date' => l(format_date($revision->timestamp, 'short'), "admin/gdpr/agreements/$agreement->id"), '!username' => theme('username', array('account' => $revision))))
+                       . (($revision->log != '') ? '<p class="revision-log">' . filter_xss($revision->log) . '</p>' : ''),
                      'class' => array('revision-current'));
       $operations[] = array('data' => drupal_placeholder(t('current revision')), 'class' => array('revision-current'), 'colspan' => 2);
     }
     else {
-      $row[] = t('!date by !username', array('!date' => l(format_date($revision->timestamp, 'short'), "admin/gdpr/agreements/$agreement->id/revisions/$revision->revision_id/view"), '!username' => theme('username', array('account' => $revision))));
+      $row[] = t('!date by !username', array('!date' => l(format_date($revision->timestamp, 'short'), "admin/gdpr/agreements/$agreement->id/revisions/$revision->revision_id/view"), '!username' => theme('username', array('account' => $revision))))
+               . (($revision->log != '') ? '<p class="revision-log">' . filter_xss($revision->log) . '</p>' : '');
       $operations[] = l(t('revert'), "admin/gdpr/agreements/$agreement->id/revisions/$revision->revision_id/revert");
       $operations[] = l(t('delete'), "admin/gdpr/agreements/$agreement->id/revisions/$revision->revision_id/delete");
     }
@@ -147,7 +149,7 @@ function gdpr_consent_agreement_revision_overview($agreement) {
  */
 function gdpr_consent_revision_list($agreement) {
   $revisions = array();
-  $result = db_query('SELECT r.revision_id, a.title, r.uid, a.revision_id AS current_revision, r.timestamp, u.name FROM {gdpr_consent_agreement_revision} r LEFT JOIN {gdpr_consent_agreement} a ON a.revision_id = r.revision_id INNER JOIN {users} u ON u.uid = r.uid WHERE r.id = :id ORDER BY r.revision_id DESC', array(':id' => $agreement->id));
+  $result = db_query('SELECT r.revision_id, a.title, r.log, r.uid, a.revision_id AS current_revision, r.timestamp, u.name FROM {gdpr_consent_agreement_revision} r LEFT JOIN {gdpr_consent_agreement} a ON a.revision_id = r.revision_id INNER JOIN {users} u ON u.uid = r.uid WHERE r.id = :id ORDER BY r.revision_id DESC', array(':id' => $agreement->id));
   foreach ($result as $revision) {
     $revisions[$revision->revision_id] = $revision;
   }
