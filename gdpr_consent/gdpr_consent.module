@@ -306,15 +306,22 @@ function gdpr_consent_field_validate($entity_type, $entity, $field, $instance, $
  * Implements hook_field_insert().
  */
 function gdpr_consent_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
-  $message = message_create('consent_agreement_accepted', array('uid' => $entity->uid));
-  $wrapper = entity_metadata_wrapper('message', $message);
+  $consent_field = reset($items);
 
-  $wrapper->user->set($field['user_id_accepted']);
-  $wrapper->agreement->set(array($field['target_id'], $field['target_revision_id']));
-  $wrapper->notes->set($field['notes']);
-  $wrapper->agreed->set($field['agreed']);
+  if (!empty($consent_field)) {
+    $agreement = entity_load_single('gdpr_consent_agreement', $consent_field['target_id']);
+    $message = message_create('consent_agreement_accepted', array('uid' => $entity->uid));
+    $wrapper = entity_metadata_wrapper('message', $message);
 
-  $wrapper->save();
+    $wrapper->owner_user->set($entity->uid);
+    $wrapper->user_accepted->set($consent_field['user_id_accepted']);
+    //$wrapper->agreement->set($agreement);
+    $wrapper->notes->set($consent_field['notes']);
+    $wrapper->agreed->set($consent_field['agreed']);
+
+    $wrapper->save();
+
+  }
 }
 
 /**
@@ -484,9 +491,9 @@ function gdpr_consent_default_message_type() {
     "arguments" : null,
     "message_text" : { "und" : [
         {
-          "value" : "\u003Cp\u003EAgreement: \u003Ca href=\u0022[message:agreement:entity:url]\/revisions\/[message:agreement:target_revision_id]\/view\u0022\u003E[message:agreement:entity:title]\u003C\/a\u003E\u003Cbr \/\u003E\r\nAgreed: [message:agreed]\u003Cbr \/\u003E\r\nNotes: [message:notes]\u003C\/p\u003E",
+          "value" : "\u003Cp\u003EAgreement: \u003Ca href=\u0022\/admin\/gdpr\/agreements\/[message:agreement:id]\u0022\u003E[message:agreement:title]\u003C\/a\u003E\u003Cbr \/\u003E\r\nAgreed: [message:agreed]\u003Cbr \/\u003E\r\nNotes: [message:notes]\u003C\/p\u003E",
           "format" : "filtered_html",
-          "safe_value" : "\u003Cp\u003EAgreement: \u003Ca href=\u0022url]\/revisions\/[message:agreement:target_revision_id]\/view\u0022\u003E[message:agreement:entity:title]\u003C\/a\u003E\u003Cbr \/\u003E\nAgreed: [message:agreed]\u003Cbr \/\u003E\nNotes: [message:notes]\u003C\/p\u003E\n"
+          "safe_value" : "\u003Cp\u003EAgreement: \u003Ca href=\u0022\/admin\/gdpr\/agreements\/[message:agreement:id]\u0022\u003E[message:agreement:title]\u003C\/a\u003E\u003Cbr \/\u003E\nAgreed: [message:agreed]\u003Cbr \/\u003E\nNotes: [message:notes]\u003C\/p\u003E\n"
         }
       ]
     },
