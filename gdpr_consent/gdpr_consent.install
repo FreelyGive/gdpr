@@ -222,8 +222,8 @@ function gdpr_consent_field_schema($field) {
 function gdpr_consent_install() {
   $field_bases = array();
 
-  // Exported field_base: 'field_agreed'.
-  $field_bases['field_agreed'] = array(
+  // Exported field_base: 'agreed'.
+  $field_bases['agreed'] = array(
     'active' => 1,
     'cardinality' => 1,
     'deleted' => 0,
@@ -247,8 +247,8 @@ function gdpr_consent_install() {
     'type' => 'list_boolean',
   );
   //
-  // Exported field_base: 'field_agreement'.
-  $field_bases['field_agreement'] = array(
+  // Exported field_base: 'agreement'.
+  $field_bases['agreement'] = array(
     'active' => 1,
     'cardinality' => 1,
     'deleted' => 0,
@@ -275,8 +275,8 @@ function gdpr_consent_install() {
     'type' => 'entityreference',
   );
 
-  // Exported field_base: 'field_notes'.
-  $field_bases['field_notes'] = array(
+  // Exported field_base: 'notes'.
+  $field_bases['notes'] = array(
     'active' => 1,
     'cardinality' => 1,
     'deleted' => 0,
@@ -294,13 +294,13 @@ function gdpr_consent_install() {
     'type' => 'text_long',
   );
 
-  // Exported field_base: 'field_user'.
-  $field_bases['field_user'] = array(
+  // Exported field_base: 'owner_user'.
+  $field_bases['owner_user'] = array(
     'active' => 1,
     'cardinality' => 1,
     'deleted' => 0,
     'entity_types' => array(),
-    'field_name' => 'user',
+    'field_name' => 'owner_user',
     'indexes' => array(
       'target_id' => array(
         0 => 'target_id',
@@ -322,8 +322,8 @@ function gdpr_consent_install() {
     'type' => 'entityreference',
   );
 
-  // Exported field_base: 'field_user_accepted'.
-  $field_bases['field_user_accepted'] = array(
+  // Exported field_base: 'user_accepted'.
+  $field_bases['user_accepted'] = array(
     'active' => 1,
     'cardinality' => 1,
     'deleted' => 0,
@@ -356,8 +356,8 @@ function gdpr_consent_install() {
 
   $field_instances = array();
 
-  // Exported field_instance: 'message-consent_agreement_accepted-field_agreed'.
-  $field_instances['message-consent_agreement_accepted-field_agreed'] = array(
+  // Exported field_instance: 'message-consent_agreement_accepted-agreed'.
+  $field_instances['message-consent_agreement_accepted-agreed'] = array(
     'bundle' => 'consent_agreement_accepted',
     'default_value' => array(
       0 => array(
@@ -394,8 +394,8 @@ function gdpr_consent_install() {
   );
 
   // Exported field_instance:
-  // 'message-consent_agreement_accepted-field_agreement'.
-  $field_instances['message-consent_agreement_accepted-field_agreement'] = array(
+  // 'message-consent_agreement_accepted-agreement'.
+  $field_instances['message-consent_agreement_accepted-agreement'] = array(
     'bundle' => 'consent_agreement_accepted',
     'default_value' => NULL,
     'deleted' => 0,
@@ -428,8 +428,8 @@ function gdpr_consent_install() {
     ),
   );
 
-  // Exported field_instance: 'message-consent_agreement_accepted-field_notes'.
-  $field_instances['message-consent_agreement_accepted-field_notes'] = array(
+  // Exported field_instance: 'message-consent_agreement_accepted-notes'.
+  $field_instances['message-consent_agreement_accepted-notes'] = array(
     'bundle' => 'consent_agreement_accepted',
     'default_value' => NULL,
     'deleted' => 0,
@@ -462,8 +462,8 @@ function gdpr_consent_install() {
     ),
   );
 
-  // Exported field_instance: 'message-consent_agreement_accepted-field_user'.
-  $field_instances['message-consent_agreement_accepted-field_user'] = array(
+  // Exported field_instance: 'message-consent_agreement_accepted-owner_user'.
+  $field_instances['message-consent_agreement_accepted-owner_user'] = array(
     'bundle' => 'consent_agreement_accepted',
     'default_value' => NULL,
     'deleted' => 0,
@@ -481,7 +481,7 @@ function gdpr_consent_install() {
       ),
     ),
     'entity_type' => 'message',
-    'field_name' => 'user',
+    'field_name' => 'owner_user',
     'label' => 'User',
     'required' => 0,
     'settings' => array(
@@ -501,8 +501,8 @@ function gdpr_consent_install() {
   );
 
   // Exported field_instance:
-  // 'message-consent_agreement_accepted-field_user_accepted'.
-  $field_instances['message-consent_agreement_accepted-field_user_accepted'] = array(
+  // 'message-consent_agreement_accepted-user_accepted'.
+  $field_instances['message-consent_agreement_accepted-user_accepted'] = array(
     'bundle' => 'consent_agreement_accepted',
     'default_value' => NULL,
     'deleted' => 0,
