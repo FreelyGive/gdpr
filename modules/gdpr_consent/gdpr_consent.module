@@ -47,8 +47,8 @@ function gdpr_consent_menu() {
   // 'Edit' tab for an individual entity.
   $items['admin/gdpr/agreements/%gdpr_consent_agreement/edit'] = array(
     'title' => 'Edit',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('gdpr_consent_agreement_form', 3),
+    'page callback' => 'entity_ui_get_form',
+    'page arguments' => array('gdpr_consent_agreement', 3),
     'access arguments' => array('manage gdpr agreements'),
     'type' => MENU_LOCAL_TASK,
     'weight' => -5,
@@ -303,18 +303,69 @@ function gdpr_consent_field_validate($entity_type, $entity, $field, $instance, $
 }
 
 /**
- * Implements hook_field_insert().
+ * Implements hook_field_attach_submit().
+ *
+ * If consent field changes grant/revoke consent and log audit trail.
  */
-function gdpr_consent_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
-  $message = message_create('consent_agreement_accepted', array('uid' => $entity->uid));
-  $wrapper = entity_metadata_wrapper('message', $message);
+function gdpr_consent_field_attach_submit($entity_type, $entity, $form, &$form_state) {
+  list($id, , $bundle) = entity_extract_ids($entity_type, $entity);
+  $fields = gdpr_consent_get_consent_fields($entity_type, $bundle);
 
-  $wrapper->user->set($field['user_id_accepted']);
-  $wrapper->agreement->set(array($field['target_id'], $field['target_revision_id']));
-  $wrapper->notes->set($field['notes']);
-  $wrapper->agreed->set($field['agreed']);
+  $original = entity_load_unchanged($entity_type, $id);
+  foreach ($fields as $field) {
+    if (!empty($values = $form_state['values'][$field])) {
+      $new = isset($values[LANGUAGE_NONE][0]['agreed']) ? (int) $values[LANGUAGE_NONE][0]['agreed'] : NULL;
+      $old = isset($original->{$field}[LANGUAGE_NONE][0]['agreed']) ? (int) $original->{$field}[LANGUAGE_NONE][0]['agreed'] : NULL;
 
-  $wrapper->save();
+      if ($new !== $old) {
+        global $user;
+        $agreement = entity_load_single('gdpr_consent_agreement', $values[LANGUAGE_NONE][0]['target_id']);
+
+        if ($new) {
+          $message = message_create('consent_agreement_accepted', array('uid' => $user->uid));
+        }
+        else {
+          $message = message_create('consent_agreement_revoked', array('uid' => $user->uid));
+        }
+
+        $wrapper = entity_metadata_wrapper('message', $message);
+
+        $wrapper->owner_user->set($user->uid);
+        $wrapper->user_accepted->set($values[LANGUAGE_NONE][0]['user_id_accepted']);
+        $wrapper->agreement->set($agreement);
+        $wrapper->notes->set($values[LANGUAGE_NONE][0]['notes']);
+        $wrapper->agreed->set($values[LANGUAGE_NONE][0]['agreed']);
+        $wrapper->save();
+      }
+    }
+  }
+}
+
+
+/**
+ * Fetches a list of consent fields for an entity.
+ *
+ * @param string $entity_type
+ *   The entity type to get fields for.
+ * @param string|null $bundle
+ *   (Optional) the bundle to get fields for. If none provided, all bundles
+ *   will be checked.
+ *
+ * @return array
+ *   List of consent field names.
+ */
+function gdpr_consent_get_consent_fields($entity_type, $bundle = NULL) {
+  $instances = field_info_instances($entity_type, $bundle);
+  $fields = array();
+
+  foreach ($instances as $field_name => $instance) {
+    $field = field_info_field($field_name);
+    if ($field['type'] == 'gdpr_user_consent') {
+      $fields[] = $field_name;
+    }
+  }
+
+  return $fields;
 }
 
 /**
@@ -472,7 +523,7 @@ function gdpr_consent_default_message_type() {
 
   $items['consent_agreement_accepted'] = entity_import('message_type', '{
     "name" : "consent_agreement_accepted",
-    "description" : "GDPR Consent Agreement",
+    "description" : "GDPR Consent Agreement accepted",
     "argument_keys" : [],
     "argument" : [],
     "category" : "message_type",
@@ -484,9 +535,32 @@ function gdpr_consent_default_message_type() {
     "arguments" : null,
     "message_text" : { "und" : [
         {
-          "value" : "\u003Cp\u003EAgreement: \u003Ca href=\u0022[message:agreement:entity:url]\/revisions\/[message:agreement:target_revision_id]\/view\u0022\u003E[message:agreement:entity:title]\u003C\/a\u003E\u003Cbr \/\u003E\r\nAgreed: [message:agreed]\u003Cbr \/\u003E\r\nNotes: [message:notes]\u003C\/p\u003E",
+          "value" : "\u003Cp\u003EAccepted Agreement: \u003Ca href=\u0022\/admin\/gdpr\/agreements\/[message:agreement:id]\u0022\u003E[message:agreement:title]\u003C\/a\u003E\u003Cbr \/\u003E\r\nAgreed: [message:agreed]\u003Cbr \/\u003E\r\nNotes: [message:notes]\u003C\/p\u003E",
           "format" : "filtered_html",
-          "safe_value" : "\u003Cp\u003EAgreement: \u003Ca href=\u0022url]\/revisions\/[message:agreement:target_revision_id]\/view\u0022\u003E[message:agreement:entity:title]\u003C\/a\u003E\u003Cbr \/\u003E\nAgreed: [message:agreed]\u003Cbr \/\u003E\nNotes: [message:notes]\u003C\/p\u003E\n"
+          "safe_value" : "\u003Cp\u003Eu003EAccepted Agreement: \u003Ca href=\u0022\/admin\/gdpr\/agreements\/[message:agreement:id]\u0022\u003E[message:agreement:title]\u003C\/a\u003E\u003Cbr \/\u003E\nAgreed: [message:agreed]\u003Cbr \/\u003E\nNotes: [message:notes]\u003C\/p\u003E\n"
+        }
+      ]
+    },
+    "rdf_mapping" : []
+  }');
+
+  $items['consent_agreement_revoked'] = entity_import('message_type', '{
+    "name" : "consent_agreement_revoked",
+    "description" : "GDPR Consent Agreement revoked",
+    "argument_keys" : [],
+    "argument" : [],
+    "category" : "message_type",
+    "data" : {
+      "token options" : { "clear" : 0 },
+      "purge" : { "override" : 1, "enabled" : 1, "quota" : "1000", "days" : "30" }
+    },
+    "language" : "",
+    "arguments" : null,
+    "message_text" : { "und" : [
+        {
+          "value" : "\u003Cp\u003ERevoked Agreement: \u003Ca href=\u0022\/admin\/gdpr\/agreements\/[message:agreement:id]\u0022\u003E[message:agreement:title]\u003C\/a\u003E\u003Cbr \/\u003E\r\nAgreed: [message:agreed]\u003Cbr \/\u003E\r\nNotes: [message:notes]\u003C\/p\u003E",
+          "format" : "filtered_html",
+          "safe_value" : "\u003Cp\u003ERevoked Agreement: \u003Ca href=\u0022\/admin\/gdpr\/agreements\/[message:agreement:id]\u0022\u003E[message:agreement:title]\u003C\/a\u003E\u003Cbr \/\u003E\nAgreed: [message:agreed]\u003Cbr \/\u003E\nNotes: [message:notes]\u003C\/p\u003E\n"
         }
       ]
     },
@@ -500,14 +574,19 @@ function gdpr_consent_default_message_type() {
  * Our custom entity class.
  */
 class ConsentAgreement extends Entity {
+  /**
+   * Implement a custom default URI.
+   */
+  public function defaultUri() {
+    return array('path' => 'admin/gdpr/agreements/' . $this->identifier());
+  }
 
   /**
    * {@inheritdoc}
    */
-  protected function defaultUri() {
-    return array('path' => 'admin/gdpr/agreements/' . $this->identifier());
+  public function identifier() {
+    return $this->internalIdentifier();
   }
-
 }
 
 /**
