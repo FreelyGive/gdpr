@@ -4,3 +4,5 @@ core = 7.x
 dependencies[] = entity
 dependencies[] = gdpr
 dependencies[] = message
+dependencies[] = entityreference
+dependencies[] = entity_token

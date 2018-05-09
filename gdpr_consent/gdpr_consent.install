@@ -351,14 +351,15 @@ function gdpr_consent_install() {
   );
 
   foreach ($field_bases as $field_base) {
-    field_create_field($field_base);
+    if (!field_info_field($field_base['field_name'])) {
+      field_create_field($field_base);
+    }
   }
 
   $field_instances = array();
 
   // Exported field_instance: 'message-consent_agreement_accepted-agreed'.
   $field_instances['message-consent_agreement_accepted-agreed'] = array(
-    'bundle' => 'consent_agreement_accepted',
     'default_value' => array(
       0 => array(
         'value' => 0,
@@ -396,7 +397,6 @@ function gdpr_consent_install() {
   // Exported field_instance:
   // 'message-consent_agreement_accepted-agreement'.
   $field_instances['message-consent_agreement_accepted-agreement'] = array(
-    'bundle' => 'consent_agreement_accepted',
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
@@ -430,7 +430,6 @@ function gdpr_consent_install() {
 
   // Exported field_instance: 'message-consent_agreement_accepted-notes'.
   $field_instances['message-consent_agreement_accepted-notes'] = array(
-    'bundle' => 'consent_agreement_accepted',
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
@@ -464,7 +463,6 @@ function gdpr_consent_install() {
 
   // Exported field_instance: 'message-consent_agreement_accepted-owner_user'.
   $field_instances['message-consent_agreement_accepted-owner_user'] = array(
-    'bundle' => 'consent_agreement_accepted',
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
@@ -503,7 +501,6 @@ function gdpr_consent_install() {
   // Exported field_instance:
   // 'message-consent_agreement_accepted-user_accepted'.
   $field_instances['message-consent_agreement_accepted-user_accepted'] = array(
-    'bundle' => 'consent_agreement_accepted',
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
@@ -539,7 +536,14 @@ function gdpr_consent_install() {
     ),
   );
 
+  $bundles = array('consent_agreement_accepted', 'consent_agreement_revoked');
+
   foreach ($field_instances as $field_instance) {
-    field_create_instance($field_instance);
+    foreach ($bundles as $bundle) {
+      if (!field_info_instance($field_instance['entity_type'], $field_instance['field_name'], $bundle)) {
+        $field_instance['bundle'] = $bundle;
+        field_create_instance($field_instance);
+      }
+    }
   }
 }
