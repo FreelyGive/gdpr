@@ -308,14 +308,30 @@ function gdpr_consent_field_validate($entity_type, $entity, $field, $instance, $
  * If consent field changes grant/revoke consent and log audit trail.
  */
 function gdpr_consent_field_attach_submit($entity_type, $entity, $form, &$form_state) {
+  $is_new = FALSE;
+
   list($id, , $bundle) = entity_extract_ids($entity_type, $entity);
+  // If $entity does not have an id that means it's new.
+  if (!isset($id)) {
+    $is_new = TRUE;
+  }
   $fields = gdpr_consent_get_consent_fields($entity_type, $bundle);
 
-  $original = entity_load_unchanged($entity_type, $id);
+  if (!$is_new) {
+    $original = entity_load_unchanged($entity_type, $id);
+  }
+
   foreach ($fields as $field) {
     if (!empty($values = $form_state['values'][$field])) {
       $new = isset($values[LANGUAGE_NONE][0]['agreed']) ? (int) $values[LANGUAGE_NONE][0]['agreed'] : NULL;
-      $old = isset($original->{$field}[LANGUAGE_NONE][0]['agreed']) ? (int) $original->{$field}[LANGUAGE_NONE][0]['agreed'] : NULL;
+
+      // Newly created entities should only log accepted agreements.
+      if ($is_new) {
+        $old = 0;
+      }
+      else {
+        $old = isset($original->{$field}[LANGUAGE_NONE][0]['agreed']) ? (int) $original->{$field}[LANGUAGE_NONE][0]['agreed'] : NULL;
+      }
 
       if ($new !== $old) {
         global $user;
