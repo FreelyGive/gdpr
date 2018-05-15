@@ -370,6 +370,8 @@ function gdpr_consent_field_property_entity_get($data, array $options, $name, $t
 
 /**
  * Implements hook_field_validate().
+ *
+ * @TODO: This validate function isn't doing anything. Please fix.
  */
 function gdpr_consent_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
   $valid = TRUE;
