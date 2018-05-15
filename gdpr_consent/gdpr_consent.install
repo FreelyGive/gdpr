@@ -227,12 +227,14 @@ function gdpr_consent_field_schema($field) {
       'unsigned' => TRUE,
       'not null' => FALSE,
       'default' => NULL,
+      'description' => 'The user uid of the user giving consent',
     ),
     'user_id_accepted' => array(
       'type' => 'int',
       'unsigned' => TRUE,
       'not null' => FALSE,
       'default' => NULL,
+      'description' => 'The user uid of the user recording the consent',
     ),
     'notes' => array(
       'type' => 'text',

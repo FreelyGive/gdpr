@@ -287,8 +287,85 @@ function gdpr_consent_field_info() {
       'description' => t('Stores user consent for a particular agreement'),
       'default_widget' => 'gdpr_consent_widget',
       'default_formatter' => 'gdpr_consent_formatter',
+      'property_type' => 'struct',
+      'property_callbacks' => array(
+        'gdpr_consent_field_gdpr_user_consent_property_callback',
+      ),
     ),
   );
+}
+
+/**
+ * Property info for gdpr consent fields.
+ */
+function gdpr_consent_field_gdpr_user_consent_property_callback(&$info, $entity_type, $field, $instance, $field_type) {
+  $property = &$info[$entity_type]['bundles'][$instance['bundle']['properties'][$field['field_name']];
+
+  $property['getter callback'] = 'entity_metadata_field_verbatim_get';
+  $property['setter callback'] = 'entity_metadata_field_verbatim_set';
+  $property['auto creation'] = 'entity_property_create_array';
+  $property['type'] = ($field['cardinality'] != 1) ? 'list<struct>' : 'struct';
+
+  $property['property info']['target_id'] = array(
+    'label' => 'Agreement ID',
+    'type' => 'int',
+    'getter callback' => 'entity_metadata_verbatim_get',
+    'schema field' => 'target_id',
+  );
+  $property['property info']['target_revision_id'] = array(
+    'label' => 'Agreement Revision ID',
+    'type' => 'int',
+    'getter callback' => 'entity_metadata_verbatim_get',
+    'schema field' => 'target_revision_id',
+  );
+  $property['property info']['entity'] = array(
+    'label' => 'Consent Agreement',
+    'type' => 'gdpr_consent_agreement',
+    'getter callback' => 'gdpr_consent_field_property_entity_get',
+  );
+  $property['property info']['date'] = array(
+    'label' => 'Date Agreed',
+    'type' => 'date',
+    'getter callback' = 'entity_metadata_verbatim_get',
+    'schema field' => 'date',
+  );
+  $property['property info']['agreed'] = array(
+    'label' => 'Agreed',
+    'type' => 'boolean',
+    'getter callback' => 'entity_metadata_verbatim_get',
+    'schema field' => 'agreed',
+  );
+  $property['property info']['user_id'] = array(
+    'label' => 'The Consenting User',
+    'type' => 'user',
+    'getter callback' => 'entity_metadata_verbatim_get',
+    'schema field' => 'user_id',
+  );
+  $property['property info']['user_id_accepted'] = array(
+    'label' => 'The User recording the Consent',
+    'type' => 'user',
+    'getter callback' => 'entity_metadata_verbatim_get',
+    'schema field' => 'user_id_accepted',
+  );
+  $property['property info']['notes'] = array(
+    'label' => 'Notes',
+    'type' => 'text',
+    'getter callback' => 'entity_metadata_verbatim_get',
+    'schema field' => 'notes',
+  );
+}
+
+/**
+ * Getter callback for the consent agreement entity.
+ */
+function gdpr_consent_field_property_entity_get($data, array $options, $name, $type, $info) {
+  if (
+    !empty($data['target_id'])
+    && !empty($data['target_revision_id'])
+    && ($consent = entity_revision_load('gdpr_consent_agreement', $data['target_revision_id']))
+  ) {
+    return $consent;
+  }
 }
 
 /**
