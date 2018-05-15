@@ -329,7 +329,8 @@ function gdpr_consent_field_attach_submit($entity_type, $entity, $form, &$form_s
   }
 
   foreach ($fields as $field) {
-    if (!empty($values = $form_state['values'][$field])) {
+    if (!empty($form_state['values'][$field])) {
+      $values = $form_state['values'][$field];
       $new = isset($values[LANGUAGE_NONE][0]['agreed']) ? (int) $values[LANGUAGE_NONE][0]['agreed'] : NULL;
 
       // Newly created entities should only log accepted agreements.
