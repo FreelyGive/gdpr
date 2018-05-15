@@ -211,12 +211,20 @@ function gdpr_consent_entity_property_info() {
     'schema field' => 'changed',
   );
 
-  $properties['uid'] = array(
+  $properties['author_uid'] = array(
     'label' => t('Authored by'),
     'description' => t('The user ID of author of the Consent Agreement entity'),
     'type' => 'user',
-    'schema field' => 'uid',
+    'schema field' => 'author_uid',
   );
+
+  $properties['revision_uid'] = array(
+    'label' => t('Revised by'),
+    'description' => t('The user ID of author of the Consent Agreement revision'),
+    'type' => 'user',
+    'schema field' => 'revision_uid',
+  );
+
 
   $properties['status'] = array(
     'label' => t('Publishing status'),
@@ -618,7 +626,7 @@ class ConsentAgreementController extends EntityAPIControllerExportable {
       global $user;
 
       $entity->created = REQUEST_TIME;
-      $entity->uid = $user->uid;
+      $entity->author_uid = $user->uid;
     }
 
     $entity->changed = REQUEST_TIME;
@@ -626,6 +634,7 @@ class ConsentAgreementController extends EntityAPIControllerExportable {
     // Always save new revisions.
     $entity->is_new_revision = TRUE;
     $entity->timestamp = REQUEST_TIME;
+    $entity->revision_uid = $user->uid;
 
     return parent::save($entity, $transaction);
   }
