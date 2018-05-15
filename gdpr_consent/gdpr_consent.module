@@ -118,7 +118,6 @@ function gdpr_consent_entity_info() {
     'entity class' => 'ConsentAgreement',
     'controller class' => 'ConsentAgreementController',
     'fieldable' => TRUE,
-    'exportable' => TRUE,
     'bundles' => array(
       'gdpr_consent_agreement' => array(
         'label' => t('GDPR Consent Agreement'),
