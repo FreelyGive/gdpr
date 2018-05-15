@@ -243,10 +243,31 @@ function gdpr_consent_field_schema($field) {
   $indexes = array(
     'target_id' => array('target_id'),
     'target_revision_id' => array('target_revision_id'),
+    'agreed' => array('agreed' => 'agreed'),
+    'user_id' => array('user_id' => 'user_id'),
+    'user_id_accepted' => array('user_id_accepted' => 'user_id_accepted'),
   );
   return array(
     'columns' => $columns,
     'indexes' => $indexes,
+    'foreign keys' => array(
+      'target_id' => array(
+        'table' => 'gdpr_consent_agreement',
+        'columns' => array('target_id' => 'id'),
+      ),
+      'target_revision_id' => array(
+        'table' => 'gdpr_consent_agreement_revision',
+        'columns' => array('target_revision_id' => 'revision_id'),
+      ),
+      'user_id' => array(
+        'table' => 'users',
+        'columns' => array('user_id' => 'uid'),
+      ),
+      'user_id_accepted' => array(
+        'table' => 'users',
+        'columns' => array('user_id_accepted' => 'uid'),
+      ),
+    ),
   );
 }
 
