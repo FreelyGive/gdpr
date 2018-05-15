@@ -222,14 +222,14 @@ function gdpr_consent_field_schema($field) {
       'not null' => TRUE,
       'default' => 0,
     ),
-    'user_id' => array(
+    'consenter' => array(
       'type' => 'int',
       'unsigned' => TRUE,
       'not null' => FALSE,
       'default' => NULL,
       'description' => 'The user uid of the user giving consent',
     ),
-    'user_id_accepted' => array(
+    'recorder' => array(
       'type' => 'int',
       'unsigned' => TRUE,
       'not null' => FALSE,
@@ -246,8 +246,8 @@ function gdpr_consent_field_schema($field) {
     'target_id' => array('target_id'),
     'target_revision_id' => array('target_revision_id'),
     'agreed' => array('agreed' => 'agreed'),
-    'user_id' => array('user_id' => 'user_id'),
-    'user_id_accepted' => array('user_id_accepted' => 'user_id_accepted'),
+    'consenter' => array('consenter' => 'consenter'),
+    'recorder' => array('recorder' => 'recorder'),
   );
   return array(
     'columns' => $columns,
@@ -261,13 +261,13 @@ function gdpr_consent_field_schema($field) {
         'table' => 'gdpr_consent_agreement_revision',
         'columns' => array('target_revision_id' => 'revision_id'),
       ),
-      'user_id' => array(
+      'consenter' => array(
         'table' => 'users',
-        'columns' => array('user_id' => 'uid'),
+        'columns' => array('consenter' => 'uid'),
       ),
-      'user_id_accepted' => array(
+      'recorder' => array(
         'table' => 'users',
-        'columns' => array('user_id_accepted' => 'uid'),
+        'columns' => array('recorder' => 'uid'),
       ),
     ),
   );
