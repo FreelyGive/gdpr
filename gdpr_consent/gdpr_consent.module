@@ -746,22 +746,22 @@ class ConsentAgreementEntityUIController extends EntityDefaultUIController {
 
     $build['description'] = array(
       '#type' => 'markup',
-      '#markup' => $entity->description,
+      '#markup' => check_plain($entity->description),
     );
 
     $build['long_description'] = array(
       '#type' => 'markup',
-      '#markup' => $entity->long_description,
+      '#markup' => check_plain($entity->long_description),
     );
 
     $build['notes'] = array(
       '#type' => 'markup',
-      '#markup' => $entity->notes,
+      '#markup' => check_plain($entity->notes),
     );
 
     $build['agreement_type'] = array(
       '#type' => 'markup',
-      '#markup' => $entity->agreement_type,
+      '#markup' => !empty($entity->agreement_type) ?  t('Explicit') : t('Implicit'),
     );
 
     return $build;

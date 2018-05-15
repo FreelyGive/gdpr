@@ -64,7 +64,7 @@ function gdpr_consent_schema() {
         'not null' => TRUE,
         'default' => 0,
         'size' => 'tiny',
-        'description' => 'Consent agreement\'s type: implicit or explicit.',
+        'description' => 'Consent agreement\'s type: implicit (0) or explicit (1).',
       ),
       'status' => array(
         'type' => 'int',
