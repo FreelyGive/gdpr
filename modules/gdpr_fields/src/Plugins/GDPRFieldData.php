@@ -109,13 +109,39 @@ class GDPRFieldData {
    */
   public static function createFromProperty($entity_type, $bundle, $property_name) {
     ctools_include('plugin');
-    $plugin = ctools_get_plugins('gdpr_fields', 'gdpr_data', implode(':', array($entity_type, $bundle, $property_name)));
+    $plugin = ctools_get_plugins('gdpr_fields', 'gdpr_data', implode('|', array($entity_type, $bundle, $property_name)));
     
     if ($plugin) {
       return static::createFromPlugin($plugin);
     }
     
     return NULL;
+  }
+  
+  /**
+   * Create the field data from a property wrapper.
+   *
+   * @param EntityMetadataWrapper $wrapper
+   */
+  public static function createFromWrapper(EntityMetadataWrapper $wrapper) {
+    $entity_type = $bundle = $property_name = FALSE;
+    while (!$entity_type) {
+      $info = $wrapper->info();
+      if (empty($info['parent'])) {
+        return NULL;
+      }
+      
+      $wrapper = $info['parent'];
+      if ($wrapper instanceof EntityDrupalWrapper) {
+        $entity_type = $wrapper->type();
+        $bundle = $wrapper->getBundle();
+        $property_name = $info['name'];
+        
+        break;
+      }
+    }
+    
+    return static::createFromProperty($entity_type, $bundle, $property_name);
   }
 
   /**
@@ -136,6 +162,17 @@ class GDPRFieldData {
 
     return $default;
   }
+  
+  /**
+   * Whether to recurse to entities included in this propert.
+   */
+  public function includeRelatedEntities() {
+    if ($this->getSetting('exclude_related_entities')) {
+      return FALSE;
+    }
+    
+    return TRUE;
+  }
 
   /**
    * Get a stored setting.
@@ -151,10 +188,4 @@ class GDPRFieldData {
     $this->settings[$setting] = $value;
     return $this;
   }
-
-
-  public function getValue($user) {
-    return $user->name;
-  }
-
 }

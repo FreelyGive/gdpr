@@ -68,28 +68,6 @@ function gdpr_fields_gdpr_fields_default_field_data() {
   return $export;
 }
 
-
-function gdpr_fields_exluded_entities($relationship) {
-  list($field, $from, $to) = explode('-', $relationship['name']);
-
-  $exluded_source = array(
-    'gdpr_task',
-  );
-  $exluded_destination = array(
-    'gdpr_task',
-  );
-
-  if (in_array($from, $exluded_source)) {
-    return TRUE;
-  }
-
-  if (in_array($to, $exluded_destination)) {
-    return TRUE;
-  }
-
-  return FALSE;
-}
-
 /**
  * Collect entities that are connected to a GDPR task.
  *
@@ -124,6 +102,16 @@ function gdpr_fields_collect_gdpr_entities(&$entity_list, $entity_type, $entity)
     
     // If it is an entity property recursively call this function.
     if ($property_type == 'entity' || entity_get_info($property_type)) {
+      // If the gdpr settings tell us not to follow related entities through
+      // this property then exclude them.
+      if (
+        $GDPR_data = GDPRFieldData::createFromWrapper($wrapper->{$property_name})
+        && !$GDPR_data->includeRelatedEntities()
+      ) {
+        continue;
+      }
+      
+      // If the property is a list then loop over each item.
       if ($is_list) {
         foreach ($wrapper->{$property_name} as $property_wrapper) {
           gdpr_fields_collect_gdpr_entities(
@@ -160,6 +148,16 @@ function gdpr_fields_collect_gdpr_entities(&$entity_list, $entity_type, $entity)
             }
             
             if ($sub_property_type == 'entity' || entity_get_info($sub_property_type)) {
+              // Skip relationships that we do not want to follow.
+              // IF we can't get gdpr data for this property then follow anyway
+              // just in case.
+              if (
+                $GDPR_data = GDPRFieldData::createFromWrapper($property_wrapper->{$sub_property})
+                && !$GDPR_data->includeRelatedEntities()
+              ) {
+                continue;
+              }
+              
               if ($is_list) {
                 foreach ($property_wrapper->{$sub_property_name} as $sub_property_wrapper) {
                   gdpr_fields_collect_gdpr_entities(
