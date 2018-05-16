@@ -59,7 +59,7 @@ class gdpr_fields_ui extends ctools_export_ui {
 
 //    $row['data'][] = array('data' => check_plain($item->entity_type), 'class' => array('ctools-export-ui-entity-type'));
 //    $row['data'][] = array('data' => check_plain($item->entity_bundle), 'class' => array('ctools-export-ui-entity-bundle'));
-//    $row['data'][] = array('data' => check_plain($item->field_name), 'class' => array('ctools-export-ui-field-name'));
+//    $row['data'][] = array('data' => check_plain($item->property_name), 'class' => array('ctools-export-ui-field-name'));
 
     $rta_labels = array(
       '' => 'Not configured',
@@ -118,7 +118,7 @@ class gdpr_fields_ui extends ctools_export_ui {
     $table_data = '';
 
     foreach ($this->rows as $name => $row) {
-      list($entity_type, $entity_bundle, $field_name) = explode('|', $name);
+      list($entity_type, $entity_bundle, $property_name) = explode('|', $name);
       $tables[$entity_type][$entity_bundle][$name] = $row;
     }
 
