@@ -52,12 +52,19 @@ function gdpr_consent_schema() {
         'default' => 0,
         'description' => 'The Unix timestamp the entity was last edited.',
       ),
-      'uid' => array(
+      'author_uid' => array(
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => FALSE,
         'default' => NULL,
-        'description' => "The {users}.uid of the associated user.",
+        'description' => "The {users}.uid of the consent author.",
+      ),
+      'agreement_type' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+        'description' => 'Consent agreement\'s type: implicit (0) or explicit (1).',
       ),
       'status' => array(
         'type' => 'int',
@@ -74,15 +81,19 @@ function gdpr_consent_schema() {
       ),
     ),
     'foreign keys' => array(
-      'uid' => array(
+      'author_uid' => array(
         'table' => 'users',
-        'columns' => array('uid' => 'uid'),
+        'columns' => array('author_uid' => 'uid'),
       ),
     ),
     'primary key' => array('id'),
-    'unique key' => array('name'),
-    'indexes' => array(
+    'unique keys' => array(
       'name' => array('name'),
+      'revision_id' => array('revision_id'),
+    ),
+    'indexes' => array(
+      'author_uid' => array('author_uid'),
+      'agreement_type' => array('agreement_type'),
     ),
   );
 
@@ -94,7 +105,7 @@ function gdpr_consent_schema() {
         'unsigned' => TRUE,
         'not null' => FALSE,
         'default' => NULL,
-        'description' => 'The ID of the attached entity.',
+        'description' => 'The ID of the GDPR Consent Agreement entity.',
       ),
       'revision_id' => array(
         'type' => 'serial',
@@ -114,12 +125,19 @@ function gdpr_consent_schema() {
         'default' => 0,
         'description' => 'A Unix timestamp indicating when this version was created.',
       ),
-      'uid' => array(
+      'author_uid' => array(
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => FALSE,
         'default' => NULL,
-        'description' => "The {users}.uid of the associated user.",
+        'description' => "The {users}.uid of the consent author.",
+      ),
+      'revision_uid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+        'default' => NULL,
+        'description' => "The {users}.uid of the revising user.",
       ),
       'description' => array(
         'type' => 'varchar',
@@ -149,12 +167,28 @@ function gdpr_consent_schema() {
       ),
       'log' => array(
         'type' => 'text',
-        'not null' => TRUE,
+        'not null' => FALSE,
         'size' => 'big',
         'description' => 'The log entry explaining the changes in this version.',
       ),
     ),
     'primary key' => array('revision_id'),
+    'indexes' => array(
+      'id' => array('id'),
+      'revision_uid' => array('revision_uid'),
+      'author_uid' => array('author_uid'),
+      'agreement_type' => array('agreement_type'),
+    ),
+    'foreign keys' => array(
+      'author_uid' => array(
+        'table' => 'users',
+        'columns' => array('author_uid' => 'uid'),
+      ),
+      'revision_uid' => array(
+        'table' => 'users',
+        'columns' => array('revision_uid' => 'uid'),
+      ),
+    ),
   );
 
   return $schema;
@@ -193,12 +227,14 @@ function gdpr_consent_field_schema($field) {
       'unsigned' => TRUE,
       'not null' => FALSE,
       'default' => NULL,
+      'description' => 'The user uid of the user giving consent',
     ),
     'user_id_accepted' => array(
       'type' => 'int',
       'unsigned' => TRUE,
       'not null' => FALSE,
       'default' => NULL,
+      'description' => 'The user uid of the user recording the consent',
     ),
     'notes' => array(
       'type' => 'text',
@@ -209,10 +245,31 @@ function gdpr_consent_field_schema($field) {
   $indexes = array(
     'target_id' => array('target_id'),
     'target_revision_id' => array('target_revision_id'),
+    'agreed' => array('agreed' => 'agreed'),
+    'user_id' => array('user_id' => 'user_id'),
+    'user_id_accepted' => array('user_id_accepted' => 'user_id_accepted'),
   );
   return array(
     'columns' => $columns,
     'indexes' => $indexes,
+    'foreign keys' => array(
+      'target_id' => array(
+        'table' => 'gdpr_consent_agreement',
+        'columns' => array('target_id' => 'id'),
+      ),
+      'target_revision_id' => array(
+        'table' => 'gdpr_consent_agreement_revision',
+        'columns' => array('target_revision_id' => 'revision_id'),
+      ),
+      'user_id' => array(
+        'table' => 'users',
+        'columns' => array('user_id' => 'uid'),
+      ),
+      'user_id_accepted' => array(
+        'table' => 'users',
+        'columns' => array('user_id_accepted' => 'uid'),
+      ),
+    ),
   );
 }
 

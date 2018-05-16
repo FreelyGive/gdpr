@@ -5,6 +5,10 @@
  * Contains hook implementations and shared functions.
  */
 
+// Define consent mode variables.
+define('GDPR_CONSENT_TYPE_IMPLICIT', 0);
+define('GDPR_CONSENT_TYPE_EXPLICIT', 1);
+
 /**
  * Implements hook_help().
  */
@@ -118,7 +122,6 @@ function gdpr_consent_entity_info() {
     'entity class' => 'ConsentAgreement',
     'controller class' => 'ConsentAgreementController',
     'fieldable' => TRUE,
-    'exportable' => TRUE,
     'bundles' => array(
       'gdpr_consent_agreement' => array(
         'label' => t('GDPR Consent Agreement'),
@@ -211,11 +214,18 @@ function gdpr_consent_entity_property_info() {
     'schema field' => 'changed',
   );
 
-  $properties['uid'] = array(
+  $properties['author_uid'] = array(
     'label' => t('Authored by'),
     'description' => t('The user ID of author of the Consent Agreement entity'),
     'type' => 'user',
-    'schema field' => 'uid',
+    'schema field' => 'author_uid',
+  );
+
+  $properties['revision_uid'] = array(
+    'label' => t('Revised by'),
+    'description' => t('The user ID of author of the Consent Agreement revision'),
+    'type' => 'user',
+    'schema field' => 'revision_uid',
   );
 
   $properties['status'] = array(
@@ -280,8 +290,85 @@ function gdpr_consent_field_info() {
       'description' => t('Stores user consent for a particular agreement'),
       'default_widget' => 'gdpr_consent_widget',
       'default_formatter' => 'gdpr_consent_formatter',
+      'property_type' => 'struct',
+      'property_callbacks' => array(
+        'gdpr_consent_field_gdpr_user_consent_property_callback',
+      ),
     ),
   );
+}
+
+/**
+ * Property info for gdpr consent fields.
+ */
+function gdpr_consent_field_gdpr_user_consent_property_callback(&$info, $entity_type, $field, $instance, $field_type) {
+  $property = &$info[$entity_type]['bundles'][$instance['bundle']]['properties'][$field['field_name']];
+
+  $property['getter callback'] = 'entity_metadata_field_verbatim_get';
+  $property['setter callback'] = 'entity_metadata_field_verbatim_set';
+  $property['auto creation'] = 'entity_property_create_array';
+  $property['type'] = ($field['cardinality'] != 1) ? 'list<struct>' : 'struct';
+
+  $property['property info']['target_id'] = array(
+    'label' => 'Agreement ID',
+    'type' => 'int',
+    'getter callback' => 'entity_metadata_verbatim_get',
+    'schema field' => 'target_id',
+  );
+  $property['property info']['target_revision_id'] = array(
+    'label' => 'Agreement Revision ID',
+    'type' => 'int',
+    'getter callback' => 'entity_metadata_verbatim_get',
+    'schema field' => 'target_revision_id',
+  );
+  $property['property info']['entity'] = array(
+    'label' => 'Consent Agreement',
+    'type' => 'gdpr_consent_agreement',
+    'getter callback' => 'gdpr_consent_field_property_entity_get',
+  );
+  $property['property info']['date'] = array(
+    'label' => 'Date Agreed',
+    'type' => 'date',
+    'getter callback' => 'entity_metadata_verbatim_get',
+    'schema field' => 'date',
+  );
+  $property['property info']['agreed'] = array(
+    'label' => 'Agreed',
+    'type' => 'boolean',
+    'getter callback' => 'entity_metadata_verbatim_get',
+    'schema field' => 'agreed',
+  );
+  $property['property info']['user_id'] = array(
+    'label' => 'The Consenting User',
+    'type' => 'user',
+    'getter callback' => 'entity_metadata_verbatim_get',
+    'schema field' => 'user_id',
+  );
+  $property['property info']['user_id_accepted'] = array(
+    'label' => 'The User recording the Consent',
+    'type' => 'user',
+    'getter callback' => 'entity_metadata_verbatim_get',
+    'schema field' => 'user_id_accepted',
+  );
+  $property['property info']['notes'] = array(
+    'label' => 'Notes',
+    'type' => 'text',
+    'getter callback' => 'entity_metadata_verbatim_get',
+    'schema field' => 'notes',
+  );
+}
+
+/**
+ * Getter callback for the consent agreement entity.
+ */
+function gdpr_consent_field_property_entity_get($data, array $options, $name, $type, $info) {
+  if (
+    !empty($data['target_id'])
+    && !empty($data['target_revision_id'])
+    && ($consent = entity_revision_load('gdpr_consent_agreement', $data['target_revision_id']))
+  ) {
+    return $consent;
+  }
 }
 
 /**
@@ -308,18 +395,38 @@ function gdpr_consent_field_validate($entity_type, $entity, $field, $instance, $
  * If consent field changes grant/revoke consent and log audit trail.
  */
 function gdpr_consent_field_attach_submit($entity_type, $entity, $form, &$form_state) {
+  $is_new = FALSE;
+
   list($id, , $bundle) = entity_extract_ids($entity_type, $entity);
+  // If $entity does not have an id that means it's new.
+  if (!isset($id)) {
+    $is_new = TRUE;
+  }
   $fields = gdpr_consent_get_consent_fields($entity_type, $bundle);
 
-  $original = entity_load_unchanged($entity_type, $id);
-  foreach ($fields as $field) {
-    if (!empty($values = $form_state['values'][$field])) {
-      $new = isset($values[LANGUAGE_NONE][0]['agreed']) ? (int) $values[LANGUAGE_NONE][0]['agreed'] : NULL;
-      $old = isset($original->{$field}[LANGUAGE_NONE][0]['agreed']) ? (int) $original->{$field}[LANGUAGE_NONE][0]['agreed'] : NULL;
+  if (!$is_new) {
+    $original = entity_load_unchanged($entity_type, $id);
+  }
 
+  foreach ($fields as $field) {
+    $info = field_info_field($field);
+    $agreement = entity_load_single('gdpr_consent_agreement', $info['settings']['target_id']);
+
+    // Don't log implicit consent.
+    if ($agreement->agreement_type != GDPR_CONSENT_TYPE_EXPLICIT) {
+      continue;
+    }
+
+    if (!empty($form_state['values'][$field])) {
+      $values = $form_state['values'][$field];
+      $new = isset($values[LANGUAGE_NONE][0]['agreed']) ? (int) $values[LANGUAGE_NONE][0]['agreed'] : NULL;
+
+      // Newly created entities should only log accepted agreements.
+      $old = (!$is_new && isset($original->{$field}[LANGUAGE_NONE][0]['agreed'])) ? (int) $original->{$field}[LANGUAGE_NONE][0]['agreed'] : NULL;
+
+      // @todo Needs test coverage to make sure we aren't logging irrelevant changes.
       if ($new !== $old) {
         global $user;
-        $agreement = entity_load_single('gdpr_consent_agreement', $values[LANGUAGE_NONE][0]['target_id']);
 
         if ($new) {
           $message = message_create('consent_agreement_accepted', array('uid' => $user->uid));
@@ -463,16 +570,15 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
 
   // Get current revision of the referenced agreement entity.
   $entity_type = 'gdpr_consent_agreement';
-  $entity = entity_load_single('gdpr_consent_agreement', $field['settings']['target_id']);
+  $entity = entity_load_single($entity_type, $field['settings']['target_id']);
 
   list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
 
   switch ($instance['widget']['type']) {
-
     case 'gdpr_consent_widget':
       $element['agreed'] = array(
         '#type' => 'checkbox',
-        '#title' => $entity->title,
+        '#title' => $entity->description,
         '#default_value' => $agreed,
         '#weight' => 0,
         '#attributes' => array(
@@ -484,12 +590,18 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
         ),
         '#description' => $entity->long_description,
       ) + $widget;
+
+      if ($entity->agreement_type == GDPR_CONSENT_TYPE_EXPLICIT) {
+        $element['agreed']['#type'] = 'item';
+        $element['agreed']['#default_value'] = TRUE;
+      }
+
       $element['notes'] = array(
         '#type' => 'textfield',
         '#title' => 'Consent Notes',
         '#default_value' => $notes,
         '#weight' => 10,
-        '#description' => '',
+        '#description' => 'Consent notes only visible for staff.',
         '#access' => user_access('grant any consent', $user),
       ) + $widget;
       $element['target_id'] = array(
@@ -503,6 +615,11 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
       $element['date'] = array(
         '#type' => 'hidden',
         '#value' => REQUEST_TIME,
+      ) + $widget;
+      // @todo Build system for automatically finding consenting user.
+      $element['user_id'] = array(
+        '#type' => 'hidden',
+        '#value' => $user->uid,
       ) + $widget;
       $element['user_id_accepted'] = array(
         '#type' => 'hidden',
@@ -602,7 +719,7 @@ class ConsentAgreementController extends EntityAPIControllerExportable {
       global $user;
 
       $entity->created = REQUEST_TIME;
-      $entity->uid = $user->uid;
+      $entity->author_uid = $user->uid;
     }
 
     $entity->changed = REQUEST_TIME;
@@ -610,6 +727,7 @@ class ConsentAgreementController extends EntityAPIControllerExportable {
     // Always save new revisions.
     $entity->is_new_revision = TRUE;
     $entity->timestamp = REQUEST_TIME;
+    $entity->revision_uid = $user->uid;
 
     return parent::save($entity, $transaction);
   }
@@ -644,22 +762,22 @@ class ConsentAgreementEntityUIController extends EntityDefaultUIController {
 
     $build['description'] = array(
       '#type' => 'markup',
-      '#markup' => $entity->description,
+      '#markup' => check_plain($entity->description),
     );
 
     $build['long_description'] = array(
       '#type' => 'markup',
-      '#markup' => $entity->long_description,
+      '#markup' => check_plain($entity->long_description),
     );
 
     $build['notes'] = array(
       '#type' => 'markup',
-      '#markup' => $entity->notes,
+      '#markup' => check_plain($entity->notes),
     );
 
     $build['agreement_type'] = array(
       '#type' => 'markup',
-      '#markup' => $entity->agreement_type,
+      '#markup' => $entity->agreement_type == GDPR_CONSENT_TYPE_EXPLICIT ?  t('Explicit') : t('Implicit'),
     );
 
     return $build;
@@ -680,7 +798,7 @@ class ConsentAgreementEntityUIController extends EntityDefaultUIController {
    */
   protected function overviewTableRow($conditions, $id, $entity, $additional_cols = array()) {
     $additional_cols = array(
-      $entity->agreement_type ? 'Explicit' : 'Implicit',
+      $entity->agreement_type == GDPR_CONSENT_TYPE_EXPLICIT ? 'Explicit' : 'Implicit',
     );
 
     $row = parent::overviewTableRow($conditions, $id, $entity, $additional_cols);

@@ -32,8 +32,8 @@ function gdpr_consent_agreement_form($form, &$form_state, ConsentAgreement $enti
     '#title' => t('Agreement Type'),
     '#type' => 'select',
     '#options' => array(
-      0 => t('Implicit'),
-      1 => t('Explicit'),
+      GDPR_CONSENT_TYPE_IMPLICIT => t('Implicit'),
+      GDPR_CONSENT_TYPE_EXPLICIT => t('Explicit'),
     ),
     '#default_value' => isset($entity->agreement_type) ? $entity->agreement_type : '',
     '#description' => t('Whether consent is implicit or explicit. Set to "Explicit" if the user needs to explicitly agree, otherwise "Implicit'),
@@ -149,7 +149,7 @@ function gdpr_consent_agreement_revision_overview($agreement) {
  */
 function gdpr_consent_revision_list($agreement) {
   $revisions = array();
-  $result = db_query('SELECT r.revision_id, a.title, r.log, r.uid, a.revision_id AS current_revision, r.timestamp, u.name FROM {gdpr_consent_agreement_revision} r LEFT JOIN {gdpr_consent_agreement} a ON a.revision_id = r.revision_id INNER JOIN {users} u ON u.uid = r.uid WHERE r.id = :id ORDER BY r.revision_id DESC', array(':id' => $agreement->id));
+  $result = db_query('SELECT r.revision_id, a.title, r.log, r.author_uid, a.revision_id AS current_revision, r.timestamp, u.name FROM {gdpr_consent_agreement_revision} r LEFT JOIN {gdpr_consent_agreement} a ON a.revision_id = r.revision_id INNER JOIN {users} u ON u.uid = r.author_uid WHERE r.id = :id ORDER BY r.revision_id DESC', array(':id' => $agreement->id));
   foreach ($result as $revision) {
     $revisions[$revision->revision_id] = $revision;
   }
