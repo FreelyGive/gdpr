@@ -42,10 +42,10 @@ function gdpr_fields_schema() {
         'length' => 32,
         'description' => 'Entity bundle of field.',
       ),
-      'field_name' => array(
+      'property_name' => array(
         'type' => 'varchar',
         'length' => 32,
-        'description' => 'Field name of field.',
+        'description' => 'Name of the property.',
       ),
       'settings' => array(
         'type' => 'text',

@@ -47,10 +47,10 @@ class GDPRFieldData {
   public $entity_bundle;
 
   /**
-   * Field name of field.
+   * Name of the property.
    * @var string
    */
-  public $field_name;
+  public $property_name;
 
   /**
    * Whether this finder is disabled.
@@ -75,20 +75,17 @@ class GDPRFieldData {
   public static function createFromPlugin(array $plugin) {
     $field = new static();
 
-    list($plugin_type, $name) = explode(':', $plugin['name']);
-    list($entity_type, $entity_bundle, $field_name) = explode('|', $name);
+    list($entity_type, $entity_bundle, $property_name) = explode('|', $plugin['name']);
     $field->entity_type = $entity_type;
     $field->entity_bundle = $entity_bundle;
-    $field->field_name = $field_name;
-    $field->name = $name;
-    $field->plugin_type = $plugin_type;
+    $field->property_name = $property_name;
+    $field->name = $plugin['name'];
 
     // @todo Should computed properties be removed instead or disabled?
     if (!empty($plugin['computed'])) {
       $field->disabled = TRUE;
     }
 
-//    $field->name = $plugin['name'];
     if (isset($plugin['label'])) {
       $field->label = $plugin['label'];
       $field->setSetting('label', $plugin['label']);
@@ -99,6 +96,50 @@ class GDPRFieldData {
     }
 
     return $field;
+  }
+  
+  /**
+   * Create field data from property name, entity type and bundle.
+   *
+   * @param $entity_type
+   * @param $bundle
+   * @param $property_name
+   */
+  public static function createFromProperty($entity_type, $bundle, $property_name) {
+    ctools_include('plugin');
+    $plugin = ctools_get_plugins('gdpr_fields', 'gdpr_data', implode('|', array($entity_type, $bundle, $property_name)));
+    
+    if ($plugin) {
+      return static::createFromPlugin($plugin);
+    }
+    
+    return NULL;
+  }
+  
+  /**
+   * Create the field data from a property wrapper.
+   *
+   * @param EntityMetadataWrapper $wrapper
+   */
+  public static function createFromWrapper(EntityMetadataWrapper $wrapper) {
+    $entity_type = $bundle = $property_name = FALSE;
+    while (!$entity_type) {
+      $info = $wrapper->info();
+      if (empty($info['parent'])) {
+        return NULL;
+      }
+      
+      $wrapper = $info['parent'];
+      if ($wrapper instanceof EntityDrupalWrapper) {
+        $entity_type = $wrapper->type();
+        $bundle = $wrapper->getBundle();
+        $property_name = $info['name'];
+        
+        break;
+      }
+    }
+    
+    return static::createFromProperty($entity_type, $bundle, $property_name);
   }
 
   /**
@@ -119,6 +160,17 @@ class GDPRFieldData {
 
     return $default;
   }
+  
+  /**
+   * Whether to recurse to entities included in this propert.
+   */
+  public function includeRelatedEntities() {
+    if ($this->getSetting('exclude_related_entities')) {
+      return FALSE;
+    }
+    
+    return TRUE;
+  }
 
   /**
    * Get a stored setting.
@@ -134,10 +186,4 @@ class GDPRFieldData {
     $this->settings[$setting] = $value;
     return $this;
   }
-
-
-  public function getValue($user) {
-    return $user->name;
-  }
-
 }
