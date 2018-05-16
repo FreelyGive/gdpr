@@ -36,14 +36,14 @@ function gdpr_fields_gdpr_entity_property_get_children($plugin, $parent) {
 
       // Default properties
       foreach ($property_info['properties'] as $property_name => $property) {
-        $name = "{$parent}:{$entity_type}|{$bundle}|{$property_name}";
+        $name = "{$entity_type}|{$bundle}|{$property_name}";
         $properties[$name] = $property;
       }
 
       // Bundle properties
       if (isset($property_info['bundles'][$bundle])) {
         foreach ($property_info['bundles'][$bundle]['properties'] as $property_name => $property) {
-          $name = "{$parent}:{$entity_type}|{$bundle}|{$property_name}";
+          $name = "{$entity_type}|{$bundle}|{$property_name}";
           $properties[$name] = $property;
         }
       }

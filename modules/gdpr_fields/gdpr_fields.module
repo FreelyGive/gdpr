@@ -60,7 +60,7 @@ function gdpr_fields_gdpr_fields_default_field_data() {
   foreach ($files as $file) {
     $field = new GDPRFieldData();
     if ((include $file->uri) == 1) {
-      $name = $field->plugin_type . ':' . $field->name;
+      $name = $field->name;
       $export[$name] = $field;
     }
   }

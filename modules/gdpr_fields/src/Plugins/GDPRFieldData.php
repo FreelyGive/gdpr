@@ -75,13 +75,11 @@ class GDPRFieldData {
   public static function createFromPlugin(array $plugin) {
     $field = new static();
 
-    list($plugin_type, $name) = explode(':', $plugin['name']);
-    list($entity_type, $entity_bundle, $property_name) = explode('|', $name);
+    list($entity_type, $entity_bundle, $property_name) = explode('|', $plugin['name']);
     $field->entity_type = $entity_type;
     $field->entity_bundle = $entity_bundle;
     $field->property_name = $property_name;
-    $field->name = $name;
-    $field->plugin_type = $plugin_type;
+    $field->name = $plugin['name'];
 
     // @todo Should computed properties be removed instead or disabled?
     if (!empty($plugin['computed'])) {

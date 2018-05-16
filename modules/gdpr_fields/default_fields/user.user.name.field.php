@@ -7,6 +7,7 @@ $field->entity_type = 'user';
 $field->entity_bundle = 'user';
 $field->property_name = 'name';
 $field->settings = array(
+  'gdpr_fields_enabled' => '1',
   'gdpr_fields_rta' => 'maybe',
   'gdpr_fields_rtf' => 'anonymise',
   'gdpr_fields_sanitizer' => 'gdpr_sanitizer_username',
