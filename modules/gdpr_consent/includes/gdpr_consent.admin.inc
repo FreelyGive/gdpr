@@ -40,7 +40,7 @@ function gdpr_consent_agreement_form($form, &$form_state, ConsentAgreement $enti
   );
   $form['description'] = array(
     '#title' => t('Description'),
-    '#type' => 'textfield',
+    '#type' => 'textarea',
     '#default_value' => isset($entity->description) ? $entity->description : '',
     '#description' => t('Text displayed to the user on the form'),
   );

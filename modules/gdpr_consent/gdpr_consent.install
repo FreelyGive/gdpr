@@ -140,8 +140,8 @@ function gdpr_consent_schema() {
         'description' => "The {users}.uid of the revising user.",
       ),
       'description' => array(
-        'type' => 'varchar',
-        'length' => 255,
+        'type' => 'text',
+        'size' => 'medium',
         'not null' => TRUE,
         'default' => '',
         'description' => 'A description of the consent agreement.',
@@ -150,6 +150,7 @@ function gdpr_consent_schema() {
         'type' => 'text',
         'size' => 'medium',
         'not null' => TRUE,
+        'default' => '',
         'description' => 'A long description of the consent agreement.',
       ),
       'agreement_type' => array(
