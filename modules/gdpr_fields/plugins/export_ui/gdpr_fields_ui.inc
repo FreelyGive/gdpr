@@ -63,10 +63,10 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
     '#disabled' => TRUE,
   );
 
-  $form['field']['field_name'] = array(
+  $form['field']['property_name'] = array(
     '#type' => 'textfield',
     '#title' => t('Field name'),
-    '#default_value' => $field_data->field_name,
+    '#default_value' => $field_data->property_name,
     '#disabled' => TRUE,
   );
 

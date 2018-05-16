@@ -21,17 +21,7 @@ function gdpr_fields_gdpr_entity_property_get_child($plugin, $parent, $child) {
 
 function gdpr_fields_gdpr_entity_property_get_children($plugin, $parent) {
   $entities = entity_get_info();
-
-  $plugins = array();
-  foreach (array_keys($entities) as $entity_type) {
-
-    $info = entity_get_info($entity_type);
-    $property_info = entity_get_property_info($entity_type);
-
-    if (empty($property_info)) {
-      continue;
-    }
-
+  foreach (entity_get_property_info() as $entity_type => $property_info) {
     foreach (array_keys($info['bundles']) as $bundle) {
       $properties = array();
 
@@ -51,9 +41,6 @@ function gdpr_fields_gdpr_entity_property_get_children($plugin, $parent) {
 
       // Add plugins for properties.
       foreach ($properties as $name => $property) {
-        if (!empty($property['field'])) {
-          continue;
-        }
         $child_plugin = $plugin;
         $child_plugin['name'] = $name;
         $child_plugin['label'] = $property['label'];

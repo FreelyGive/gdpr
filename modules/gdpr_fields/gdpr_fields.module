@@ -28,9 +28,6 @@ function gdpr_fields_ctools_plugin_directory($owner, $plugin_type) {
   if ($owner == 'ctools' && $plugin_type == 'export_ui') {
     return 'plugins/' . $plugin_type;
   }
-  if ($owner == 'ctools' && $plugin_type == 'relationships') {
-    return 'plugins/' . $plugin_type;
-  }
 }
 
 /**
@@ -93,80 +90,100 @@ function gdpr_fields_exluded_entities($relationship) {
   return FALSE;
 }
 
+/**
+ * Collect entities that are connected to a GDPR task.
+ *
+ * @param array &$entity_list
+ * @param string $entity_type
+ * @param int|stdClass $entity
+ */
 function gdpr_fields_collect_gdpr_entities(&$entity_list, $entity_type, $entity) {
+  // Get the wrapper and entity id.
+  $wrapper = entity_metadata_wrapper($entity_type, $entity);
+  $entity_id = $wrapper->getIdentifier();
+  
   // Check for recursion.
-  list($entity_id, , $bundle) = entity_extract_ids($entity_type, $entity);
-  if (isset($entity_list[$entity_type][$bundle][$entity_id])) {
+  if (isset($entity_list[$entity_type][$entity_id])) {
     return;
   }
 
   // Set entity.
-  $entity_list[$entity_type][$bundle][$entity_id] = $entity;
-
-  ctools_include('context');
-  ctools_include('plugins');
-
-  $context = ctools_context_create("entity:{$entity_type}", $entity);
-
-  // Get available relationships from context.
-  $available_relationships = array();
-  $relationships = ctools_get_relationships();
-
-  // Go through each relationship.
-  foreach ($relationships as $rid => $relationship) {
-    // For each relationship, see if there is a context that satisfies it.
-    if (ctools_context_filter(array($context), $relationship['required context'])) {
-      $available_relationships[$rid] = $relationship;
+  $entity_list[$entity_type][$entity_id] = $entity;
+  
+  // Loop over all defined properties and collect information.
+  // @todo: Add a way to exclude specific properties.
+  // @todo: Exclude entity types.
+  foreach ($wrapper->getPropertyInfo() as $property_name => $property_info) {
+    // Work out whether the property is a list and what type it is.
+    $is_list = FALSE;
+    $property_type = $property_info['type'];
+    if ($list_type = entity_property_list_extract_type($property_type)) {
+      $is_list = TRUE;
+      $property_type = $list_type;
     }
-  }
-
-  // @todo Turn these into hooks.
-  $allowed_relationships = array(
-    'entities_from_schema',
-    'entities_from_field',
-    'party_from_user',
-    'attached_entity_from_party',
-  );
-
-  $forbidden_relationships = array(
-    'entities_from_field' => 'gdpr_fields_exluded_entities',
-    'entities_from_schema' => 'gdpr_fields_exluded_entities',
-  );
-
-  foreach ($available_relationships as $relationship_name => $relationship) {
-    if (is_numeric(strpos($relationship_name, ':'))) {
-      list($rel_plugin, $rel_plugin_name) = explode(':', $relationship_name);
-    }
-    else {
-      $rel_plugin = $relationship_name;
-    }
-
-    if (!in_array($rel_plugin, $allowed_relationships)) {
-      continue;
-    }
-
-    if (in_array($rel_plugin, array_keys($forbidden_relationships))) {
-      if ($forbidden_relationships[$rel_plugin]($relationship)) {
-        continue;
+    
+    // If it is an entity property recursively call this function.
+    if ($property_type == 'entity' || entity_get_info($property_type)) {
+      if ($is_list) {
+        foreach ($wrapper->{$property_name} as $property_wrapper) {
+          gdpr_fields_collect_gdpr_entities(
+            $entity_list,
+            $property_type->type(),
+            $property_wrapper->value()
+          );
+        }
+      }
+      else {
+        gdpr_fields_collect_gdpr_entities(
+          $entity_list,
+          $wrapper->{$property_name}->type(),
+          $wrapper->{$property_name}->value()
+        );
       }
     }
-
-    // @todo can identifier be loaded elsewhere?
-    $relationship['identifier'] = $relationship['title'];
-
-    $entity_contexts = gdpr_fields_get_contexts_from_relationship($relationship, $context);
-
-    if (!is_array($entity_contexts)) {
-      $entity_contexts = array($entity_contexts);
-    }
-
-    foreach ($entity_contexts as $entity_context) {
-      if (!empty($entity_context->data)) {
-        list($plugin_type, $entity_type) = explode(':', $entity_context->plugin);
-        gdpr_fields_collect_gdpr_entities($entity_list, $entity_type, $entity_context->data);
+    else if (!empty($property_info['property info'])) {
+      // Because this recurses at an entity level rather than a property level
+      // we do some limited manual recursion into 'struct' and other complex
+      // property types. This recursion only goes one level deep, but covers
+      // the uncommon use case where an entity referencing property has its
+      // entity as a sub property.
+      // Sub-sub-property entity references are NOT supported here - but we are
+      // unaware of any modules that implement sub-sub-property reference.
+      if ($is_list) {
+        foreach ($wrapper->{$property_name} as $property_wrapper) {
+          foreach ($property_wrapper->getPropertyInfo() as $sub_property_name => $sub_property_info) {
+            $is_sub_list = FALSE;
+            $sub_property_type = $sub_property_info['type'];
+            if ($sub_list_type = entity_property_list_extract_type($sub_property_type)) {
+              $is_sub_list = TRUE;
+              $sub_property_type = $sub_list_type;
+            }
+            
+            if ($sub_property_type == 'entity' || entity_get_info($sub_property_type)) {
+              if ($is_list) {
+                foreach ($property_wrapper->{$sub_property_name} as $sub_property_wrapper) {
+                  gdpr_fields_collect_gdpr_entities(
+                    $entity_list,
+                    $sub_property_wrapper->type(),
+                    $sub_property_wrapper->value()
+                  );
+                }
+              }
+              else {
+                gdpr_fields_collect_gdpr_entities(
+                  $entity_list,
+                  $property_wrapper->{$sub_property_name}->type(),
+                  $property_wrapper->{$sub_property_name}->value()
+                );
+              }
+            }
+          }
+        }
       }
     }
   }
+  
+  return $entity_list;
 }
 
 /**
@@ -181,71 +198,4 @@ function gdpr_fields_permission() {
   );
 
   return $perms;
-}
-
-/**
- * Return a context from a relationship.
- *
- * @param array $relationship
- *   The configuration of a relationship. It must contain the following data:
- *   - name: The name of the relationship plugin being used.
- *   - relationship_settings: The configuration based upon the plugin forms.
- *   - identifier: The human readable identifier for this relationship, usually
- *     defined by the UI.
- *   - keyword: The keyword used for this relationship for substitutions.
- *
- * @param ctools_context $source_context
- *   The context this relationship is based upon.
- * @param bool $placeholders
- *   If TRUE, placeholders are acceptable.
- *
- * @return ctools_context|null
- *   A context object if one can be loaded, otherwise NULL.
- *
- * @see ctools_context_get_relevant_relationships()
- * @see ctools_context_get_context_from_relationships()
- */
-function gdpr_fields_get_contexts_from_relationship($relationship, $source_context, $placeholders = FALSE) {
-  ctools_include('plugins');
-
-  // Attempt to get custom contexts function.
-  $function = ctools_plugin_load_function('ctools', 'relationships', $relationship['name'], 'contexts');
-
-  // Fall back on default context function.
-  if (!$function) {
-    $function = ctools_plugin_load_function('ctools', 'relationships', $relationship['name'], 'context');
-  }
-
-  if ($function) {
-    // Backward compatibility: Merge old style settings into new style:
-    if (!empty($relationship['relationship_settings'])) {
-      $relationship += $relationship['relationship_settings'];
-      unset($relationship['relationship_settings']);
-    }
-
-    $contexts = $function($source_context, $relationship, $placeholders);
-
-
-
-    if ($contexts && !is_array($contexts)) {
-      $contexts = array($contexts);
-    }
-
-    if (!empty($contexts)) {
-
-      foreach ($contexts as &$context) {
-        $context->identifier = $relationship['identifier'];
-        $context->page_title = isset($relationship['title']) ? $relationship['title'] : '';
-        $context->keyword = $relationship['keyword'];
-        if (!empty($context->empty)) {
-          $context->placeholder = array(
-            'type' => 'relationship',
-            'conf' => $relationship,
-          );
-        }
-      }
-      return $contexts;
-    }
-  }
-  return NULL;
 }
