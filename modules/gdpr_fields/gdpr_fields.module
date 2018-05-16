@@ -71,18 +71,24 @@ function gdpr_fields_gdpr_fields_default_field_data() {
 /**
  * Collect entities that are connected to a GDPR task.
  *
- * @param array &$entity_list
  * @param string $entity_type
+ *   The entity type of $entity.
  * @param int|stdClass $entity
+ *   The entity we want information for.
+ * @param array $entity_list
+ *   Internal use only, provide the entity list to build upon.
+ *
+ * @return array
+ *   The array of entities for the task.
  */
-function gdpr_fields_collect_gdpr_entities(&$entity_list, $entity_type, $entity) {
+function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_list = array()) {
   // Get the wrapper and entity id.
   $wrapper = entity_metadata_wrapper($entity_type, $entity);
   $entity_id = $wrapper->getIdentifier();
   
   // Check for recursion.
   if (isset($entity_list[$entity_type][$entity_id])) {
-    return;
+    return $entity_list;
   }
 
   // Set entity.
@@ -104,28 +110,26 @@ function gdpr_fields_collect_gdpr_entities(&$entity_list, $entity_type, $entity)
     if ($property_type == 'entity' || entity_get_info($property_type)) {
       // If the gdpr settings tell us not to follow related entities through
       // this property then exclude them.
-      if (
-        $GDPR_data = GDPRFieldData::createFromWrapper($wrapper->{$property_name})
-        && !$GDPR_data->includeRelatedEntities()
-      ) {
+      $GDPR_data = GDPRFieldData::createFromWrapper($wrapper->{$property_name});
+      if ($GDPR_data && !$GDPR_data->includeRelatedEntities()) {
         continue;
       }
       
       // If the property is a list then loop over each item.
       if ($is_list) {
         foreach ($wrapper->{$property_name} as $property_wrapper) {
-          gdpr_fields_collect_gdpr_entities(
-            $entity_list,
+          $entity_list = gdpr_fields_collect_gdpr_entities(
             $property_type->type(),
-            $property_wrapper->value()
+            $property_wrapper->value(),
+            $entity_list
           );
         }
       }
       else {
-        gdpr_fields_collect_gdpr_entities(
-          $entity_list,
+        $entity_list = gdpr_fields_collect_gdpr_entities(
           $wrapper->{$property_name}->type(),
-          $wrapper->{$property_name}->value()
+          $wrapper->{$property_name}->value(),
+          $entity_list
         );
       }
     }
@@ -140,10 +144,8 @@ function gdpr_fields_collect_gdpr_entities(&$entity_list, $entity_type, $entity)
       if ($is_list) {
         foreach ($wrapper->{$property_name} as $property_wrapper) {
           foreach ($property_wrapper->getPropertyInfo() as $sub_property_name => $sub_property_info) {
-            $is_sub_list = FALSE;
             $sub_property_type = $sub_property_info['type'];
             if ($sub_list_type = entity_property_list_extract_type($sub_property_type)) {
-              $is_sub_list = TRUE;
               $sub_property_type = $sub_list_type;
             }
             
@@ -151,27 +153,25 @@ function gdpr_fields_collect_gdpr_entities(&$entity_list, $entity_type, $entity)
               // Skip relationships that we do not want to follow.
               // IF we can't get gdpr data for this property then follow anyway
               // just in case.
-              if (
-                $GDPR_data = GDPRFieldData::createFromWrapper($property_wrapper->{$sub_property})
-                && !$GDPR_data->includeRelatedEntities()
-              ) {
+              $GDPR_data = GDPRFieldData::createFromWrapper($property_wrapper->{$sub_property});
+              if ($GDPR_data && !$GDPR_data->includeRelatedEntities()) {
                 continue;
               }
               
               if ($is_list) {
                 foreach ($property_wrapper->{$sub_property_name} as $sub_property_wrapper) {
-                  gdpr_fields_collect_gdpr_entities(
-                    $entity_list,
+                  $entity_list = gdpr_fields_collect_gdpr_entities(
                     $sub_property_wrapper->type(),
-                    $sub_property_wrapper->value()
+                    $sub_property_wrapper->value(),
+                    $entity_list
                   );
                 }
               }
               else {
-                gdpr_fields_collect_gdpr_entities(
-                  $entity_list,
+                $entity_list = gdpr_fields_collect_gdpr_entities(
                   $property_wrapper->{$sub_property_name}->type(),
-                  $property_wrapper->{$sub_property_name}->value()
+                  $property_wrapper->{$sub_property_name}->value(),
+                  $entity_list
                 );
               }
             }
@@ -180,7 +180,7 @@ function gdpr_fields_collect_gdpr_entities(&$entity_list, $entity_type, $entity)
       }
     }
   }
-  
+
   return $entity_list;
 }
 

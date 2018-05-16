@@ -20,9 +20,18 @@ function gdpr_fields_gdpr_entity_property_get_child($plugin, $parent, $child) {
 }
 
 function gdpr_fields_gdpr_entity_property_get_children($plugin, $parent) {
-  $entities = entity_get_info();
   foreach (entity_get_property_info() as $entity_type => $property_info) {
-    foreach (array_keys($info['bundles']) as $bundle) {
+    // Get a list of bundles.
+    if (isset($property_info['bundles'])) {
+      $bundles = array_keys($property_info['bundles']);
+    }
+    // Otherwise just use the entity type.
+    else {
+      $bundles = array($entity_type);
+    }
+
+    // Get the plugins for each bundle.
+    foreach ($bundles as $bundle) {
       $properties = array();
 
       // Default properties
