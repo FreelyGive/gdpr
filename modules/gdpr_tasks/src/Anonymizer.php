@@ -39,7 +39,7 @@ class Anonymizer {
       $this->plugins[$plugin->entity_type][$plugin_id] = $plugin;
       $this->plugin_data[$plugin->entity_type][$plugin_id] = $data;
     }
-    gdpr_fields_collect_gdpr_entities($entities, 'user', $user);
+    $entities = gdpr_fields_collect_gdpr_entities('user', $user);
 
     foreach ($entities as $entity_type => $bundles) {
       foreach ($bundles as $entity_bundle => $entities) {
