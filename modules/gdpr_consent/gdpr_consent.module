@@ -417,8 +417,8 @@ function gdpr_consent_field_attach_submit($entity_type, $entity, $form, &$form_s
       continue;
     }
 
-    if (!empty($form_state['values'][$field])) {
-      $values = $form_state['values'][$field];
+    $values = drupal_array_get_nested_value($form_state['values'], $form[$field]['#parents']);
+    if (!empty($values)) {
       $new = isset($values[LANGUAGE_NONE][0]['agreed']) ? (int) $values[LANGUAGE_NONE][0]['agreed'] : NULL;
 
       // Newly created entities should only log accepted agreements.
@@ -429,15 +429,16 @@ function gdpr_consent_field_attach_submit($entity_type, $entity, $form, &$form_s
         global $user;
 
         if ($new) {
-          $message = message_create('consent_agreement_accepted', array('uid' => $user->uid));
+          $message = message_create('consent_agreement_accepted', array('uid' => $values[LANGUAGE_NONE][0]['user_id']));
         }
         else {
-          $message = message_create('consent_agreement_revoked', array('uid' => $user->uid));
+          $message = message_create('consent_agreement_revoked', array('uid' => $values[LANGUAGE_NONE][0]['user_id']));
         }
 
         $wrapper = entity_metadata_wrapper('message', $message);
 
-        $wrapper->owner_user->set($user->uid);
+        // @todo fix naming for fields - User owner is giving consent by probably unnecessary?
+        $wrapper->owner_user->set($values[LANGUAGE_NONE][0]['user_id']);
         $wrapper->user_accepted->set($values[LANGUAGE_NONE][0]['user_id_accepted']);
         $wrapper->agreement->set($agreement);
         $wrapper->notes->set($values[LANGUAGE_NONE][0]['notes']);
@@ -591,9 +592,11 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
         '#description' => $entity->long_description,
       ) + $widget;
 
-      if ($entity->agreement_type == GDPR_CONSENT_TYPE_EXPLICIT) {
-        $element['agreed']['#type'] = 'item';
-        $element['agreed']['#default_value'] = TRUE;
+      if ($entity->agreement_type != GDPR_CONSENT_TYPE_EXPLICIT) {
+        $element['description'] = $element['agreed'];
+        $element['description']['#type'] = 'item';
+        $element['agreed']['#type'] = 'value';
+        $element['agreed']['#default_value'] = 1;
       }
 
       $element['notes'] = array(
