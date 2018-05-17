@@ -106,7 +106,7 @@ class GDPRFieldData {
    * @param $property_name
    */
   public static function createFromProperty($entity_type, $bundle, $property_name) {
-    ctools_include('plugin');
+    ctools_include('plugins');
     $plugin = ctools_get_plugins('gdpr_fields', 'gdpr_data', implode('|', array($entity_type, $bundle, $property_name)));
     
     if ($plugin) {

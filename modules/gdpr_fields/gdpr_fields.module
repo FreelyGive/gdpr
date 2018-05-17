@@ -100,7 +100,8 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
   foreach ($wrapper->getPropertyInfo() as $property_name => $property_info) {
     // Work out whether the property is a list and what type it is.
     $is_list = FALSE;
-    $property_type = $property_info['type'];
+
+    $property_type = isset($property_info['type']) ? $property_info['type'] : 'text';
     if ($list_type = entity_property_list_extract_type($property_type)) {
       $is_list = TRUE;
       $property_type = $list_type;
