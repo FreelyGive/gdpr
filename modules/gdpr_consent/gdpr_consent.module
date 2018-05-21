@@ -338,17 +338,17 @@ function gdpr_consent_field_gdpr_user_consent_property_callback(&$info, $entity_
     'getter callback' => 'entity_metadata_verbatim_get',
     'schema field' => 'agreed',
   );
-  $property['property info']['user_id'] = array(
+  $property['property info']['user_consenter'] = array(
     'label' => 'The Consenting User',
     'type' => 'user',
     'getter callback' => 'entity_metadata_verbatim_get',
-    'schema field' => 'user_id',
+    'schema field' => 'user_consenter',
   );
-  $property['property info']['user_id_accepted'] = array(
+  $property['property info']['user_recorder'] = array(
     'label' => 'The User recording the Consent',
     'type' => 'user',
     'getter callback' => 'entity_metadata_verbatim_get',
-    'schema field' => 'user_id_accepted',
+    'schema field' => 'user_recorder',
   );
   $property['property info']['notes'] = array(
     'label' => 'Notes',
@@ -429,17 +429,17 @@ function gdpr_consent_field_attach_submit($entity_type, $entity, $form, &$form_s
         global $user;
 
         if ($new) {
-          $message = message_create('consent_agreement_accepted', array('uid' => $values[LANGUAGE_NONE][0]['user_id']));
+          $message = message_create('consent_agreement_accepted', array('uid' => $values[LANGUAGE_NONE][0]['user_consenter']));
         }
         else {
-          $message = message_create('consent_agreement_revoked', array('uid' => $values[LANGUAGE_NONE][0]['user_id']));
+          $message = message_create('consent_agreement_revoked', array('uid' => $values[LANGUAGE_NONE][0]['user_consenter']));
         }
 
         $wrapper = entity_metadata_wrapper('message', $message);
 
         // @todo fix naming for fields - User owner is giving consent by probably unnecessary?
-        $wrapper->owner_user->set($values[LANGUAGE_NONE][0]['user_id']);
-        $wrapper->user_accepted->set($values[LANGUAGE_NONE][0]['user_id_accepted']);
+        $wrapper->user_consenter->set($values[LANGUAGE_NONE][0]['user_consenter']);
+        $wrapper->user_recorder->set($values[LANGUAGE_NONE][0]['user_recorder']);
         $wrapper->agreement->set($agreement);
         $wrapper->notes->set($values[LANGUAGE_NONE][0]['notes']);
         $wrapper->agreed->set($values[LANGUAGE_NONE][0]['agreed']);
@@ -620,11 +620,11 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
         '#value' => REQUEST_TIME,
       ) + $widget;
       // @todo Build system for automatically finding consenting user.
-      $element['user_id'] = array(
+      $element['user_consenter'] = array(
         '#type' => 'hidden',
         '#value' => $user->uid,
       ) + $widget;
-      $element['user_id_accepted'] = array(
+      $element['user_recorder'] = array(
         '#type' => 'hidden',
         '#value' => $user->uid,
       ) + $widget;

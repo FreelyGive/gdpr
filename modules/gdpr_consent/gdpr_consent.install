@@ -221,14 +221,14 @@ function gdpr_consent_field_schema($field) {
       'not null' => TRUE,
       'default' => 0,
     ),
-    'user_id' => array(
+    'user_consenter' => array(
       'type' => 'int',
       'unsigned' => TRUE,
       'not null' => FALSE,
       'default' => NULL,
       'description' => 'The user uid of the user giving consent',
     ),
-    'user_id_accepted' => array(
+    'user_recorder' => array(
       'type' => 'int',
       'unsigned' => TRUE,
       'not null' => FALSE,
@@ -245,8 +245,8 @@ function gdpr_consent_field_schema($field) {
     'target_id' => array('target_id'),
     'target_revision_id' => array('target_revision_id'),
     'agreed' => array('agreed' => 'agreed'),
-    'user_id' => array('user_id' => 'user_id'),
-    'user_id_accepted' => array('user_id_accepted' => 'user_id_accepted'),
+    'user_consenter' => array('user_consenter' => 'user_consenter'),
+    'user_recorder' => array('user_recorder' => 'user_recorder'),
   );
   return array(
     'columns' => $columns,
@@ -260,13 +260,13 @@ function gdpr_consent_field_schema($field) {
         'table' => 'gdpr_consent_agreement_revision',
         'columns' => array('target_revision_id' => 'revision_id'),
       ),
-      'user_id' => array(
+      'user_consenter' => array(
         'table' => 'users',
-        'columns' => array('user_id' => 'uid'),
+        'columns' => array('user_consenter' => 'uid'),
       ),
-      'user_id_accepted' => array(
+      'user_recorder' => array(
         'table' => 'users',
-        'columns' => array('user_id_accepted' => 'uid'),
+        'columns' => array('user_recorder' => 'uid'),
       ),
     ),
   );
@@ -350,13 +350,13 @@ function gdpr_consent_install() {
     'type' => 'text_long',
   );
 
-  // Exported field_base: 'owner_user'.
-  $field_bases['owner_user'] = array(
+  // Exported field_base: 'user_consenter'.
+  $field_bases['user_consenter'] = array(
     'active' => 1,
     'cardinality' => 1,
     'deleted' => 0,
     'entity_types' => array(),
-    'field_name' => 'owner_user',
+    'field_name' => 'user_consenter',
     'indexes' => array(
       'target_id' => array(
         0 => 'target_id',
@@ -378,13 +378,13 @@ function gdpr_consent_install() {
     'type' => 'entityreference',
   );
 
-  // Exported field_base: 'user_accepted'.
-  $field_bases['user_accepted'] = array(
+  // Exported field_base: 'user_recorder'.
+  $field_bases['user_recorder'] = array(
     'active' => 1,
     'cardinality' => 1,
     'deleted' => 0,
     'entity_types' => array(),
-    'field_name' => 'user_accepted',
+    'field_name' => 'user_recorder',
     'indexes' => array(
       'target_id' => array(
         0 => 'target_id',
@@ -517,8 +517,8 @@ function gdpr_consent_install() {
     ),
   );
 
-  // Exported field_instance: 'message-consent_agreement_accepted-owner_user'.
-  $field_instances['message-consent_agreement_accepted-owner_user'] = array(
+  // Exported field_instance: 'message-consent_agreement_accepted-user_consenter'.
+  $field_instances['message-consent_agreement_accepted-user_consenter'] = array(
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
@@ -535,7 +535,7 @@ function gdpr_consent_install() {
       ),
     ),
     'entity_type' => 'message',
-    'field_name' => 'owner_user',
+    'field_name' => 'user_consenter',
     'label' => 'User',
     'required' => 0,
     'settings' => array(
@@ -555,8 +555,8 @@ function gdpr_consent_install() {
   );
 
   // Exported field_instance:
-  // 'message-consent_agreement_accepted-user_accepted'.
-  $field_instances['message-consent_agreement_accepted-user_accepted'] = array(
+  // 'message-consent_agreement_accepted-user_recorder'.
+  $field_instances['message-consent_agreement_accepted-user_recorder'] = array(
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
@@ -573,7 +573,7 @@ function gdpr_consent_install() {
       ),
     ),
     'entity_type' => 'message',
-    'field_name' => 'user_accepted',
+    'field_name' => 'user_recorder',
     'label' => 'User Accepted',
     'required' => 0,
     'settings' => array(
