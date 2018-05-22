@@ -146,20 +146,56 @@ class GdprTasksSarWorker {
    */
   protected function compile(\GDPRTask $task) {
     // Compile all files into a single zip.
-    $zipfile = drupal_realpath($task->wrapper()->gdpr_tasks_sar_export->file->value()->uri);
-    dpm($zipfile);
+    $wrapper = $task->wrapper();
+    $file = $wrapper->gdpr_tasks_sar_export->file;
+    $file_path = drupal_realpath($file->value()->uri);
+
     $zip = new ZipArchive();
-    if (!$zip->open($zipfile, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
+    if (!$zip->open($file_path, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
+      // @todo: Improve error handling.
       drupal_set_message('error opening file', 'error');
       return;
     }
 
-    foreach ($task->wrapper()->gdpr_tasks_sar_export_parts as $item) {
-      $filename = basename($item->file->value()->uri);
-      dvm($zip->addFile(drupal_realpath($item->file->value()->uri), $filename), "Adding $filename");
+    // Gather all the files we need to include in this package.
+    $part_files = array();
+    foreach ($wrapper->gdpr_tasks_sar_export_parts as $item) {
+      $part_file = $item->file->value();
+      $part_files[] = $part_file;
+
+      // Add the file to the zip.
+      // @todo: Add error handling.
+      $zip->addFile(drupal_realpath($part_file->uri), basename($part_file->uri));
     }
 
-    dvm($zip->close(),'close');
+    // Add in any attached files that need including.
+    foreach ($wrapper->gdpr_tasks_sar_export_assets as $item) {
+      $asset_file = $item->file->value();
+
+      // Add the file to the zip.
+      $filename = "assets/{$asset_file->fid}." . pathinfo($asset_file->uri, PATHINFO_EXTENSION);
+      // @todo: Add error handling.
+      $zip->addFile(drupal_realpath($asset_file->uri), $filename);
+    }
+
+    // Clear our parts and assets file lists.
+    $task->gdpr_tasks_sar_export_parts = NULL;
+    $task->gdpr_tasks_sar_export_assets = NULL;
+
+    // Close the zip to write it to disk.
+    // @todo: Add error handling.
+    $zip->close();
+
+    // Save the file to update the file size.
+    $file->save();
+
+    // Remove the partial files.
+    foreach ($part_files as $part_file) {
+      file_delete($part_file);
+    }
+
+    // Clean up the parts directory.
+    // @todo.
 
     // Update the status as completed.
     $task->status = 'closed';

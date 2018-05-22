@@ -180,7 +180,7 @@ function gdpr_tasks_install() {
       'field_name' => 'gdpr_tasks_sar_export',
       'entity_type' => 'gdpr_task',
       'bundle' => 'gdpr_sar',
-      'required' => TRUE,
+      'required' => FALSE,
       'widget' => array(
         'type' => 'file_generic',
       ),
@@ -218,13 +218,51 @@ function gdpr_tasks_install() {
       'field_name' => 'gdpr_tasks_sar_export_parts',
       'entity_type' => 'gdpr_task',
       'bundle' => 'gdpr_sar',
-      'required' => TRUE,
+      'required' => FALSE,
       'widget' => array(
         'type' => 'file_generic',
       ),
       'settings' => array(
         'file_display' => 'gdpr-exports',
         'file_extensions' => 'csv',
+      ),
+      'display' => array(
+        'default' => array(
+          'type' => 'hidden',
+        ),
+      ),
+    );
+    field_create_instance($instance);
+  }
+
+  // Add an export field to sar task.
+  if (!field_info_field('gdpr_tasks_sar_export_assets')) {
+    $field = array(
+      'field_name' => 'gdpr_tasks_sar_export_assets',
+      'type' => 'file',
+      'locked' => TRUE,
+      'settings' => array(
+        'display_field' => FALSE,
+        'uri_scheme' => 'private',
+      ),
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+    );
+    field_create_field($field);
+  }
+
+  if (!field_info_instance('gdpr_task', 'gdpr_tasks_sar_export_assets', 'gdpr_sar')) {
+    $instance = array(
+      'label' => $t('Data Export'),
+      'field_name' => 'gdpr_tasks_sar_export_assets',
+      'entity_type' => 'gdpr_task',
+      'bundle' => 'gdpr_sar',
+      'required' => FALSE,
+      'widget' => array(
+        'type' => 'file_generic',
+      ),
+      'settings' => array(
+        'file_display' => 'gdpr-exports',
+        'file_extensions' => '',
       ),
       'display' => array(
         'default' => array(
