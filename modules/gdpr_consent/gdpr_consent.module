@@ -583,7 +583,7 @@ function gdpr_consent_field_widget_info() {
 function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   global $user;
 
-  $agreed = isset($items[$delta]['agreed']) ? $items[$delta]['agreed'] : '';
+  $agreed = isset($items[$delta]['agreed']) ? (int) $items[$delta]['agreed'] : 0;
   $notes = isset($items[$delta]['notes']) ? $items[$delta]['notes'] : '';
 
   $widget = $element;
