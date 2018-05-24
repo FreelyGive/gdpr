@@ -75,18 +75,21 @@ class GdprTasksSarWorker {
    *   The task.
    */
   protected function build(\GDPRTask $task) {
+    $wrapper = $task->wrapper();
+
     $field_info = field_info_field('gdpr_tasks_sar_export');
     $directory = $field_info['settings']['uri_scheme'] . '://gdpr_sars/';
     $directory .= basename($task->wrapper()->gdpr_tasks_sar_export->file->url->value(), '.zip');
 
     // Gather our entities.
+    // @todo: Move this inline.
     $all_data = gdpr_tasks_collect_rta_data($task->getOwner());
 
     // Build our export files.
     $csvs = array();
     foreach ($all_data as $plugin_id => $data) {
-      // Skip if we don't need this data.
-      if (!in_array($data['rta'], array('inc', 'maybe'))) {
+      if ($plugin_id == '_assets') {
+        $wrapper->gdpr_tasks_sar_export_assets = $data;
         continue;
       }
 
@@ -108,7 +111,7 @@ class GdprTasksSarWorker {
 
     // Gather existing files.
     $files = array();
-    foreach ($task->wrapper()->gdpr_tasks_sar_export_parts as $item) {
+    foreach ($wrapper->gdpr_tasks_sar_export_parts as $item) {
       $filename = basename($item->file->url->value(), '.csv');
       $files[$filename] = $item->file->value();
     }
@@ -131,6 +134,7 @@ class GdprTasksSarWorker {
         fputcsv($handler, $row);
       }
       fclose($handler);
+      file_save($file);
     }
 
     // Update the status.

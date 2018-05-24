@@ -3,7 +3,7 @@
 /**
  * The Task entity controller class.
  */
-class GDPRTaskController extends EntityAPIControllerExportable {
+class GDPRTaskController extends EntityAPIController {
 
   /**
    * {@inheritdoc}

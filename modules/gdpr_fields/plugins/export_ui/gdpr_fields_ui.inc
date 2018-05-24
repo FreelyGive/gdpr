@@ -102,6 +102,56 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
     '#default_value' => $field_data->getSetting('gdpr_fields_enabled', ''),
   );
 
+  $all_properties = entity_get_property_info($field_data->entity_type);
+  if (isset($all_properties['bundles'][$field_data->entity_bundle]['properties'][$field_data->property_name])) {
+    $info = $all_properties['bundles'][$field_data->entity_bundle]['properties'][$field_data->property_name];
+  }
+  elseif (isset($all_properties['properties'][$field_data->property_name])) {
+    $info = $all_properties['properties'][$field_data->property_name];
+  }
+  $type = isset($info['type']) ? $info['type'] : 'string';
+  $is_list = substr($type, 0, 5) == 'list<';
+  if ($is_list) {
+    $type = entity_property_extract_innermost_type($type);
+  }
+
+  // Defaults.
+  $form['settings']['gdpr_fields_owner'] = array(
+    '#type' => 'value',
+    '#value' => FALSE,
+  );
+  $form['settings']['gdpr_sars_filename'] = array(
+    '#type' => 'value',
+    '#value' => FALSE,
+  );
+
+  if (isset($info)) {
+    if ($type != 'file' && ($entity_type = entity_get_info($type))) {
+      // Ownership tracking.
+      $form['settings']['gdpr_fields_owner'] = array(
+        '#type' => 'checkbox',
+        '#default_value' => $field_data->getSetting('gdpr_fields_owner', FALSE),
+        '#title' => t('Field is owner'),
+        '#description' => t('If checked, this entity will be included for any task including the %type this property references.', array(
+          '%type' => $entity_type['label'],
+        )),
+      );
+
+      // Target file.
+      $form['settings']['gdpr_sars_filename'] = array(
+        '#type' => 'textfield',
+        '#title' => t('SARs filename'),
+        '#description' => t('Specify which file this should be included in. The base user will go into %main.', array(
+          '%main' => 'main.csv',
+        )),
+        // Default to the entity type.
+        '#default_value' => $field_data->getSetting('gdpr_sars_filename', $type),
+        '#field_suffix' => '.csv',
+        '#size' => 20,
+        '#required' => TRUE,
+      );
+    }
+  }
 
   $form['settings']['gdpr_fields_rta'] = array(
     '#type' => 'select',
@@ -179,6 +229,8 @@ function gdpr_fields_field_data_export_ui_form_submit(&$form, &$form_state) {
     unset($form_state['values']['settings']['gdpr_fields_rta']);
     unset($form_state['values']['settings']['gdpr_fields_rtf']);
     unset($form_state['values']['settings']['gdpr_fields_sanitizer']);
+    unset($form_state['values']['settings']['gdpr_fields_owner']);
+    unset($form_state['values']['settings']['gdpr_sars_filename']);
   }
 
   if (isset($form_state['values']['field']['label'])) {
