@@ -81,8 +81,9 @@ function gdpr_fields_gdpr_fields_default_field_data() {
  * @return array
  *   The array of entities for the task.
  */
-function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_list = array()) {
+function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_list = array(), $source_plugin = NULL, $row_id = NULL) {
   // Get the wrapper and entity id.
+  /* @var \EntityDrupalWrapper $wrapper */
   $wrapper = entity_metadata_wrapper($entity_type, $entity);
   $entity_id = $wrapper->getIdentifier();
   
@@ -92,12 +93,22 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
   }
 
   // Set entity.
+  if (!isset($row_id)) {
+    $row_id = $wrapper->getIdentifier();
+  }
+  $entity->_gdpr_row_id = $row_id;
+  $entity->_gdpr_source_plugin = $source_plugin;
   $entity_list[$entity_type][$entity_id] = $entity;
   
   // Loop over all defined properties and collect information.
   // @todo: Add a way to exclude specific properties.
   // @todo: Exclude entity types.
   foreach ($wrapper->getPropertyInfo() as $property_name => $property_info) {
+    // If there is no value, we don't need to proceed.
+    if (!$wrapper->{$property_name}->value()) {
+      continue;
+    }
+
     // Work out whether the property is a list and what type it is.
     $is_list = FALSE;
 
@@ -108,7 +119,7 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
     }
     
     // If it is an entity property recursively call this function.
-    if ($property_type == 'entity' || entity_get_info($property_type)) {
+    if ($property_type != 'file' && ($property_type == 'entity' || entity_get_info($property_type))) {
       // If the gdpr settings tell us not to follow related entities through
       // this property then exclude them.
       $GDPR_data = GDPRFieldData::createFromWrapper($wrapper->{$property_name});
@@ -120,9 +131,10 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
       if ($is_list) {
         foreach ($wrapper->{$property_name} as $property_wrapper) {
           $entity_list = gdpr_fields_collect_gdpr_entities(
-            $property_type->type(),
+            $property_wrapper->type(),
             $property_wrapper->value(),
-            $entity_list
+            $entity_list,
+            $GDPR_data->name
           );
         }
       }
@@ -130,11 +142,13 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
         $entity_list = gdpr_fields_collect_gdpr_entities(
           $wrapper->{$property_name}->type(),
           $wrapper->{$property_name}->value(),
-          $entity_list
+          $entity_list,
+          $GDPR_data->name,
+          $row_id
         );
       }
     }
-    else if (!empty($property_info['property info'])) {
+    elseif (!empty($property_info['property info'])) {
       // Because this recurses at an entity level rather than a property level
       // we do some limited manual recursion into 'struct' and other complex
       // property types. This recursion only goes one level deep, but covers
@@ -150,21 +164,22 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
               $sub_property_type = $sub_list_type;
             }
             
-            if ($sub_property_type == 'entity' || entity_get_info($sub_property_type)) {
+            if ($sub_property_type != 'file' && ($sub_property_type == 'entity' || entity_get_info($sub_property_type))) {
               // Skip relationships that we do not want to follow.
               // IF we can't get gdpr data for this property then follow anyway
               // just in case.
-              $GDPR_data = GDPRFieldData::createFromWrapper($property_wrapper->{$sub_property});
+              $GDPR_data = GDPRFieldData::createFromWrapper($property_wrapper->{$sub_property_name});
               if ($GDPR_data && !$GDPR_data->includeRelatedEntities()) {
                 continue;
               }
-              
+
               if ($is_list) {
                 foreach ($property_wrapper->{$sub_property_name} as $sub_property_wrapper) {
                   $entity_list = gdpr_fields_collect_gdpr_entities(
                     $sub_property_wrapper->type(),
                     $sub_property_wrapper->value(),
-                    $entity_list
+                    $entity_list,
+                    $GDPR_data->name
                   );
                 }
               }
@@ -172,7 +187,9 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
                 $entity_list = gdpr_fields_collect_gdpr_entities(
                   $property_wrapper->{$sub_property_name}->type(),
                   $property_wrapper->{$sub_property_name}->value(),
-                  $entity_list
+                  $entity_list,
+                  $GDPR_data->name,
+                  $row_id
                 );
               }
             }
@@ -181,6 +198,35 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
       }
     }
   }
+
+  // Track through ownership. This requires looking for any owner field that
+  // references the current owner type.
+// pseudo code
+//  foreach ($fields as $field) {
+//    /* @var \GDPRFieldData $field */
+//    if ($field->getSetting('gdpr_fields_owner', FALSE) && $field_target_type == $entity_type) {
+//      $query = new EntityFieldQuery();
+//      $query->entityCondition('entity_type', $field->entity_type);
+//      $query->entityCondition('bundle', $field->entity_bundle);
+//      if ($is_field) {
+//        $query->fieldCondition($field->property_name, 'target_id', $entity_id);
+//      }
+//      else {
+//        $query->propertyCondition($field->property_name, $entity_id);
+//      }
+//      $results = $query->execute();
+//      if (isset($results[$field->entity_type])) {
+//        foreach (entity_load($field->entity_type, array_keys($results[$field->entity_type])) as $owned_entity) {
+//          $entity_list = gdpr_fields_collect_gdpr_entities(
+//            $field->entity_type,
+//            $owned_entity,
+//            $entity_list,
+//            $field->name
+//          );
+//        }
+//      }
+//    }
+//  }
 
   return $entity_list;
 }
@@ -197,4 +243,19 @@ function gdpr_fields_permission() {
   );
 
   return $perms;
+}
+
+/**
+ * Implements hook_entity_property_info_alter().
+ */
+function gdpr_fields_entity_property_info_alter(&$info) {
+  // If user.picture is not defined, do our best to define it.
+  if (!isset($info['user']['properties']['picture'])) {
+    $info['user']['properties']['picture'] = array(
+      'label' => t('Picture'),
+      'description' => t("The users's uploaded picture."),
+      'type' => entity_get_info('file') ? 'file' : 'integer',
+      'schema field' => 'picture',
+    );
+  }
 }

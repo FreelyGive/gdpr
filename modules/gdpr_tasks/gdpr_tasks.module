@@ -468,57 +468,69 @@ function gdpr_tasks_update_task_csv($data, $dirname = 'private://') {
 /**
  * @param $user
  */
-function gdpr_tasks_collect_rta_data($user, $include_plugins = FALSE) {
+function gdpr_tasks_collect_rta_data($user) {
   ctools_include('plugins');
   ctools_include('export');
 
   $plugins = ctools_export_load_object('gdpr_fields_field_data');
-  $fields = array();
+  $fields = array('_assets' => array());
 
   $gdpr_entities = gdpr_fields_collect_gdpr_entities('user', $user);
 
   foreach ($gdpr_entities as $entity_type => $entities) {
     foreach ($entities as $entity) {
-      foreach ($entity as $key => $value) {
-        list($entity_id, , $entity_bundle) = entity_extract_ids($entity_type, $entity);
-        $plugin_name = "{$entity_type}|{$entity_bundle}|{$key}";
-        $wrapper = entity_metadata_wrapper($entity_type, $entity);
+      /* @var \EntityDrupalWrapper $wrapper */
+      $wrapper = entity_metadata_wrapper($entity_type, $entity);
+      foreach ($wrapper->getPropertyInfo() as $property => $property_info) {
+        $entity_id = $wrapper->getIdentifier();
+        $plugin_name = "{$entity_type}|{$wrapper->getBundle()}|{$property}";
 
         if (isset($plugins[$plugin_name])) {
-          $field = $plugins[$plugin_name];
+          $field_config = $plugins[$plugin_name];
 
-          /* @var GDPRFieldData $field */
-          if ($field->disabled) {
+          /* @var GDPRFieldData $field_config */
+          if ($field_config->disabled || !in_array($field_config->getSetting('gdpr_fields_rta'), array('inc', 'maybe'))) {
             continue;
           }
 
-          if ($field->getSetting('gdpr_fields_rta')) {
-            // @todo Better data rendering.
-            if (is_array($value)) {
-              $value = '';
-              if ($wrapper->{$key} instanceof EntityValueWrapper) {
-                $value .= ' ' . $wrapper->{$key}->value();
+          if ($field_config->getSetting('gdpr_fields_rta')) {
+            // Figure out what to do based on the type.
+            $type = isset($property_info['type']) ? $property_info['type'] : 'string';
+            $is_list = substr($type, 0, 5) == 'list<';
+            if ($is_list) {
+              $type = entity_property_extract_innermost_type($type);
+            }
+
+            // Check if the type is an entity, except for files.
+            if ($type != 'file' && ($type == 'entity' || entity_get_info($type))) {
+              $type = 'entity';
+            }
+
+            // If this is a list, loop over getting the output.
+            $values = array();
+            if ($is_list) {
+              foreach ($wrapper->{$property} as $value) {
+                $values[] = gdpr_tasks_collect_rta_data_extract_value($type, $value, $fields['_assets']);
               }
-              elseif ($wrapper->{$key} instanceof EntityStructureWrapper) {
-                $key_data = $wrapper->{$key}->value();
-                if (!empty($key_data)) {
-                  foreach (array_keys($key_data) as $sub_key) {
-                    $list = $wrapper->{$key}->getPropertyInfo();
-                    if (!empty($list) && in_array($sub_key, array_keys($list)) && $wrapper->{$key}->{$sub_key} instanceof EntityValueWrapper) {
-                      $value .= ' ' . $wrapper->{$key}->{$sub_key}->value();
-                    }
-                  }
-                }
-              }
+            }
+            else {
+              $values[] = gdpr_tasks_collect_rta_data_extract_value($type, $wrapper->{$property}, $fields['_assets']);
+            }
+
+            $filename = 'main';
+            if ($entity->_gdpr_source_plugin && isset($plugins[$entity->_gdpr_source_plugin])) {
+              $filename = $plugins[$entity->_gdpr_source_plugin]->getSetting('gdpr_sars_filename', $filename);
             }
             $data = array(
               'entity_type' => $entity_type,
               'entity_id' => $entity_id,
-              'file' => 'main',
-              'label' => $field->getSetting('label'),
-              'value' => (string) $value,
-              'notes' => $field->getSetting('notes'),
-              'rta' => $field->getSetting('gdpr_fields_rta'),
+              // @todo: Make this configurable.
+              'file' => $filename,
+              'row_id' => $entity->_gdpr_row_id,
+              'label' => $field_config->getSetting('label'),
+              'value' => implode(', ', array_filter($values)),
+              'notes' => $field_config->getSetting('notes'),
+              'rta' => $field_config->getSetting('gdpr_fields_rta'),
             );
 
             $fields["{$plugin_name}|{$entity_id}"] = $data;
@@ -529,6 +541,39 @@ function gdpr_tasks_collect_rta_data($user, $include_plugins = FALSE) {
   }
 
   return $fields;
+}
+
+function gdpr_tasks_collect_rta_data_extract_value($type, EntityMetadataWrapper $value, array &$assets) {
+  // If there is a callback, pass straight to that.
+  $info = $value->info();
+  if (isset($info['gdpr sars callback']) && is_callable($info['gdpr sars callback'])) {
+    return $info['gdpr sars callback']($value, $assets);
+  }
+  
+  // Make pre adjustment for known multi property values.
+  if ($type == 'field_item_image') {
+    $type = 'file';
+    $value = $value->file;
+  }
+  elseif ($type == 'text_formatted') {
+    $type = 'text';
+    $value = $value->value;
+  }
+
+  // Extract the value appropriately.
+  if ($type == 'entity') {
+    /* @var \EntityDrupalWrapper $value */
+    // @todo: Should we include filename to help people find it?
+    return "{$value->label()} [{$value->id()}]";
+  }
+  elseif ($type == 'file') {
+    /* @var \EntityDrupalWrapper $value */
+    $assets[] = array('fid' => $value->getIdentifier(), 'display' => 1);
+    return "assets/{$value->getIdentifier()}." . pathinfo($value->value()->uri, PATHINFO_EXTENSION);
+  }
+  else {
+    return (string) $value->value();
+  }
 }
 
 
@@ -637,4 +682,24 @@ function gdpr_tasks_send_mail($key, GDPRTask $task, array $tokens = array()) {
   $from = variable_get('gdpr_tasks_emails_from', NULL);
   $to = $task->getOwner()->mail;
   drupal_mail('gdpr_tasks', 'gdpr_tasks_' . $key, $to, $language, $params, $from);
+}
+
+/**
+ * Implements hook_entity_property_info_alter().
+ */
+function gdpr_tasks_entity_property_info_alter(&$info) {
+  // If user.picture is not defined, do our best to define it.
+  if (isset($info['user']['properties']['roles'])) {
+    $info['user']['properties']['roles']['gdpr sars callback'] = 'gdpr_tasks_sars_callback_user_roles';
+  }
+}
+
+function gdpr_tasks_sars_callback_user_roles(EntityMetadataWrapper $value) {
+  $rid = $value->value();
+  if (in_array($rid, array(DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID))) {
+    return NULL;
+  }
+
+  $role = user_role_load($rid);
+  return $role->name;
 }
