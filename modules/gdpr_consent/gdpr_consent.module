@@ -246,6 +246,21 @@ function gdpr_consent_access_callback($op, $entity = NULL, $account = NULL) {
 }
 
 /**
+ * Implements hook_field_access()
+ */
+function gdpr_consent_field_access($op, $field, $entity_type, $entity, $account) {
+  if ($field['type'] == 'gdpr_user_consent' && $op == 'edit') {
+    if (user_access('manage gdpr agreements', $account) || user_access('grant any consent', $account)) {
+      return TRUE;
+    }
+
+    // @todo Check grant own consent when we can consistently find the user.
+
+    return TRUE;
+  }
+}
+
+/**
  * Menu autoloader for gdpr agreements.
  */
 function gdpr_consent_agreement_load($id, $revision_id = NULL) {
@@ -414,6 +429,11 @@ function gdpr_consent_field_attach_submit($entity_type, $entity, $form, &$form_s
 
     // Don't log implicit consent.
     if ($agreement->agreement_type != GDPR_CONSENT_TYPE_EXPLICIT) {
+      continue;
+    }
+
+    // Ignore if field not present in form.
+    if (!isset($form[$field])) {
       continue;
     }
 
