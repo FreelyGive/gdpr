@@ -614,7 +614,8 @@ function gdpr_consent_field_widget_form(&$form, &$form_state, $field, $instance,
 
       if ($entity->agreement_type != GDPR_CONSENT_TYPE_EXPLICIT) {
         $element['description'] = $element['agreed'];
-        $element['description']['#type'] = 'item';
+        $element['description']['#type'] = 'markup';
+        $element['description']['#markup'] = $element['description']['#title'];
         $element['agreed']['#type'] = 'value';
         $element['agreed']['#default_value'] = 1;
       }
