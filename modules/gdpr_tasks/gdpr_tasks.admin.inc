@@ -118,6 +118,10 @@ function gdpr_task_edit_gdpr_sar_form($form, &$form_state) {
 
 
   $header_table = array(
+    'Entity',
+    'Entity ID',
+    'File name',
+    'File row',
     'Name',
     'Data',
     'Notes',

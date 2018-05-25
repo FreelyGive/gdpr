@@ -90,6 +90,7 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
     '#tree' => TRUE,
   );
 
+  // @todo move this out of settings and set #states on settings fieldset.
   $form['settings']['gdpr_fields_enabled'] = array(
     '#type' => 'select',
     '#title' => t('GDPR Field'),
@@ -135,6 +136,11 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
         '#description' => t('If checked, this entity will be included for any task including the %type this property references.', array(
           '%type' => $entity_type['label'],
         )),
+        '#states' => array(
+          'visible' => array(
+            ':input[name="settings[gdpr_fields_enabled]"]' => array('value' => 1),
+          ),
+        ),
       );
 
       // Target file.
@@ -149,6 +155,11 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
         '#field_suffix' => '.csv',
         '#size' => 20,
         '#required' => TRUE,
+        '#states' => array(
+          'visible' => array(
+            ':input[name="settings[gdpr_fields_enabled]"]' => array('value' => 1),
+          ),
+        ),
       );
     }
   }

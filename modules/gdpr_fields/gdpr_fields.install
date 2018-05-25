@@ -44,7 +44,7 @@ function gdpr_fields_schema() {
       ),
       'property_name' => array(
         'type' => 'varchar',
-        'length' => 32,
+        'length' => 128,
         'description' => 'Name of the property.',
       ),
       'settings' => array(

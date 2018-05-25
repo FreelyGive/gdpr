@@ -57,10 +57,10 @@ class GdprTasksSarWorker {
     file_prepare_directory($content_directory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
 
     // Store the file against the task.
-    $task->gdpr_tasks_sar_export[LANGUAGE_NONE][0] = [
+    $task->gdpr_tasks_sar_export[LANGUAGE_NONE][0] = array(
       'fid' => $file->fid,
       'display' => TRUE,
-    ];
+    );
     $task->status = 'building';
     $task->save();
 
@@ -100,13 +100,13 @@ class GdprTasksSarWorker {
 
       // Initialise and fill out the row to make sure things come in a
       // consistent order.
-      if (!isset($csvs[$data['file']][$data['entity_id']])) {
-        $csvs[$data['file']][$data['entity_id']] = array();
+      if (!isset($csvs[$data['file']][$data['row_id']])) {
+        $csvs[$data['file']][$data['row_id']] = array();
       }
-      $csvs[$data['file']][$data['entity_id']] += array_fill_keys(array_keys($csvs[$data['file']]['_header']), '');
+      $csvs[$data['file']][$data['row_id']] += array_fill_keys(array_keys($csvs[$data['file']]['_header']), '');
 
       // Put our piece of information in place.
-      $csvs[$data['file']][$data['entity_id']][$plugin_id] = $data['value'];
+      $csvs[$data['file']][$data['row_id']][$plugin_id] = $data['value'];
     }
 
     // Gather existing files.
@@ -123,10 +123,10 @@ class GdprTasksSarWorker {
         $file = file_save_data('', "{$directory}/{$filename}.csv", FILE_EXISTS_REPLACE);
 
         // Track the file.
-        $task->gdpr_tasks_sar_export_parts[LANGUAGE_NONE][] = [
+        $task->gdpr_tasks_sar_export_parts[LANGUAGE_NONE][] = array(
           'fid' => $file->fid,
           'display' => TRUE,
-        ];
+        );
       }
 
       $handler = fopen($file->uri, 'w');

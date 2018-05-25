@@ -138,7 +138,15 @@ class GDPRFieldData {
         break;
       }
     }
-    
+
+    // @todo improve performance by loading specific plugin and not all.
+    $plugins = ctools_export_load_object('gdpr_fields_field_data');
+    $name = implode('|', array($entity_type, $bundle, $property_name));
+    if (isset($plugins[$name])) {
+      return $plugins[$name];
+    }
+
+
     return static::createFromProperty($entity_type, $bundle, $property_name);
   }
 
@@ -165,11 +173,11 @@ class GDPRFieldData {
    * Whether to recurse to entities included in this propert.
    */
   public function includeRelatedEntities() {
-    if ($this->getSetting('exclude_related_entities')) {
-      return FALSE;
+    if ($this->getSetting('gdpr_fields_enabled', 0)) {
+      return TRUE;
     }
     
-    return TRUE;
+    return FALSE;
   }
 
   /**

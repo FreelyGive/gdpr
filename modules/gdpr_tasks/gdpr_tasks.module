@@ -569,7 +569,12 @@ function gdpr_tasks_collect_rta_data_extract_value($type, EntityMetadataWrapper 
   if (isset($info['gdpr sars callback']) && is_callable($info['gdpr sars callback'])) {
     return $info['gdpr sars callback']($value, $assets);
   }
-  
+  // Dont try to render empty data.
+  $test_empty = $value->value();
+  if (empty($test_empty)) {
+    return '';
+  }
+
   // Make pre adjustment for known multi property values.
   if ($type == 'field_item_image') {
     $type = 'file';
@@ -592,7 +597,7 @@ function gdpr_tasks_collect_rta_data_extract_value($type, EntityMetadataWrapper 
     return "assets/{$value->getIdentifier()}." . pathinfo($value->value()->uri, PATHINFO_EXTENSION);
   }
   else {
-    return (string) $value->value();
+    return !is_array($value->value()) ? (string) $value->value() : 'Array';
   }
 }
 
