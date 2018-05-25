@@ -6,6 +6,17 @@
  */
 
 /**
+ * Implements hook_module_implements_alter().
+ */
+function gdpr_tasks_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'menu_alter') {
+    $group = $implementations['gdpr_tasks'];
+    unset($implementations['gdpr_tasks']);
+    $implementations['gdpr_tasks'] = $group;
+  }
+}
+
+/**
  * Implements hook_entity_info().
  */
 function gdpr_tasks_entity_info() {
@@ -104,19 +115,12 @@ function gdpr_tasks_menu() {
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
   );
-  $items['user/%user/gdpr/requests'] = array(
-    'title' => 'My data requests',
-    'access arguments' => array('view own gdpr tasks'),
-    'page callback' => 'gdpr_task_user_request',
-    'page arguments' => array(1),
-    'type' => MENU_LOCAL_TASK,
-    'file' => 'gdpr_tasks.pages.inc',
-  );
   $items['user/%user/gdpr/requests/gdpr_remove/add'] = array(
     'title' => 'Request data removal',
     'page callback' => 'gdpr_tasks_request',
     'page arguments' => array(1, 4),
-    'access arguments' => array('request gdpr tasks'),
+    'access callback' => 'gdpr_tasks_user_tasks_access',
+    'access arguments' => array('request', 1),
     'type' => MENU_LOCAL_ACTION,
     'file' => 'gdpr_tasks.pages.inc',
   );
@@ -124,7 +128,8 @@ function gdpr_tasks_menu() {
     'title' => 'Request data export',
     'page callback' => 'gdpr_tasks_request',
     'page arguments' => array(1, 4),
-    'access arguments' => array('request gdpr tasks'),
+    'access callback' => 'gdpr_tasks_user_tasks_access',
+    'access arguments' => array('request', 1),
     'type' => MENU_LOCAL_ACTION,
     'file' => 'gdpr_tasks.pages.inc',
   );
@@ -139,6 +144,14 @@ function gdpr_tasks_menu() {
     'weight' => 99,
   );
   return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function gdpr_tasks_menu_alter(&$items) {
+  $items['user/%/gdpr/requests']['access callback'] = 'gdpr_tasks_user_tasks_access';
+  $items['user/%/gdpr/requests']['access arguments'] = array('view', 1);
 }
 
 /**
@@ -182,6 +195,13 @@ function gdpr_tasks_permission() {
   );
 
   return $perms;
+}
+
+function gdpr_tasks_user_tasks_access($op, $account) {
+  global $user;
+  $own = $account == $user->uid ? 'own ' : '';
+  $permission = "{$op} {$own}gdpr tasks";
+  return user_access($permission);
 }
 
 /**
@@ -660,7 +680,7 @@ function gdpr_tasks_send_mail($key, GDPRTask $task, array $tokens = array()) {
   $emails = variable_get('gdpr_tasks_emails', array());
 
   // Allow other modules to alter the task emails.
-  drupal_alter('gdpr_tasks_send_mail', $emails, $key, $ticket, $tokens);
+  drupal_alter('gdpr_tasks_send_mail', $emails, $key, $task, $tokens);
 
   if (empty($emails[$key]['enabled'])) {
     return;
