@@ -42,6 +42,7 @@ $plugin = array(
 function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
   /* @var GDPRFieldData $field_data */
   $field_data = $form_state['item'];
+  $entity_type = entity_get_info($field_data->entity_type);
 
   $form['field'] = array(
     '#type' => 'fieldset',
@@ -121,21 +122,31 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
     '#type' => 'value',
     '#value' => FALSE,
   );
+  $form['settings']['gdpr_fields_no_follow'] = array(
+    '#type' => 'value',
+    '#value' => FALSE,
+  );
   $form['settings']['gdpr_sars_filename'] = array(
     '#type' => 'value',
     '#value' => FALSE,
   );
 
   if (isset($info)) {
-    if ($type != 'file' && ($entity_type = entity_get_info($type))) {
+    if ($type != 'file' && ($target_type = entity_get_info($type))) {
       // Ownership tracking.
+      $option_vars = array(
+        '%field_name' => $field_data->getSetting('label'),
+        '%label' => isset($entity_type['bundles'][$field_data->entity_bundle]['label']) ? $entity_type['bundles'][$field_data->entity_bundle]['label'] : $entity_type['label'],
+      );
       $form['settings']['gdpr_fields_owner'] = array(
-        '#type' => 'checkbox',
+        '#type' => 'radios',
+        '#title' => t('Ownership'),
         '#default_value' => $field_data->getSetting('gdpr_fields_owner', FALSE),
-        '#title' => t('Field is owner'),
-        '#description' => t('If checked, this entity will be included for any task including the %type this property references.', array(
-          '%type' => $entity_type['label'],
-        )),
+        '#options' => array(
+          0 => t('This entity owns the entity this field references (the %label owns the %field_name)', $option_vars),
+          1 => t('This field references an entity that owns this entity (the %field_name owns this %label)', $option_vars),
+        ),
+        '#description' => t('Only shows for entity references.'),
         '#states' => array(
           'visible' => array(
             ':input[name="settings[gdpr_fields_enabled]"]' => array('value' => 1),
@@ -143,10 +154,24 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
         ),
       );
 
+      $form['settings']['gdpr_fields_no_follow'] = array(
+        '#type' => 'checkbox',
+        '#default_value' => $field_data->getSetting('gdpr_fields_no_recursion', FALSE),
+        '#title' => t('Do not include any information from the entity this references'),
+        '#description' => t('If checked, this relationship will not be followed when looking for additional personal information. If you choose "Right to access: Included" we will show the label of the referenced entity.'),
+        '#states' => array(
+          'visible' => array(
+            ':input[name="settings[gdpr_fields_enabled]"]' => array('value' => 1),
+            ':input[name="settings[gdpr_fields_owner]"]' => array('value' => 0),
+          ),
+        ),
+      );
+
       // Target file.
+      // @todo: Move to a form alter in gdpr_tasks.
       $form['settings']['gdpr_sars_filename'] = array(
         '#type' => 'textfield',
-        '#title' => t('SARs filename'),
+        '#title' => t('Right to access filename'),
         '#description' => t('Specify which file this should be included in. The base user will go into %main.', array(
           '%main' => 'main.csv',
         )),
@@ -158,8 +183,10 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
         '#states' => array(
           'visible' => array(
             ':input[name="settings[gdpr_fields_enabled]"]' => array('value' => 1),
+            ':input[name="settings[gdpr_fields_no_follow]"]' => array('checked' => FALSE),
           ),
         ),
+        '#weight' => 30,
       );
     }
   }
@@ -178,6 +205,7 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
         ':input[name="settings[gdpr_fields_enabled]"]' => array('value' => 1),
       ),
     ),
+    '#weight' => 20,
   );
 
   $form['settings']['gdpr_fields_rtf'] = array(
@@ -195,6 +223,7 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
         ':input[name="settings[gdpr_fields_enabled]"]' => array('value' => 1),
       ),
     ),
+    '#weight' => 40,
   );
 
   // @todo Filter by relevance.
@@ -213,6 +242,7 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
         ':input[name="settings[gdpr_fields_rtf]"]' => array('value' => 'anonymise'),
       ),
     ),
+    '#weight' => 50,
   );
 
   $form['settings']['gdpr_fields_notes'] = array(
@@ -224,6 +254,7 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
         ':input[name="settings[gdpr_fields_enabled]"]' => array('value' => ''),
       ),
     ),
+    '#weight' => 99,
   );
 }
 
@@ -241,6 +272,7 @@ function gdpr_fields_field_data_export_ui_form_submit(&$form, &$form_state) {
     unset($form_state['values']['settings']['gdpr_fields_rtf']);
     unset($form_state['values']['settings']['gdpr_fields_sanitizer']);
     unset($form_state['values']['settings']['gdpr_fields_owner']);
+    unset($form_state['values']['settings']['gdpr_fields_no_follow']);
     unset($form_state['values']['settings']['gdpr_sars_filename']);
   }
 

@@ -82,6 +82,11 @@ function gdpr_fields_gdpr_fields_default_field_data() {
  *   The array of entities for the task.
  */
 function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_list = array(), $source_plugin = NULL, $row_id = NULL) {
+  // References to deleted entities may get this far, but without $entity.
+  if (empty($entity)) {
+    return $entity_list;
+  }
+
   // Get the wrapper and entity id.
   /* @var \EntityDrupalWrapper $wrapper */
   $wrapper = entity_metadata_wrapper($entity_type, $entity);
@@ -105,7 +110,13 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
   // @todo: Exclude entity types.
   foreach ($wrapper->getPropertyInfo() as $property_name => $property_info) {
     // If there is no value, we don't need to proceed.
-    if (!$wrapper->{$property_name}->value()) {
+    try {
+      if (!$wrapper->{$property_name}->value()) {
+        continue;
+      }
+    }
+    catch (Exception $e) {
+      // Treat exceptions like no value.
       continue;
     }
 
@@ -119,17 +130,20 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
     }
     
     // If it is an entity property recursively call this function.
-    if ($property_type != 'file' && ($property_type == 'entity' || entity_get_info($property_type))) {
+    if ($property_type != 'file' && entity_get_info($property_type)) {
       // If the gdpr settings tell us not to follow related entities through
       // this property then exclude them.
       $GDPR_data = GDPRFieldData::createFromWrapper($wrapper->{$property_name});
-      if ($GDPR_data && !$GDPR_data->includeRelatedEntities()) {
+      if (!$GDPR_data) {
         continue;
       }
-      
+      if (!$GDPR_data->includeRelatedEntities()) {
+        continue;
+      }
+
       // If the property is a list then loop over each item.
       if ($is_list) {
-        foreach ($wrapper->{$property_name} as $property_wrapper) {
+        foreach ($wrapper->{$property_name} as $delta => $property_wrapper) {
           $entity_list = gdpr_fields_collect_gdpr_entities(
             $property_wrapper->type(),
             $property_wrapper->value(),
@@ -201,32 +215,45 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
 
   // Track through ownership. This requires looking for any owner field that
   // references the current owner type.
-// pseudo code
-//  foreach ($fields as $field) {
-//    /* @var \GDPRFieldData $field */
-//    if ($field->getSetting('gdpr_fields_owner', FALSE) && $field_target_type == $entity_type) {
-//      $query = new EntityFieldQuery();
-//      $query->entityCondition('entity_type', $field->entity_type);
-//      $query->entityCondition('bundle', $field->entity_bundle);
-//      if ($is_field) {
-//        $query->fieldCondition($field->property_name, 'target_id', $entity_id);
-//      }
-//      else {
-//        $query->propertyCondition($field->property_name, $entity_id);
-//      }
-//      $results = $query->execute();
-//      if (isset($results[$field->entity_type])) {
-//        foreach (entity_load($field->entity_type, array_keys($results[$field->entity_type])) as $owned_entity) {
-//          $entity_list = gdpr_fields_collect_gdpr_entities(
-//            $field->entity_type,
-//            $owned_entity,
-//            $entity_list,
-//            $field->name
-//          );
-//        }
-//      }
-//    }
-//  }
+  $fields = ctools_export_load_object('gdpr_fields_field_data');
+  $all_property_info = entity_get_property_info();
+  foreach ($fields as $field) {
+    /* @var \GDPRFieldData $field */
+    if ($field->getSetting('gdpr_fields_owner', FALSE)) {
+      // Get the data type.
+      if (isset($all_property_info[$field->entity_type]['bundles'][$field->entity_bundle]['properties'][$field->property_name])) {
+        $property_info = $all_property_info[$field->entity_type]['bundles'][$field->entity_bundle]['properties'][$field->property_name];
+      }
+      else {
+        $property_info = $all_property_info[$field->entity_type]['properties'][$field->property_name];
+      }
+      $type = entity_property_extract_innermost_type($property_info['type']);
+
+      // If the target is our current entity type, find all owned entities.
+      if ($type == $entity_type) {
+        $query = new EntityFieldQuery();
+        $query->entityCondition('entity_type', $field->entity_type);
+        $query->entityCondition('bundle', $field->entity_bundle);
+        if (!empty($property_info['field'])) {
+          $query->fieldCondition($field->property_name, 'target_id', $entity_id);
+        }
+        else {
+          $query->propertyCondition($field->property_name, $entity_id);
+        }
+        $results = $query->execute();
+        if (isset($results[$field->entity_type])) {
+          foreach (entity_load($field->entity_type, array_keys($results[$field->entity_type])) as $owned_entity) {
+            $entity_list = gdpr_fields_collect_gdpr_entities(
+              $field->entity_type,
+              $owned_entity,
+              $entity_list,
+              $field->name
+            );
+          }
+        }
+      }
+    }
+  }
 
   return $entity_list;
 }

@@ -170,14 +170,25 @@ class GDPRFieldData {
   }
   
   /**
-   * Whether to recurse to entities included in this propert.
+   * Whether to recurse to entities included in this property.
    */
   public function includeRelatedEntities() {
-    if ($this->getSetting('gdpr_fields_enabled', 0)) {
-      return TRUE;
+    // If not explicitly a GDPR field, don't recurse.
+    if (!$this->getSetting('gdpr_fields_enabled')) {
+      return FALSE;
     }
-    
-    return FALSE;
+
+    // If the field is an owner, don't recurse.
+    if ($this->getSetting('gdpr_fields_owner')) {
+      return FALSE;
+    }
+
+    // Don't follow if we've been explicitly set not to.
+    if ($this->getSetting('gdpr_fields_no_follow')) {
+      return FALSE;
+    }
+
+    return TRUE;
   }
 
   /**
