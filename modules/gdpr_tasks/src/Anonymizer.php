@@ -5,9 +5,6 @@
  */
 class Anonymizer {
 
-  protected $plugins = [];
-  protected $plugin_data = [];
-
   /**
    * Runs anonymization routines against a user.
    *
@@ -22,82 +19,66 @@ class Anonymizer {
     // so we don't end up affecting any other references to the entity.
     $user = $task->getOwner();
 
-    $errors = [];
-    $entities = [];
-    $successes = [];
-    $failures = [];
-    $log = [];
+    $errors = array();
+    $successes = array();
+    $failures = array();
+    $log = array();
 
     if (!$this->checkExportDirectoryExists()) {
       $errors[] = 'An export directory has not been set. Please set this under Configuration -> GDPR -> Right to be Forgotten';
     }
 
     foreach (gdpr_tasks_collect_rtf_data($user, TRUE) as $plugin_id => $data) {
-      $plugin = $data['plugin'];
-      unset($data['plugin']);
+      $mode = $data['rtf'];
+      $entity_type = $data['entity_type'];
+      $entity_id = $data['entity_id'];
+      $entity = $data['entity'];
+      $wrapper = entity_metadata_wrapper($entity_type, $entity_id);
+      $entity_bundle = $wrapper->type();
 
-      $this->plugins[$plugin->entity_type][$plugin_id] = $plugin;
-      $this->plugin_data[$plugin->entity_type][$plugin_id] = $data;
-    }
-    $entities = gdpr_fields_collect_gdpr_entities('user', $user);
+      $entity_success = TRUE;
+      $success = TRUE;
+      $msg = NULL;
+      $sanitizer = '';
 
-    foreach ($entities as $entity_type => $bundles) {
-      foreach ($bundles as $entity_bundle => $entities) {
-        foreach ($entities as $bundle_entity_id => $bundle_entity) {
+      if ($mode == 'anonymise') {
+        list($success, $msg, $sanitizer) = $this->anonymize($data, $entity);
+      }
+      elseif ($mode == 'remove') {
+        list($success, $msg) = $this->remove($data, $entity);
+      }
 
-          // Re-load a fresh copy of the bundle entity from storage so we don't
-          // end up modifying any other references to the entity in memory.
-          $bundle_entity = entity_load_unchanged($entity_type, $bundle_entity_id);
-          $entity_success = TRUE;
+      if ($success === TRUE) {
+        $log[] = 'success';
+        $log[] = array(
+          'entity_id' => $entity_id,
+          'entity_type' => $entity_type . '.' . $entity_bundle,
+          'field_name' => $data['plugin']->property_name,
+          'action' => $mode,
+          'sanitizer' => $sanitizer,
+        );
+      }
+      else {
+        // Could not anonymize/remove field. Record to errors list.
+        // Prevent entity from being saved.
+        $entity_success = FALSE;
+        $errors[] = $msg;
+        $log[] = 'error';
+        $log[] = array(
+          'error' => $msg,
+          'entity_id' => $entity_id,
+          'entity_type' => $entity_type . '.' . $entity_bundle,
+          'field_name' => $data['plugin']->property_name,
+          'action' => $mode,
+          'sanitizer' => $sanitizer,
+        );
+      }
 
-          foreach ($this->getFieldsToProcess($entity_type, $bundle_entity) as $field_info) {
-            $mode = $field_info['mode'];
-
-            $success = TRUE;
-            $msg = NULL;
-            $sanitizer = '';
-
-            if ($mode == 'anonymise') {
-              list($success, $msg, $sanitizer) = $this->anonymize($field_info, $bundle_entity);
-            }
-            elseif ($mode == 'remove') {
-              list($success, $msg) = $this->remove($field_info, $bundle_entity);
-            }
-
-            if ($success === TRUE) {
-              $log[] = 'success';
-              $log[] = [
-                'entity_id' => $bundle_entity_id,
-                'entity_type' => $entity_type . '.' . $entity_bundle,
-                'field_name' => $field_info['field'],
-                'action' => $mode,
-                'sanitizer' => $sanitizer,
-              ];
-            }
-            else {
-              // Could not anonymize/remove field. Record to errors list.
-              // Prevent entity from being saved.
-              $entity_success = FALSE;
-              $errors[] = $msg;
-              $log[] = 'error';
-              $log[] = [
-                'error' => $msg,
-                'entity_id' => $bundle_entity_id,
-                'entity_type' => $entity_type . '.' . $entity_bundle,
-                'field_name' => $field_info['field'],
-                'action' => $mode,
-                'sanitizer' => $sanitizer,
-              ];
-            }
-          }
-
-          if ($entity_success) {
-            $successes[$entity_type][$bundle_entity_id] = $bundle_entity;
-          }
-          else {
-            $failures[] = $bundle_entity;
-          }
-        }
+      if ($entity_success) {
+        $successes[$entity_type][$entity_id] = $entity;
+      }
+      else {
+        $failures[] = $entity;
       }
     }
 
@@ -133,7 +114,7 @@ class Anonymizer {
   /**
    * Removes the field value.
    *
-   * @param string $field_info
+   * @param array $field_info
    *   The current field to process.
    * @param EntityInterface|stdClass $entity
    *   The current field to process.
@@ -143,60 +124,19 @@ class Anonymizer {
    */
   private function remove($field_info, $entity) {
     try {
-      /* @var EntityDrupalWrapper $wrapper */
-      $wrapper = entity_metadata_wrapper($field_info['entity_type'], $entity);
-
-      /* @var EntityMetadataWrapper $field */
-      $field = $wrapper->{$field_info['field']};
-      $this->clearField($field);
-      return [TRUE, NULL];
+      $field = $field_info['plugin']->property_name;
+      $entity->{$field} = NULL;
+      return array(TRUE, NULL);
     }
     catch (Exception $e) {
-      return [FALSE, $e->getMessage()];
-    }
-  }
-
-  /**
-   * Removes the field value.
-   *
-   * @param EntityMetadataWrapper $field
-   *   The current field to process.
-   *
-   * @return array
-   *   First element is success boolean, second element is the error message.
-   */
-  protected function clearField($field) {
-    if ($field instanceof EntityValueWrapper) {
-      // @todo Add any other types that come up.
-      switch ($field->info()['type']) {
-        case 'text':
-          $field->set('');
-          break;
-
-        default:
-          $field->set(NULL);
-      }
-    }
-    elseif ($field instanceof EntityListWrapper) {
-      $field->set(array());
-    }
-    elseif ($field instanceof EntityStructureWrapper) {
-      $list = $field->getPropertyInfo();
-      if (!empty($list) && !empty($field->value())) {
-        foreach (array_keys($field->value()) as $key) {
-          if (!empty($list) && in_array($key, array_keys($list))) {
-            $sub_field = $field->{$key};
-            $this->clearField($sub_field);
-          }
-        }
-      }
+      return array(FALSE, $e->getMessage());
     }
   }
 
   /**
    * Runs anonymize functionality against a field.
    *
-   * @param string $field_info
+   * @param array $field_info
    *   The field to anonymise.
    * @param $entity
    *   The parent entity.
@@ -206,13 +146,14 @@ class Anonymizer {
    */
   private function anonymize($field_info, $entity) {
     $sanitizer_id = $this->getSanitizerId($field_info, $entity);
+    $field = $field_info['plugin']->property_name;
 
     if (!$sanitizer_id) {
-      return [
+      return array(
         FALSE,
-        "Could not anonymize field {$field_info['field']}. Please consider changing this field from 'anonymize' to 'remove', or register a custom sanitizer.",
+        "Could not anonymize field {$field}. Please consider changing this field from 'anonymize' to 'remove', or register a custom sanitizer.",
         NULL,
-      ];
+      );
     }
 
     try {
@@ -223,11 +164,11 @@ class Anonymizer {
 
       $wrapper = entity_metadata_wrapper($field_info['entity_type'], $entity);
 
-      $wrapper->{$field_info['field']} = $sanitizer->sanitize($field_info['value'], $wrapper->{$field_info['field']});
-      return [TRUE, NULL, $sanitizer_id];
+      $wrapper->{$field} = $sanitizer->sanitize($field_info['value'], $wrapper->{$field});
+      return array(TRUE, NULL, $sanitizer_id);
     }
     catch (\Exception $e) {
-      return [FALSE, $e->getMessage(), NULL];
+      return array(FALSE, $e->getMessage(), NULL);
     }
   }
 
@@ -246,52 +187,9 @@ class Anonymizer {
   }
 
   /**
-   * Gets fields to anonymize/remove.
-   *
-   * @param $entity
-   *   The entity to anonymise.
-   *
-   * @return array
-   *   Array containing metadata about the entity.
-   *   Elements are entity_type, bundle, field, value, mode and plugin.
-   */
-  private function getFieldsToProcess($entity_type, $entity) {
-    if (!isset($this->plugins[$entity_type])) {
-      return array();
-    }
-
-    $plugins = $this->plugins[$entity_type];
-    list(, , $bundle) = entity_extract_ids($entity_type, $entity);
-
-    // Get fields for entity.
-    $fields = [];
-    foreach ($entity as $field_id => $field) {
-      $plugin_name = "{$entity_type}|{$bundle}|{$field_id}";
-
-      if (isset($plugins[$plugin_name])) {
-        $plugin = $plugins[$plugin_name];
-        $data = $this->plugin_data[$entity_type][$plugin_name];
-
-        if (!empty($data['rtf']) && $data['rtf'] !== 'no') {
-          $fields[] = array(
-            'entity_type' => $entity_type,
-            'bundle' => $bundle,
-            'field' => $field_id,
-            'value' => $data['value'],
-            'mode' => $data['rtf'],
-            'plugin' => $plugin,
-          );
-        }
-      }
-    }
-
-    return $fields;
-  }
-
-  /**
    * Gets the ID of the sanitizer plugin to use on this field.
    *
-   * @param string $field_info
+   * @param array $field_info
    *   The field to anonymise.
    * @param $entity
    *   The parent entity.
