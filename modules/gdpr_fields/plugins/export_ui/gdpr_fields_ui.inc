@@ -42,7 +42,6 @@ $plugin = array(
 function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
   /* @var GDPRFieldData $field_data */
   $field_data = $form_state['item'];
-  $entity_type = entity_get_info($field_data->entity_type);
 
   $form['field'] = array(
     '#type' => 'fieldset',
@@ -132,21 +131,15 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
   );
 
   if (isset($info)) {
-    if ($type != 'file' && ($target_type = entity_get_info($type))) {
+    if ($type != 'file' && ($entity_type = entity_get_info($type))) {
       // Ownership tracking.
-      $option_vars = array(
-        '%field_name' => $field_data->getSetting('label'),
-        '%label' => isset($entity_type['bundles'][$field_data->entity_bundle]['label']) ? $entity_type['bundles'][$field_data->entity_bundle]['label'] : $entity_type['label'],
-      );
       $form['settings']['gdpr_fields_owner'] = array(
-        '#type' => 'radios',
-        '#title' => t('Ownership'),
+        '#type' => 'checkbox',
         '#default_value' => $field_data->getSetting('gdpr_fields_owner', FALSE),
-        '#options' => array(
-          0 => t('This entity owns the entity this field references (the %label owns the %field_name)', $option_vars),
-          1 => t('This field references an entity that owns this entity (the %field_name owns this %label)', $option_vars),
-        ),
-        '#description' => t('Only shows for entity references.'),
+        '#title' => t('Field is owner'),
+        '#description' => t('If checked, this entity will be included for any task including the %type this property references.', array(
+          '%type' => $entity_type['label'],
+        )),
         '#states' => array(
           'visible' => array(
             ':input[name="settings[gdpr_fields_enabled]"]' => array('value' => 1),
@@ -156,13 +149,12 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
 
       $form['settings']['gdpr_fields_no_follow'] = array(
         '#type' => 'checkbox',
-        '#default_value' => $field_data->getSetting('gdpr_fields_no_recursion', FALSE),
-        '#title' => t('Do not include any information from the entity this references'),
-        '#description' => t('If checked, this relationship will not be followed when looking for additional personal information. If you choose "Right to access: Included" we will show the label of the referenced entity.'),
+        '#default_value' => $field_data->getSetting('gdpr_fields_no_follow', FALSE),
+        '#title' => t('Do no follow this relationship'),
+        '#description' => t('If checked, this relationship will not be followed when looking for additional personal information.'),
         '#states' => array(
           'visible' => array(
             ':input[name="settings[gdpr_fields_enabled]"]' => array('value' => 1),
-            ':input[name="settings[gdpr_fields_owner]"]' => array('value' => 0),
           ),
         ),
       );
@@ -171,7 +163,7 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
       // @todo: Move to a form alter in gdpr_tasks.
       $form['settings']['gdpr_sars_filename'] = array(
         '#type' => 'textfield',
-        '#title' => t('Right to access filename'),
+        '#title' => t('SARs filename'),
         '#description' => t('Specify which file this should be included in. The base user will go into %main.', array(
           '%main' => 'main.csv',
         )),
@@ -225,6 +217,13 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
     ),
     '#weight' => 40,
   );
+
+  // Force removal to 'no' for computed properties.
+  if (!empty($field_data->computed)) {
+    $form['settings']['gdpr_fields_rtf']['#default_value'] = 'no';
+    $form['settings']['gdpr_fields_rtf']['#disabled'] = TRUE;
+    $form['settings']['gdpr_fields_rtf']['#description'] = '*This is a computed field and cannot be removed.';
+  }
 
   // @todo Filter by relevance.
   $sanitizer_options = array();

@@ -83,6 +83,7 @@ class GDPRFieldData {
 
     // @todo Should computed properties be removed instead or disabled?
     if (!empty($plugin['computed'])) {
+      $field->computed = TRUE;
       $field->disabled = TRUE;
     }
 
