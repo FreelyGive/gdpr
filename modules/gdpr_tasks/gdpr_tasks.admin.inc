@@ -63,7 +63,7 @@ function gdpr_task_form_submit($form, &$form_state) {
   // Process and close the task.
   $task->processed_by = $user->uid;
   drupal_set_message(t('Task has been processed.'));
-  $task->status = 'closed';
+  $task->status = 'processed';
   $task->save();
 
   // Send confirmation email.
@@ -113,40 +113,98 @@ function gdpr_task_edit_gdpr_sar_form($form, &$form_state) {
   $task = $form_state['task'] = $form_state['build_info']['args'][0];
   $form = gdpr_task_form($form, $form_state);
 
-  // Disable export field form element.
-  $form['gdpr_tasks_sar_export']['#disabled'] = TRUE;
-
-
-  $header_table = array(
-    'Entity',
-    'Entity ID',
-    'File name',
-    'File row',
-    'Name',
-    'Data',
-    'Notes',
-    'Right to access',
-  );
-  $rows = gdpr_tasks_collect_rta_data(user_load($task->user_id));
-
-  $data_table = array(
-    '#theme' => 'table',
-    '#header' => $header_table,
-    '#rows' => $rows,
-    '#caption' => 'Export data',
+  $plugins = ctools_export_load_object('gdpr_fields_field_data');
+  $inc_label_map = array(
+    'inc' => '[' . t('Include') . ']',
+    'maybe' => '[' . t('Maybe') . ']',
   );
 
-  $form['data'] = array(
-    '#markup' => drupal_render($data_table),
-  );
+  foreach ($task->gdpr_tasks_sar_export_parts[LANGUAGE_NONE] as $part) {
+    if (($handle = fopen(drupal_realpath($part['uri']), "r")) !== FALSE) {
+      $row_type = 'plugin';
+      $type = array();
+      $header = array();
+      $rows = array();
+      while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        switch ($row_type) {
+          case 'plugin':
+            foreach ($data as $key => $plugin_id) {
+              if (isset($plugins[$plugin_id])) {
+                $plugin = $plugins[$plugin_id];
+                $inc = $plugin->getSetting('gdpr_fields_rta');
+              }
+
+              $type[$key] = isset($inc) ? $inc_label_map[$inc] : '';
+            }
+
+            $row_type = 'header';
+            break;
+          case 'header':
+            $header = $data;
+            $rows[] = $type;
+            $row_type = 'row';
+            break;
+          default:
+            $rows[] = $data;
+            break;
+        }
+      }
+      fclose($handle);
+    }
+
+    $form[$part['filename']] = array(
+      '#theme' => 'table',
+      '#header' => $header,
+      '#rows' => $rows,
+      '#caption' => t('File contents for @filename', array('@filename' =>  $part['filename'])),
+    );
+
+//    $field_set = array(
+//      'element' => array(
+//        '#title' => t('File contents for @filename', array('@filename' =>  $part['filename'])),
+//        '#value' => theme('table', $table),
+//        '#children' => '<div>',
+//        '#attributes' => array (
+//          'class' => array(
+//            'collapsible',
+//          ),
+//        ),
+//      ),
+//    );
+//
+//    $form[$part['filename']] = array(
+//      'element' => array(
+//        '#title' => t('File contents for @filename', array('@filename' =>  $part['filename'])),
+//        '#value' => '',
+//        '#children' => '<div>',
+//        '#attributes' => array (
+//          'class' => array(
+//            'collapsible',
+//          ),
+//        ),
+//      ),
+//    );
+//
+//    $form[$part['filename']]['element']['#value'] = theme('fieldset', $field_set);
+
+//    $form[$part['filename']] = ;
+
+  }
 
   $form['actions']['submit']['#value'] = t('Process');
   $form['actions']['submit']['#name'] = 'export';
 
 
+  $form['gdpr_tasks_manual_data']['#access'] = FALSE;
   if ($task->status == 'closed') {
-    $form['gdpr_tasks_manual_data']['#disabled'] = TRUE;
+    // Disable export field form element.
+    $form['gdpr_tasks_sar_export']['#disabled'] = TRUE;
+    $form['gdpr_tasks_sar_export_parts']['#access'] = FALSE;
+    $form['gdpr_tasks_sar_export_assets']['#access'] = FALSE;
     $form['actions']['#access'] = FALSE;
+  }
+  else {
+    $form['gdpr_tasks_sar_export']['#access'] = FALSE;
   }
 
   return $form;
@@ -196,32 +254,8 @@ function gdpr_task_edit_gdpr_sar_form_submit($form, &$form_state) {
   // Process the export.
   /* @var GDPRTask $task */
   $task = $form_state['task'];
-  $manual = $form_state['values']['gdpr_tasks_manual_data'][LANGUAGE_NONE][0]['value'];
-
-  // @todo add getOwner method to Task.
-  $data = gdpr_tasks_collect_rta_data(user_load($task->user_id));
-
-  $inc = array();
-  foreach ($data as $key => $values) {
-    $rta = $values['rta'];
-    unset($values['rat']);
-    if ($rta == 'inc') {
-      $inc[$key] = $values;
-    }
-  }
-
-  $file = $task->wrapper()->gdpr_tasks_sar_export->file->value();
-  $file_name = $file->filename;
-  $file_uri = $file->uri;
-  $dirname = str_replace($file_name, '', $file_uri);
-
-  $destination = gdpr_tasks_update_task_csv($inc, $dirname);
-  $export = file_get_contents($destination);
-
-  $export .= $manual;
-
-  // @todo Add headers to csv export.
-  file_save_data($export, $file_uri, FILE_EXISTS_REPLACE);
+  $queue = \DrupalQueue::get('gdpr_tasks_process_gdpr_sar');
+  $queue->createItem($task->identifier());
 }
 
 /**

@@ -87,15 +87,16 @@ class GdprTasksSarWorker {
 
     // Build our export files.
     $csvs = array();
-    foreach ($all_data as $plugin_id => $data) {
+    foreach ($all_data as $plugin_id =>  $data) {
       if ($plugin_id == '_assets') {
         $wrapper->gdpr_tasks_sar_export_assets = $data;
         continue;
       }
 
-      // Build the header if required.
-      if (!isset($csvs[$data['file']]['_header'][$plugin_id])) {
-        $csvs[$data['file']]['_header'][$plugin_id] = $data['label'];
+      // Build the headers if required.
+      if (!isset($csvs[$data['file']]['_header'][$data['plugin_name']])) {
+        $csvs[$data['file']]['_plugin_id'][$data['plugin_name']] = $data['plugin_name'];
+        $csvs[$data['file']]['_header'][$data['plugin_name']] = $data['label'];
       }
 
       // Initialise and fill out the row to make sure things come in a
@@ -106,7 +107,7 @@ class GdprTasksSarWorker {
       $csvs[$data['file']][$data['row_id']] += array_fill_keys(array_keys($csvs[$data['file']]['_header']), '');
 
       // Put our piece of information in place.
-      $csvs[$data['file']][$data['row_id']][$plugin_id] = $data['value'];
+      $csvs[$data['file']][$data['row_id']][$data['plugin_name']] = $data['value'];
     }
 
     // Gather existing files.
@@ -128,12 +129,11 @@ class GdprTasksSarWorker {
           'display' => TRUE,
         );
       }
-
-      $handler = fopen($file->uri, 'w');
-      foreach ($data as $row) {
-        fputcsv($handler, $row);
+      else {
+        $file = $files[$filename];
       }
-      fclose($handler);
+
+      $this->writeCsv($file->uri, $data);
       file_save($file);
     }
 
@@ -167,9 +167,15 @@ class GdprTasksSarWorker {
       $part_file = $item->file->value();
       $part_files[] = $part_file;
 
+      // Re-write the file to remove the header.
+      $data = $this->readCsv($part_file->uri);
+      array_shift($data);
+      $this->writeCsv($part_file->uri, $data);
+      file_save($part_file);
+
       // Add the file to the zip.
       // @todo: Add error handling.
-      $zip->addFile(drupal_realpath($part_file->uri), basename($part_file->uri));
+      $zip->addFile(drupal_realpath($part_file->uri), $part_file->filename);
     }
 
     // Add in any attached files that need including.
@@ -204,6 +210,42 @@ class GdprTasksSarWorker {
     // Update the status as completed.
     $task->status = 'closed';
     $task->save();
+  }
+
+  /**
+   * Read data from a CSV file.
+   *
+   * @param string $filename
+   *   The filename to read from (supports streams).
+   *
+   * @return array
+   */
+  public static function readCsv($filename) {
+    $data = array();
+    $handle = fopen($filename, 'r');
+    while (!feof($handle)) {
+      $data[] = fgetcsv($handle);
+    }
+    fclose($handle);
+    return $data;
+  }
+
+  /**
+   * Write data to a CSV file.
+   *
+   * @param string $filename
+   *   The filename to write to (supports streams).
+   * @param array $content
+   *   The data to write, an array containing each row as an array.
+   */
+  protected function writeCsv($filename, array $content) {
+    $handler = fopen($filename, 'w');
+    // Write the UTF-8 BOM header so excel handles the encoding.
+    fprintf($handler, chr(0xEF) . chr(0xBB) . chr(0xBF));
+    foreach ($content as $row) {
+      fputcsv($handler, $row);
+    }
+    fclose($handler);
   }
 
 }

@@ -542,6 +542,7 @@ function gdpr_tasks_collect_rta_data($user) {
               $filename = $plugins[$entity->_gdpr_source_plugin]->getSetting('gdpr_sars_filename', $filename);
             }
             $data = array(
+              'plugin_name' => $plugin_name,
               'entity_type' => $entity_type,
               'entity_id' => $entity_id,
               // @todo: Make this configurable.
@@ -569,6 +570,7 @@ function gdpr_tasks_collect_rta_data_extract_value($type, EntityMetadataWrapper 
   if (isset($info['gdpr sars callback']) && is_callable($info['gdpr sars callback'])) {
     return $info['gdpr sars callback']($value, $assets);
   }
+
   // Dont try to render empty data.
   $test_empty = $value->value();
   if (empty($test_empty)) {
@@ -589,7 +591,9 @@ function gdpr_tasks_collect_rta_data_extract_value($type, EntityMetadataWrapper 
   if ($type == 'entity') {
     /* @var \EntityDrupalWrapper $value */
     // @todo: Should we include filename to help people find it?
-    return "{$value->label()} [{$value->id()}]";
+    $label = $value->label();
+    $id = $value->getIdentifier();
+    return ($label == $id) ? $id : "{$value->label()} [{$value->getIdentifier()}]";
   }
   elseif ($type == 'file') {
     /* @var \EntityDrupalWrapper $value */
@@ -597,7 +601,8 @@ function gdpr_tasks_collect_rta_data_extract_value($type, EntityMetadataWrapper 
     return "assets/{$value->getIdentifier()}." . pathinfo($value->value()->uri, PATHINFO_EXTENSION);
   }
   else {
-    return !is_array($value->value()) ? (string) $value->value() : 'Array';
+    $raw_value = $value->value();
+    return is_scalar($raw_value) ? (string) $raw_value : gettype($raw_value);
   }
 }
 
@@ -719,6 +724,48 @@ function gdpr_tasks_entity_property_info_alter(&$info) {
   }
 }
 
+/**
+ * Implements hook_field_info_alter().
+ */
+function gdpr_tasks_field_info_alter(&$field_info) {
+  $types = array('datetime', 'date', 'datestampe', 'name', 'addressfield', 'commerce_price');
+  foreach ($types as $type) {
+    $field_info[$type]['property_callbacks'][] = 'gdpr_tasks_field_metatdata_property_info_alter';
+  }
+}
+
+/**
+ * Field entity metadata property callback.
+ *
+ * @see \gdpr_tasks_field_info_alter()
+ */
+function gdpr_tasks_field_metatdata_property_info_alter(&$info, $entity_type, $field, $instance, $field_type) {
+  $name = $field['field_name'];
+  $property = &$info[$entity_type]['bundles'][$instance['bundle']]['properties'][$name];
+  $type = entity_property_extract_innermost_type($property['type']);
+
+  switch ($type) {
+    case 'date':
+      $property['gdpr sars callback'] = 'gdpr_tasks_sars_callback_date';
+      break;
+
+    case 'field_item_name':
+      $property['gdpr sars callback'] = 'gdpr_tasks_sars_callback_name_field';
+      break;
+
+    case 'addressfield':
+      $property['gdpr sars callback'] = 'gdpr_tasks_sars_callback_address_field';
+      break;
+
+    case 'commerce_price';
+      $property['gdpr sars callback'] = 'gdpr_tasks_sars_callback_commerce_price';
+      break;
+  }
+}
+
+/**
+ * GDPR SARs render callback for user roles.
+ */
 function gdpr_tasks_sars_callback_user_roles(EntityMetadataWrapper $value) {
   $rid = $value->value();
   if (in_array($rid, array(DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID))) {
@@ -727,4 +774,41 @@ function gdpr_tasks_sars_callback_user_roles(EntityMetadataWrapper $value) {
 
   $role = user_role_load($rid);
   return $role->name;
+}
+
+/**
+ * GDPR SARs render callback for dates.
+ */
+function gdpr_tasks_sars_callback_date(EntityMetadataWrapper $value) {
+  return date('c', $value->value());
+}
+
+/**
+ * GDPR SARs render callback for name fields.
+ */
+function gdpr_tasks_sars_callback_name_field(EntityMetadataWrapper $value) {
+  return name_format($value->value(), '((((t+ig)+im)+if)+is)+jc');
+}
+
+/**
+ * GDPR SARs render callback for address fields.
+ */
+function gdpr_tasks_sars_callback_address_field(EntityMetadataWrapper $value) {
+  $components = array();
+  $address = $value->value();
+
+  foreach (array('name_line', 'first_name', 'last_name', 'organisation_name', 'thoroughfare', 'premise', 'locality', 'administrative_area', 'postal_code', 'country') as $component) {
+    if (!empty($address[$component])) {
+      $components[] = $address[$component];
+    }
+  }
+
+  return implode(', ', $components);
+}
+
+/**
+ * GDPR SARs render callback for commerce price fields.
+ */
+function gdpr_tasks_sars_callback_commerce_price(EntityMetadataWrapper $value) {
+  return commerce_currency_format($value->amount->value(), $value->currency_code->value());
 }
