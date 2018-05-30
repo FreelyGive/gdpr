@@ -665,6 +665,11 @@ function gdpr_tasks_collect_rtf_data($user, $include_plugins = FALSE) {
               'rtf' => $field_config->getSetting('gdpr_fields_rtf'),
             );
 
+            // If entity ID is being removed display as deletion.
+            if ($data['rtf'] == 'remove' && Anonymizer::propertyIsEntityId($field_config->entity_type, $field_config->property_name)) {
+              $data['rtf'] = 'delete entire entity';
+            }
+
             if ($include_plugins) {
               $data['plugin'] = $field_config;
               $data['entity_type'] = $entity_type;

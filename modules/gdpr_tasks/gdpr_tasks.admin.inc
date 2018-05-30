@@ -158,37 +158,6 @@ function gdpr_task_edit_gdpr_sar_form($form, &$form_state) {
       '#rows' => $rows,
       '#caption' => t('File contents for @filename', array('@filename' =>  $part['filename'])),
     );
-
-//    $field_set = array(
-//      'element' => array(
-//        '#title' => t('File contents for @filename', array('@filename' =>  $part['filename'])),
-//        '#value' => theme('table', $table),
-//        '#children' => '<div>',
-//        '#attributes' => array (
-//          'class' => array(
-//            'collapsible',
-//          ),
-//        ),
-//      ),
-//    );
-//
-//    $form[$part['filename']] = array(
-//      'element' => array(
-//        '#title' => t('File contents for @filename', array('@filename' =>  $part['filename'])),
-//        '#value' => '',
-//        '#children' => '<div>',
-//        '#attributes' => array (
-//          'class' => array(
-//            'collapsible',
-//          ),
-//        ),
-//      ),
-//    );
-//
-//    $form[$part['filename']]['element']['#value'] = theme('fieldset', $field_set);
-
-//    $form[$part['filename']] = ;
-
   }
 
   $form['actions']['submit']['#value'] = t('Process');

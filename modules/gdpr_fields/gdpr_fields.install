@@ -29,17 +29,17 @@ function gdpr_fields_schema() {
       ),
       'plugin_type' => array(
         'type' => 'varchar',
-        'length' => 32,
+        'length' => 128,
         'description' => 'Plugin type of the field.',
       ),
       'entity_type' => array(
         'type' => 'varchar',
-        'length' => 32,
+        'length' => 128,
         'description' => 'Entity type of field.',
       ),
       'entity_bundle' => array(
         'type' => 'varchar',
-        'length' => 32,
+        'length' => 128,
         'description' => 'Entity bundle of field.',
       ),
       'property_name' => array(

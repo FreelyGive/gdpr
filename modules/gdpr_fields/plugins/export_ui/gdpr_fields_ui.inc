@@ -218,6 +218,23 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
     '#weight' => 40,
   );
 
+  // If this is the entity's ID, treat the removal as remove the entire
+  // entity.
+  if (Anonymizer::propertyIsEntityId($field_data->entity_type, $field_data->property_name)) {
+    unset($form['settings']['gdpr_fields_rtf']['#options']['anonymise']);
+    $form['settings']['gdpr_fields_rtf']['#options']['remove'] = t('Delete entire entity');
+  }
+  // Otherwise check if this can be removed.
+  elseif (!Anonymizer::propertyCanBeRemoved($field_data->entity_type, $field_data->property_name, $info, $error_message)) {
+    unset($form['settings']['gdpr_fields_rtf']['#options']['remove']);
+    $form['settings']['gdpr_fields_rtf_disabled'] = array(
+      '#type' => 'item',
+      '#markup' => 'This field cannot be removed, only anonymised.',
+      '#description' => $error_message,
+      '#weight' => $form['settings']['gdpr_fields_rtf']['#weight'] + 0.1,
+    );
+  }
+
   // Force removal to 'no' for computed properties.
   if (!empty($field_data->computed)) {
     $form['settings']['gdpr_fields_rtf']['#default_value'] = 'no';
@@ -238,6 +255,7 @@ function gdpr_fields_field_data_export_ui_form(&$form, &$form_state) {
     '#default_value' => $field_data->getSetting('gdpr_fields_sanitizer', ''),
     '#states' => array(
       'visible' => array(
+        ':input[name="settings[gdpr_fields_enabled]"]' => array('value' => 1),
         ':input[name="settings[gdpr_fields_rtf]"]' => array('value' => 'anonymise'),
       ),
     ),

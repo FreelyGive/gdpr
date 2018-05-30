@@ -124,7 +124,25 @@ class Anonymizer {
    */
   private function remove($field_info, $entity) {
     try {
+      $entity_type = $field_info['entity_type'];
       $field = $field_info['plugin']->property_name;
+
+      // If this is the entity's ID, treat the removal as remove the entire
+      // entity.
+      if (self::propertyIsEntityId($entity_type, $field)) {
+        if (entity_delete($entity_type, $entity->{$field}) === FALSE) {
+          return array(FALSE, "Unable to delete entity type.");
+        }
+        return array(TRUE, NULL);
+      }
+
+      // Check if the property can be removed.
+      $wrapper = entity_metadata_wrapper($entity_type, $entity);
+      if (!self::propertyCanBeRemoved($entity_type, $field, $wrapper->{$field}->info(), $error_message)) {
+        return array(FALSE, $error_message);
+      }
+
+      // Otherwise assume we can simply clear the field.
       $entity->{$field} = NULL;
       return array(TRUE, NULL);
     }
@@ -206,6 +224,66 @@ class Anonymizer {
       $sanitizer = 'gdpr_sanitizer_text';
     }
     return $sanitizer;
+  }
+
+  /**
+   * Check whether a property is the entity ID.
+   *
+   * @param string $entity_type
+   *   The entity type.
+   * @param string $field
+   *   The field name.
+   *
+   * @return bool
+   *   Whether the property is the entity ID.
+   */
+  public static function propertyIsEntityId($entity_type, $field) {
+    $entity_info = entity_get_info($entity_type);
+    return $entity_info['entity keys']['id'] == $field;
+  }
+
+  /**
+   * Check whether a property can be removed.
+   *
+   * @param string $entity_type
+   *   The entity type.
+   * @param string $field
+   *   The field name.
+   * @param array $property_info
+   *   The property info.
+   * @param null $error_message
+   *   A variable to fill with an error message.
+   *
+   * @return bool
+   *   TRUE if the property can be removed, FALSE if not.
+   */
+  public static function propertyCanBeRemoved($entity_type, $field, $property_info, &$error_message = NULL) {
+    // Fail on computed fields.
+    if (!empty($property_info['computed'])) {
+      $error_message = "Unable to remove computed property.";
+      return FALSE;
+    }
+
+    // Check that this isn't a required entity property.
+    $entity_info = entity_get_info($entity_type);
+    if (!empty($entity_info['base table']) && empty($property_info['field'])) {
+      $schema_field = isset($property_info['schema field']) ? $property_info['schema field'] : $field;
+      $schema = drupal_get_schema($entity_info['base table']);
+
+      // If the field is set to not NULL, fail.
+      if (!empty($schema['fields'][$schema_field]['not null'])) {
+        $error_message = t("Unable to remove required database field %field.", array('%field' => $field));
+        return FALSE;
+      }
+
+      if (in_array($schema_field, $schema['primary key'])) {
+        $error_message = t("Unable to remove part of a primary key %field.", array('%field' => $field));
+        return FALSE;
+      }
+    }
+
+    // Otherwise assume we can.
+    return TRUE;
   }
 
 }

@@ -57,6 +57,11 @@ function gdpr_dump_gdpr_dump_default_sanitizer() {
 
   foreach ($plugins as $name => $plugin) {
     $class = ctools_plugin_get_class($plugin, 'handler');
+
+    if (!$class) {
+      continue;
+    }
+
     $export[$name] = $class::create($plugin);
   }
 
