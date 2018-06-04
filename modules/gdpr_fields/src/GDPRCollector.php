@@ -2,7 +2,9 @@
 
 namespace Drupal\gdpr_fields;
 
+use Drupal\Console\Bootstrap\Drupal;
 use Drupal\Core\Config\Entity\ConfigEntityTypeInterface;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Plugin\Context\Context;
@@ -32,16 +34,26 @@ class GDPRCollector {
   protected $relationshipManager;
 
   /**
+   * Entity field manager.
+   *
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   */
+  private $entityFieldManager;
+
+  /**
    * Constructs a GDPRCollector object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManager $entity_type_manager
    *   The entity type manager.
    * @param \Drupal\ctools\Plugin\RelationshipManager $relationship_manager
    *   The ctools relationship manager.
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
+   *   The entity field manager.
    */
-  public function __construct(EntityTypeManager $entity_type_manager, RelationshipManager $relationship_manager) {
+  public function __construct(EntityTypeManager $entity_type_manager, RelationshipManager $relationship_manager, EntityFieldManagerInterface $entity_field_manager) {
     $this->entityTypeManager = $entity_type_manager;
     $this->relationshipManager = $relationship_manager;
+    $this->entityFieldManager = $entity_field_manager;
   }
 
   /**
@@ -210,7 +222,8 @@ class GDPRCollector {
       $bundle_key = $entity_definition->getKey('bundle');
       $values[$bundle_key] = $bundle_id;
     }
-    $entity = $storage->create($values);
+
+    $field_definitions = $this->entityFieldManager->getFieldDefinitions($entity_type, $bundle_id);
 
     // Get fields for entity.
     $fields = [];
@@ -219,9 +232,8 @@ class GDPRCollector {
       return $fields;
     }
 
-    foreach ($entity as $field_id => $field) {
-      /** @var \Drupal\Core\Field\FieldItemListInterface $field */
-      $field_definition = $field->getFieldDefinition();
+    foreach ($field_definitions as $field_id => $field_definition) {
+      /** @var \Drupal\Core\Field\FieldItemListInterface $field_definition */
       $key = "$entity_type.$bundle_id.$field_id";
       $route_name = 'gdpr_fields.edit_field';
       $route_params = [
