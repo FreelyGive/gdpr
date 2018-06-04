@@ -6,8 +6,10 @@ use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
+use Drupal\gdpr_fields\GDPRCollector;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -97,21 +99,27 @@ class GdprFieldSettingsForm extends FormBase {
    *   Anonymizer to use.
    * @param string $notes
    *   Notes.
+   * @param bool $no_follow
+   *   Whether the relationship should not be traversed.
+   * @param bool $owner
+   *   Whether this is a reverse relationship owned by the entity.
+   * @param string $sars_filename
+   *   Filename to store data from this relationship in subject access requests.
    *
    * @return \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity
    *   The config entity.
    */
-  private static function setConfig($entity_type, $bundle, $field_name, $enabled, $rta, $rtf, $anonymizer, $notes) {
-    $config = GdprFieldConfigEntity::load($entity_type);
-    if (NULL === $config) {
-      $config = GdprFieldConfigEntity::create(['id' => $entity_type]);
-    }
+  private static function setConfig($entity_type, $bundle, $field_name, $enabled, $rta, $rtf, $anonymizer, $notes, $no_follow, $owner, $sars_filename) {
+    $config = GdprFieldConfigEntity::load($entity_type) ?? GdprFieldConfigEntity::create(['id' => $entity_type]);
     $config->setField($bundle, $field_name, [
       'enabled' => $enabled,
       'rta' => $rta,
       'rtf' => $rtf,
       'anonymizer' => $anonymizer,
       'notes' => $notes,
+      'sars_filename' => $sars_filename,
+      'owner' => $owner,
+      'no_follow' => $no_follow,
     ]);
     return $config;
   }
@@ -142,6 +150,8 @@ class GdprFieldSettingsForm extends FormBase {
    *
    * @return array
    *   The form structure.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public function buildForm(array $form, FormStateInterface $form_state, $entity_type = NULL, $bundle_name = NULL, $field_name = NULL) {
     if (empty($entity_type) || empty($bundle_name) || empty($field_name)) {
@@ -211,13 +221,20 @@ class GdprFieldSettingsForm extends FormBase {
    *   Field.
    *
    * @see gdpr_fields_form_field_config_edit_form_submit
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public static function buildFormFields(array &$form, $entity_type = NULL, $bundle_name = NULL, $field_name = NULL) {
     $config = static::getConfig($entity_type, $bundle_name, $field_name);
 
+    /* @var \Drupal\Core\Entity\EntityFieldManagerInterface $field_manager */
     /* @var \Drupal\anonymizer\Anonymizer\AnonymizerFactory $anonymizer_factory */
+    $entity_type_manager = \Drupal::entityTypeManager();
+    $field_manager = \Drupal::service('entity_field.manager');
     $anonymizer_factory = \Drupal::service('anonymizer.anonymizer_factory');
     $anonymizer_definitions = $anonymizer_factory->getDefinitions();
+    $entity_definition = $entity_type_manager->getDefinition($entity_type);
+    $field_definition = $field_manager->getFieldDefinitions($entity_type, $bundle_name)[$field_name];
 
     $form['gdpr_enabled'] = [
       '#type' => 'checkbox',
@@ -225,8 +242,79 @@ class GdprFieldSettingsForm extends FormBase {
       '#default_value' => $config->enabled,
     ];
 
+    $form['gdpr_owner'] = [
+      '#type' => 'value',
+      '#value' => FALSE,
+    ];
+    $form['gdpr_no_follow'] = [
+      '#type' => 'value',
+      '#value' => FALSE,
+    ];
+    $form['gdpr_sars_filename'] = [
+      '#type' => 'value',
+      '#value' => FALSE,
+    ];
+
+    if ($field_definition->getType() == 'entity_reference') {
+      $inner_entity_type = $field_definition->getSetting('target_type');
+
+      $form['gdpr_owner'] = [
+        '#type' => 'checkbox',
+        '#default_value' => $config->owner,
+        '#title' => t('Field is owner'),
+        '#description' => t('If checked, this entity will be included for any task including the %type this property references.', [
+          '%type' => $entity_definition->getLabel(),
+        ]),
+        '#states' => [
+          'visible' => [
+            ':input[name="gdpr_enabled"]' => [
+              'checked' => TRUE,
+            ],
+          ],
+        ],
+      ];
+
+      $form['gdpr_no_follow'] = [
+        '#type' => 'checkbox',
+        '#default_value' => $config->noFollow,
+        '#title' => t('Do no follow this relationship'),
+        '#description' => t('If checked, this relationship will not be followed when looking for additional personal information.'),
+        '#states' => [
+          'visible' => [
+            ':input[name="gdpr_enabled"]' => [
+              'checked' => TRUE,
+            ],
+          ],
+        ],
+      ];
+
+      // Target file.
+      // @todo: Move to a form alter in gdpr_tasks.
+      $form['gdpr_sars_filename'] = [
+        '#type' => 'textfield',
+        '#title' => t('SARs filename'),
+        '#description' => t('Specify which file this should be included in. The base user will go into %main.', [
+          '%main' => 'main.csv',
+        ]),
+        // Default to the entity type.
+        '#default_value' => $config->sarsFilename ? $config->sarsFilename : $inner_entity_type,
+        '#field_suffix' => '.csv',
+        '#size' => 20,
+        // Between RTA and RTF.
+        '#weight' => 15,
+        '#required' => TRUE,
+        '#states' => [
+          'visible' => [
+            ':input[name="gdpr_enabled"]' => ['checked' => TRUE],
+            ':input[name="gdpr_no_follow"]' => ['checked' => FALSE],
+          ],
+        ],
+      ];
+    }
+
     $form['gdpr_rta'] = [
       '#type' => 'select',
+      '#weight' => 10,
       '#title' => t('Right to access'),
       '#options' => [
         'inc' => 'Included',
@@ -244,6 +332,7 @@ class GdprFieldSettingsForm extends FormBase {
     ];
 
     $form['gdpr_rtf'] = [
+      '#weight' => 20,
       '#type' => 'select',
       '#title' => t('Right to be forgotten'),
       '#options' => [
@@ -262,14 +351,40 @@ class GdprFieldSettingsForm extends FormBase {
       ],
     ];
 
-    $anonymizer_options = ['' => ''] + array_map(function ($s) {
+    // If this is the entity's ID, treat the removal as remove the entire
+    // entity.
+    if ($entity_definition->getKey('id') == $field_name) {
+      unset($form['gdpr_rtf']['#options']['anonymise']);
+      $form['gdpr_rtf']['#options']['remove'] = new TranslatableMarkup('Delete entire entity');
+    }
+    // Otherwise check if this can be removed.
+    elseif (!GDPRCollector::propertyCanBeRemoved($entity_definition, $field_definition, $error_message)) {
+      unset($form['gdpr_rtf']['#options']['remove']);
+      $form['gdpr_rtf_disabled'] = [
+        '#type' => 'item',
+        '#markup' => new TranslatableMarkup('This field cannot be removed, only anonymised.'),
+        '#description' => $error_message,
+      ];
+    }
+
+    // Force removal to 'no' for computed properties.
+    if ($field_definition->isComputed()) {
+      $form['gdpr_rtf']['#default_value'] = 'no';
+      $form['gdpr_rtf']['#disabled'] = TRUE;
+      $form['gdpr_rtf']['#description'] = '*This is a computed field and cannot be removed.';
+    }
+
+    // @todo what aboyt system fields (uuid etc?)
+
+    $sanitizer_options = ['' => ''] + array_map(function ($s) {
         return $s['label'];
     }, $anonymizer_definitions);
 
     $form['gdpr_anonymizer'] = [
+      '#weight' => 30,
       '#type' => 'select',
       '#title' => t('Anonymizer to use'),
-      '#options' => $anonymizer_options,
+      '#options' => $sanitizer_options,
       '#default_value' => $config->anonymizer,
       '#states' => [
         'visible' => [
@@ -280,6 +395,7 @@ class GdprFieldSettingsForm extends FormBase {
     ];
 
     $form['gdpr_notes'] = [
+      '#weight' => 40,
       '#type' => 'textarea',
       '#title' => 'Notes',
       '#default_value' => $config->notes,
@@ -295,6 +411,8 @@ class GdprFieldSettingsForm extends FormBase {
 
   /**
    * {@inheritdoc}
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     if ($form_state->getTriggeringElement()['#name'] == 'Cancel') {
@@ -310,7 +428,10 @@ class GdprFieldSettingsForm extends FormBase {
       $form_state->getValue('gdpr_rta'),
       $form_state->getValue('gdpr_rtf'),
       $form_state->getValue('gdpr_anonymizer'),
-      $form_state->getValue('gdpr_notes')
+      $form_state->getValue('gdpr_notes'),
+      $form_state->getValue('gdpr_no_follow'),
+      $form_state->getValue('gdpr_owner'),
+      $form_state->getValue('gdpr_sars_filename')
     );
 
     $config->save();
