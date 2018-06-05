@@ -210,7 +210,7 @@ class GDPRCollector {
    * @return array
    *   GDPR entity field list.
    */
-  public function listFields($entity_type = 'user', $bundle_id, $include_not_configured) {
+  public function listFields($entity_type = 'user', $bundle_id, $filters) {
     $storage = $this->entityTypeManager->getStorage($entity_type);
     $entity_definition = $this->entityTypeManager->getDefinition($entity_type);
     $bundle_type = $entity_definition->getBundleEntityType();
@@ -228,9 +228,13 @@ class GDPRCollector {
     // Get fields for entity.
     $fields = [];
 
-    if (!$include_not_configured && $gdpr_settings == NULL) {
+    // If the 'Filter out entities where all fields are not configured' option
+    // is set, return an empty array if GDPR is not configured for the entity.
+    if ($filters['empty'] && $gdpr_settings == NULL) {
       return $fields;
     }
+
+    $has_at_least_one_configured_field = FALSE;
 
     foreach ($field_definitions as $field_id => $field_definition) {
       /** @var \Drupal\Core\Field\FieldItemListInterface $field_definition */
@@ -246,8 +250,18 @@ class GDPRCollector {
         $route_params[$bundle_type] = $bundle_id;
       }
 
+      $rta = '0';
+      $rtf = '0';
+
+      $label = $field_definition->getLabel();
+
+      // If we're searching by name, check if the label matches search.
+      if ($filters['search'] && !stripos($label, $filters['search'])) {
+        continue;
+      }
+
       $fields[$key] = [
-        'title' => $field_definition->getLabel(),
+        'title' => $label,
         'type' => $field_definition->getType(),
         'gdpr_rta' => 'Not Configured',
         'gdpr_rtf' => 'Not Configured',
@@ -264,16 +278,33 @@ class GDPRCollector {
       }
 
       if ($gdpr_settings != NULL) {
+        /* @var \Drupal\gdpr_fields\Entity\GdprField $field_settings */
         $field_settings = $gdpr_settings->getField($bundle_id, $field_id);
         if ($field_settings->configured) {
+          $has_at_least_one_configured_field = TRUE;
+          $rta = $field_settings->rta;
+          $rtf = $field_settings->rtf;
+
           $fields[$key]['gdpr_rta'] = $field_settings->rtaDescription();
           $fields[$key]['gdpr_rtf'] = $field_settings->rtfDescription();
           $fields[$key]['notes'] = $field_settings->notes;
         }
-        elseif (!$field_settings->configured && !$include_not_configured) {
-          unset($fields[$key]);
-        }
       }
+
+      // Apply filters.
+      if (!empty($filters['rtf']) && !in_array($rtf, $filters['rtf'])) {
+        unset($fields[$key]);
+      }
+
+      if (!empty($filters['rta']) && !in_array($rta, $filters['rta'])) {
+        unset($fields[$key]);
+      }
+    }
+
+    // Handle the 'Filter out Entities where all fields are not configured'
+    // checkbox.
+    if ($filters['empty'] && !$has_at_least_one_configured_field) {
+      return [];
     }
 
     return $fields;

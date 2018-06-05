@@ -5,6 +5,7 @@ namespace Drupal\gdpr_fields\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
+use Drupal\gdpr_fields\Form\GdprFieldFilterForm;
 use Drupal\gdpr_fields\GDPRCollector;
 use Drupal\user\UserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -46,11 +47,18 @@ class GDPRController extends ControllerBase {
    * @return array
    *   The Views plugins report page.
    */
-  public function fieldsList($mode) {
+  public function fieldsList() {
+    $filters = GdprFieldFilterForm::getFilters(\Drupal::request());
+
     $output = [];
     $entities = [];
-    $include_not_configured = $mode == 'all';
     $this->collector->getEntities($entities);
+
+    // If a filter was supplied for only certain entities,
+    // remove any that don't match.
+    if (!empty($filters['gdpr_entity'])) {
+      $entities = array_intersect_key($entities, $filters['gdpr_entity']);
+    }
 
     $output['filter'] = $this->formBuilder()->getForm('Drupal\gdpr_fields\Form\GdprFieldFilterForm');
     $output['#attached']['library'][] = 'gdpr_fields/field-list';
@@ -64,19 +72,37 @@ class GDPRController extends ControllerBase {
       ];
 
       if (count($bundles) > 1) {
+        $at_least_one_bundle_has_fields = FALSE;
         foreach ($bundles as $bundle_id) {
-          $output[$entity_type][$bundle_id] = [
-            '#type' => 'details',
-            '#title' => t($bundle_id),
-            '#open' => TRUE,
-          ];
-          $output[$entity_type][$bundle_id]['fields'] = $this->buildFieldTable($entity_type, $bundle_id, $include_not_configured);
+          $field_table = $this->buildFieldTable($entity_type, $bundle_id, $filters);
+
+          if ($field_table) {
+            $at_least_one_bundle_has_fields = TRUE;
+            $output[$entity_type][$bundle_id] = [
+              '#type' => 'details',
+              '#title' => t($bundle_id),
+              '#open' => TRUE,
+            ];
+            $output[$entity_type][$bundle_id]['fields'] = $field_table;
+          }
+        }
+
+        if (!$at_least_one_bundle_has_fields) {
+          unset($output[$entity_type]);
         }
       }
       else {
         // Don't add another collapsible wrapper around single bundle entities.
         $bundle_id = reset($bundles);
-        $output[$entity_type][$bundle_id]['fields'] = $this->buildFieldTable($entity_type, $bundle_id, $include_not_configured);
+        $field_table = $this->buildFieldTable($entity_type, $bundle_id, $filters);
+        if ($field_table) {
+          $output[$entity_type][$bundle_id]['fields'] = $field_table;
+        }
+        else {
+          // If the entity has no fields because they've been filtered out
+          // don't bother including it.
+          unset($output[$entity_type]);
+        }
       }
     }
 
@@ -90,21 +116,26 @@ class GDPRController extends ControllerBase {
    *   The entity type id.
    * @param string $bundle_id
    *   The entity bundle id.
+   * @param array $filters
+   *   Filters
    *
    * @return array
    *   Renderable array for field list table.
    */
-  protected function buildFieldTable($entity_type, $bundle_id, $include_not_configured) {
-    $rows = $this->collector->listFields($entity_type, $bundle_id, $include_not_configured);
+  protected function buildFieldTable($entity_type, $bundle_id, $filters) {
+    $rows = $this->collector->listFields($entity_type, $bundle_id, $filters);
+
+    if (count($rows) == 0) {
+      return NULL;
+    }
+
     // Sort rows by field name.
     ksort($rows);
 
     $table = [
       '#type' => 'table',
       '#header' => [t('Name'), t('Type'), t('Right to access'), t('Right to be forgotten'), t('Notes'), ''],
-    //  '#rows' => $rows,
       '#sticky' => TRUE,
-      '#empty' => t('There are no GDPR fields for this entity.'),
     ];
 
     $i = 0;
