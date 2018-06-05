@@ -145,7 +145,7 @@ class GDPRController extends ControllerBase {
       ];
 
       $table[$i]['type'] = [
-        '#plain_text' => $row['type'],
+        '#markup' => $row['is_id'] || $row['type'] == 'entity_reference' ? "<strong>{$row['type']}</strong>" : $row['type'],
       ];
 
       $table[$i]['gdpr_rta'] = [

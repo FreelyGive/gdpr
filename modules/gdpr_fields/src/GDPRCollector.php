@@ -260,13 +260,16 @@ class GDPRCollector {
         continue;
       }
 
+      $is_id = $entity_definition->getKey('id') == $field_id;
+
       $fields[$key] = [
         'title' => $label,
-        'type' => $field_definition->getType(),
+        'type' => $is_id ? 'primary_key' : $field_definition->getType(),
         'gdpr_rta' => 'Not Configured',
         'gdpr_rtf' => 'Not Configured',
         'notes' => '',
         'edit' => '',
+        'is_id' => $is_id,
       ];
 
       if ($entity_definition->get('field_ui_base_route')) {
