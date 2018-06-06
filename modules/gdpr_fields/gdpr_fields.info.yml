@@ -6,4 +6,3 @@ package: General Data Protection Regulation
 
 dependencies:
   - gdpr:gdpr
-  - ctools:ctools (>=8.x-3.0-beta1)

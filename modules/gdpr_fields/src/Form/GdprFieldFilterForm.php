@@ -5,6 +5,7 @@ namespace Drupal\gdpr_fields\Form;
 
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -50,7 +51,10 @@ class GdprFieldFilterForm extends FormBase {
 
     $entities = [];
     foreach ($this->entityTypeManager->getDefinitions() as $key => $definition) {
-      $entities[$key] = $definition->getLabel();
+      // Exclude anything not fieldable (ie config entities)
+      if ($definition->entityClassImplements(FieldableEntityInterface::class)) {
+        $entities[$key] = $definition->getLabel();
+      }
     }
 
     $form['container']['search'] = [

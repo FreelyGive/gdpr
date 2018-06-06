@@ -6,7 +6,9 @@ use Drupal\Console\Bootstrap\Drupal;
 use Drupal\Core\Config\Entity\ConfigEntityTypeInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Plugin\Context\Context;
@@ -30,13 +32,6 @@ class GDPRCollector {
   protected $entityTypeManager;
 
   /**
-   * The ctools relationship manager.
-   *
-   * @var \Drupal\ctools\Plugin\RelationshipManager
-   */
-  protected $relationshipManager;
-
-  /**
    * Entity field manager.
    *
    * @var \Drupal\Core\Entity\EntityFieldManagerInterface
@@ -44,83 +39,22 @@ class GDPRCollector {
   private $entityFieldManager;
 
   /**
+   * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface
+   */
+  private $bundleInfo;
+
+  /**
    * Constructs a GDPRCollector object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManager $entity_type_manager
    *   The entity type manager.
-   * @param \Drupal\ctools\Plugin\RelationshipManager $relationship_manager
-   *   The ctools relationship manager.
    * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
    *   The entity field manager.
    */
-  public function __construct(EntityTypeManager $entity_type_manager, RelationshipManager $relationship_manager, EntityFieldManagerInterface $entity_field_manager) {
+  public function __construct(EntityTypeManager $entity_type_manager, EntityFieldManagerInterface $entity_field_manager, EntityTypeBundleInfoInterface $bundle_info) {
     $this->entityTypeManager = $entity_type_manager;
-    $this->relationshipManager = $relationship_manager;
     $this->entityFieldManager = $entity_field_manager;
-  }
-
-  /**
-   * Get entity tree for GDPR.
-   *
-   * @param $entity_list
-   *   List of all gotten entities keyed by entity type and bundle id.
-   * @param string $entity_type
-   *   The entity type id.
-   * @param string|null $bundle_id
-   *   The entity bundle id, NULL if bundles should be loaded.
-   */
-  public function getEntities(&$entity_list, $entity_type = 'user', $bundle_id = NULL) {
-    $definition = $this->entityTypeManager->getDefinition($entity_type);
-
-    if ($definition instanceof ConfigEntityTypeInterface) {
-      return;
-    }
-
-    // @todo Add way of excluding irrelevant entity types.
-
-    if (!$bundle_id) {
-      if ($definition->getBundleEntityType()) {
-        $bundle_storage = $this->entityTypeManager->getStorage($definition->getBundleEntityType());
-        foreach (array_keys($bundle_storage->loadMultiple()) as $bundle_id) {
-          $this->getEntities($entity_list, $entity_type, $bundle_id);
-        }
-      }
-      else {
-        $this->getEntities($entity_list, $entity_type, $entity_type);
-      }
-
-      return;
-    }
-
-    // Check for recursion.
-    if (isset($entity_list[$entity_type][$bundle_id])) {
-      return;
-    }
-
-    // Set entity.
-    $entity_list[$entity_type][$bundle_id] = $bundle_id;
-
-    // Find relationships.
-    $context = new Context(new ContextDefinition("entity:{$entity_type}"));
-    $definitions = $this->relationshipManager->getDefinitionsForContexts([$context]);
-
-    foreach ($definitions as $definition_id => $definition) {
-      list($type, , ,) = explode(':', $definition_id);
-
-      if ($type == 'typed_data_entity_relationship') {
-        if (isset($definition['target_entity_type'])) {
-          $this->getEntities($entity_list, $definition['target_entity_type']);
-        }
-      }
-      elseif ($type == 'typed_data_entity_relationship_reverse') {
-        if (isset($definition['source_entity_type'])) {
-          $this->getEntities($entity_list, $definition['source_entity_type']);
-        }
-      }
-      else {
-        continue;
-      }
-    }
+    $this->bundleInfo = $bundle_info;
   }
 
   /**
@@ -205,7 +139,7 @@ class GDPRCollector {
   /**
    * List fields on entity including their GDPR values.
    *
-   * @param string $entity_type
+   * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
    *   The entity type id.
    * @param string $bundle_id
    *   The entity bundle id.
@@ -213,20 +147,23 @@ class GDPRCollector {
    * @return array
    *   GDPR entity field list.
    */
-  public function listFields($entity_type = 'user', $bundle_id, $filters) {
-    $storage = $this->entityTypeManager->getStorage($entity_type);
-    $entity_definition = $this->entityTypeManager->getDefinition($entity_type);
-    $bundle_type = $entity_definition->getBundleEntityType();
-    $gdpr_settings = GdprFieldConfigEntity::load($entity_type);
+  public function listFields($entity_type, $bundle_id, $filters) {
+    $bundle_type = $entity_type->getBundleEntityType();
+    $gdpr_settings = GdprFieldConfigEntity::load($entity_type->id());
 
     // Create a blank entity.
     $values = [];
-    if ($entity_definition->hasKey('bundle')) {
-      $bundle_key = $entity_definition->getKey('bundle');
+    if ($entity_type->hasKey('bundle')) {
+      $bundle_key = $entity_type->getKey('bundle');
       $values[$bundle_key] = $bundle_id;
     }
 
-    $field_definitions = $this->entityFieldManager->getFieldDefinitions($entity_type, $bundle_id);
+    // @todo explicitly skip commerce_order_item for now as they break bundles
+    if ($entity_type->id() == 'commerce_order_item') {
+      return [];
+    }
+
+    $field_definitions = $this->entityFieldManager->getFieldDefinitions($entity_type->id(), $bundle_id);
 
     // Get fields for entity.
     $fields = [];
@@ -241,10 +178,10 @@ class GDPRCollector {
 
     foreach ($field_definitions as $field_id => $field_definition) {
       /** @var \Drupal\Core\Field\FieldItemListInterface $field_definition */
-      $key = "$entity_type.$bundle_id.$field_id";
+      $key = "{$entity_type->id()}.$bundle_id.$field_id";
       $route_name = 'gdpr_fields.edit_field';
       $route_params = [
-        'entity_type' => $entity_type,
+        'entity_type' => $entity_type->id(),
         'bundle_name' => $bundle_id,
         'field_name' => $field_id,
       ];
@@ -263,7 +200,7 @@ class GDPRCollector {
         continue;
       }
 
-      $is_id = $entity_definition->getKey('id') == $field_id;
+      $is_id = $entity_type->getKey('id') == $field_id;
 
       $fields[$key] = [
         'title' => $label,
@@ -275,7 +212,7 @@ class GDPRCollector {
         'is_id' => $is_id,
       ];
 
-      if ($entity_definition->get('field_ui_base_route')) {
+      if ($entity_type->get('field_ui_base_route')) {
         $url = Url::fromRoute($route_name, $route_params);
 
         if ($url->access()) {
