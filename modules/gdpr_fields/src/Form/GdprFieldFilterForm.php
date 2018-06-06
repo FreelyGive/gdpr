@@ -45,12 +45,8 @@ class GdprFieldFilterForm extends FormBase {
     $filters = self::getFilters($this->getRequest());
 
     $form['container'] = [
-//      '#type' => 'details',
-//      '#attributes' => [
-//      'class' => [
-//        'container-inline',
-//       ],
-//      ],
+      '#prefix' => '<div class="ctools-export-ui-row ctools-export-ui-top-row clearfix">',
+      '#suffix' => '</div>',
     ];
 
     $entities = [];

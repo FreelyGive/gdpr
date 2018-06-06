@@ -67,6 +67,27 @@ class GdprField {
   public $configured = FALSE;
 
   /**
+   * SARS filename when handling multiple cardinality fields.
+   *
+   * @var string
+   */
+  public $sarsFilename = '';
+
+  /**
+   * Whether this relationship should be followed or not.
+   *
+   * @var bool
+   */
+  public $noFollow = FALSE;
+
+  /**
+   * Whether this is a reverse relationship where this side is the owner.
+   *
+   * @var bool
+   */
+  public $owner = FALSE;
+
+  /**
    * GdprField constructor.
    *
    * @param string $bundle
@@ -95,6 +116,9 @@ class GdprField {
     $field->enabled = $values['enabled'];
     $field->sanitizer = $values['sanitizer'];
     $field->notes = $values['notes'];
+    $field->owner = array_key_exists('owner', $values) ? $values['owner'] : FALSE;
+    $field->noFollow = array_key_exists('no_follow', $values) ? $values['no_follow'] : FALSE;
+    $field->sarsFilename = array_key_exists('sars_filename', $values) ?  $values['sars_filename'] : '';
     $field->configured = TRUE;
     return $field;
   }

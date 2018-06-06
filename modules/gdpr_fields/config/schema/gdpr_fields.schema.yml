@@ -28,3 +28,9 @@ gdpr_fields.gdpr_fields_config.*:
               type: string
             notes:
               type: string
+            no_follow:
+              type: boolean
+            sars_filename:
+              type: string
+            owner:
+              type: boolean
