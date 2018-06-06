@@ -97,6 +97,12 @@ class GdprFieldFilterForm extends FormBase {
       '#name' => 'Apply',
     ];
 
+    $form['container']['reset'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Reset'),
+      '#name' => 'Reset',
+    ];
+
     return $form;
   }
 
@@ -135,13 +141,20 @@ class GdprFieldFilterForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $form_state->setRedirect('gdpr_fields.fields_list', [
-      'search' => $form_state->getValue('search'),
-      'gdpr_entity' => $form_state->getValue('gdpr_entity'),
-      'rta' => $form_state->getValue('rta'),
-      'rtf' => $form_state->getValue('rtf'),
-      'empty' => $form_state->getValue('empty'),
-    ]);
+    if ($form_state->getTriggeringElement()['#name'] == 'Reset') {
+      $arguments = [];
+    }
+    else {
+      $arguments = [
+        'search' => $form_state->getValue('search'),
+        'gdpr_entity' => $form_state->getValue('gdpr_entity'),
+        'rta' => $form_state->getValue('rta'),
+        'rtf' => $form_state->getValue('rtf'),
+        'empty' => $form_state->getValue('empty'),
+      ];
+    }
+
+    $form_state->setRedirect('gdpr_fields.fields_list', $arguments);
   }
 
   /**
@@ -162,10 +175,10 @@ class GdprFieldFilterForm extends FormBase {
       'empty' => $request->get('empty'),
     ];
 
-    if($filters['rtf'] === NULL) {
+    if ($filters['rtf'] === NULL) {
       $filters['rtf'] = [];
     }
-    if($filters['rta'] === NULL) {
+    if ($filters['rta'] === NULL) {
       $filters['rta'] = [];
     }
     return $filters;
