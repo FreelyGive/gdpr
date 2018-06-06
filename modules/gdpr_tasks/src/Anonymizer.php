@@ -5,6 +5,7 @@ namespace Drupal\gdpr_tasks;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Field\FieldItemListInterface;
@@ -119,6 +120,7 @@ class Anonymizer {
         $bundle_entity = $this->entityTypeManager->getStorage($bundle_entity->getEntityTypeId())
           ->loadUnchanged($bundle_entity->id());
 
+
         $entity_success = TRUE;
 
         foreach ($this->getFieldsToProcess($bundle_entity) as $field_info) {
@@ -134,7 +136,7 @@ class Anonymizer {
             list($success, $msg, $sanitizer) = $this->anonymize($field, $bundle_entity);
           }
           elseif ($mode == 'remove') {
-            list($success, $msg) = $this->remove($field);
+            list($success, $msg) = $this->remove($field, $bundle_entity);
           }
 
           if ($success === TRUE) {
@@ -198,8 +200,20 @@ class Anonymizer {
    * @return array
    *   First element is success boolean, second element is the error message.
    */
-  private function remove(FieldItemListInterface $field) {
+  private function remove(FieldItemListInterface $field, EntityInterface $entity) {
     try {
+      // If this is the entity's ID, treat the removal as remove the entire
+      // entity.
+      $entity_type = $entity->getEntityType();
+      if ($entity_type->getKey('id') == $field->getName()) {
+        $entity->delete();
+      }
+      // Check if the property can be removed.
+      elseif (!GDPRCollector::propertyCanBeRemoved($entity_type, $field->getFieldDefinition(), $error_message)) {
+        return [FALSE, $error_message];
+      }
+
+      // Otherwise assume we can simply clear the field.
       $field->setValue(NULL);
       return [TRUE, NULL];
     }
