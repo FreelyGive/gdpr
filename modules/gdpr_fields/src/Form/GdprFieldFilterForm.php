@@ -12,6 +12,11 @@ use Drupal\user\Entity\User;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
+/**
+ * Filter form for GDPR field list page.
+ *
+ * @package Drupal\gdpr_fields\Form
+ */
 class GdprFieldFilterForm extends FormBase {
 
   /**
@@ -21,6 +26,12 @@ class GdprFieldFilterForm extends FormBase {
    */
   protected $entityTypeManager;
 
+  /**
+   * GdprFieldFilterForm constructor.
+   *
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   Entity type manager.
+   */
   public function __construct(EntityTypeManagerInterface $entity_type_manager) {
     $this->entityTypeManager = $entity_type_manager;
   }
