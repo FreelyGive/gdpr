@@ -72,6 +72,9 @@ class GDPRCollector {
    *   The entity type id.
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The fully loaded entity for which values are gotten.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public function getEntities(array &$entity_list, $entity_type, EntityInterface $entity) {
     $definition = $this->entityTypeManager->getDefinition($entity_type);
@@ -164,7 +167,7 @@ class GDPRCollector {
    * @return array
    *   GDPR entity field list.
    */
-  public function listFields($entity_type, $bundle_id, array $filters) {
+  public function listFields(EntityTypeInterface $entity_type, $bundle_id, array $filters) {
     $bundle_type = $entity_type->getBundleEntityType();
     $gdpr_settings = GdprFieldConfigEntity::load($entity_type->id());
 
@@ -278,12 +281,16 @@ class GDPRCollector {
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The fully loaded entity for which values are listed.
    * @param array $extra_fields
-   *   Add extra fields if required
+   *   Add extra fields if required.
    *
    * @return array
    *   GDPR entity field value list.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Core\Entity\EntityMalformedException
    */
-  public function fieldValues($entity_type = 'user', EntityInterface $entity, $extra_fields = []) {
+  public function fieldValues($entity_type, EntityInterface $entity, array $extra_fields = []) {
     $entity_definition = $this->entityTypeManager->getDefinition($entity_type);
     $bundle_type = $entity_definition->getBundleEntityType();
     $bundle_id = $entity->bundle();
@@ -337,7 +344,6 @@ class GDPRCollector {
 
         if ($rta_value && $rta_value !== 'no') {
           $fields[$key]['gdpr_rta'] = $rta_value;
-          //$fields[$key]['gdpr_rta_desc'] = $field_config->rtaDescription();
         }
         else {
           unset($fields[$key]);
@@ -348,8 +354,6 @@ class GDPRCollector {
 
         if ($rtf_value && $rtf_value !== 'no') {
           $fields[$key]['gdpr_rtf'] = $rtf_value;
-          //$fields[$key]['gdpr_rtf_desc'] = $field_config->rtfDescription();
-
           // For 'maybes', provide a link to edit the entity.
           if ($rtf_value == 'maybe') {
             $fields[$key]['link'] = $entity->toLink('Edit', 'edit-form');
@@ -374,7 +378,7 @@ class GDPRCollector {
    *   The entity type.
    * @param \Drupal\Core\Field\FieldDefinitionInterface $field_definition
    *   The property info.
-   * @param null $error_message
+   * @param string $error_message
    *   A variable to fill with an error message.
    *
    * @return bool
@@ -404,6 +408,12 @@ class GDPRCollector {
     return TRUE;
   }
 
+  /**
+   * Gets all reverse relationships configured in the system.
+   *
+   * @return array
+   *   Information about reversible relationships.
+   */
   private function getAllReverseRelationships() {
     if ($this->reverseRelationshipFields !== NULL) {
       // Make sure reverse relationships are cached.
