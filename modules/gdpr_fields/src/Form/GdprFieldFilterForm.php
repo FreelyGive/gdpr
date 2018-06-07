@@ -2,14 +2,10 @@
 
 namespace Drupal\gdpr_fields\Form;
 
-
-use Drupal\Console\Bootstrap\Drupal;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\gdpr_tasks\RightToAccessEntityTraversal;
-use Drupal\user\Entity\User;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -119,13 +115,6 @@ class GdprFieldFilterForm extends FormBase {
       '#name' => 'Reset',
     ];
 
-
-    $form['container']['test'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Test'),
-      '#name' => 'test',
-    ];
-
     return $form;
   }
 
@@ -167,10 +156,6 @@ class GdprFieldFilterForm extends FormBase {
     if ($form_state->getTriggeringElement()['#name'] == 'Reset') {
       $arguments = [];
     }
-   else  if ($form_state->getTriggeringElement()['#name'] == 'test') {
-      $t = \Drupal::service('gdpr_tasks.rta_traversal');
-      $t->traverse(User::load(27));
-   }
     else {
       $arguments = [
         'search' => $form_state->getValue('search'),
