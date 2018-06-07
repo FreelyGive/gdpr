@@ -107,12 +107,6 @@ class GdprFieldFilterForm extends FormBase {
       '#name' => 'Reset',
     ];
 
-    $form['container']['test'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Test'),
-      '#name' => 'Test'
-    ];
-
     return $form;
   }
 
@@ -153,10 +147,6 @@ class GdprFieldFilterForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     if ($form_state->getTriggeringElement()['#name'] == 'Reset') {
       $arguments = [];
-    }
-    if ($form_state->getTriggeringElement()['#name'] == 'Test') {
-      $traverser = new RightToAccessEntityTraversal(\Drupal::entityTypeManager(), \Drupal::service('entity_field.manager'));
-      $traverser->traverse(User::load(27));
     }
     else {
       $arguments = [
