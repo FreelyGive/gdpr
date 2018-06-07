@@ -84,9 +84,9 @@ class RightToAccessEntityTraversal extends EntityTraversal {
 
     // Special handling for file references.
     // For files, we want to add to the assets collection.
-    if ($field->getType() == 'entity_reference' && $field->getSetting('target_type') == 'file') {
+    if (($field->getType() == 'image' || $field->getType() == 'entity_reference') && $field->getSetting('target_type') == 'file') {
       /* @var \Drupal\file\Entity\File $file */
-      $file = $entity->get('field_id')->entity;
+      $file = $entity->get($field_id)->entity;
       if ($file) {
         $this->assets[] = ['fid' => $file->id(), 'display' => 1];
         $field_value = "assets/{$file->id()}." . pathinfo($file->getFileUri(), PATHINFO_EXTENSION);
