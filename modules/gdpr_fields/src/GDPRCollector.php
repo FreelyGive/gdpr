@@ -41,13 +41,6 @@ class GDPRCollector {
   private $bundleInfo;
 
   /**
-   * Reverse relationship information.
-   *
-   * @var \Drupal\gdpr_fields\Entity\GdprField[]
-   */
-  private $reverseRelationshipFields = NULL;
-
-  /**
    * Constructs a GDPRCollector object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManager $entity_type_manager
@@ -77,77 +70,7 @@ class GDPRCollector {
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public function getEntities(array &$entity_list, $entity_type, EntityInterface $entity) {
-    $definition = $this->entityTypeManager->getDefinition($entity_type);
 
-    if ($definition instanceof ConfigEntityTypeInterface) {
-      return;
-    }
-
-    if ($entity_type == 'gdpr_task') {
-      // Explicitly make sure we don't traverse any links to gdpr_task
-      // even if the user has explicitly included the reference for traversal.
-      return;
-    }
-
-    // Check for recursion.
-    if (isset($entity_list[$entity_type][$entity->id()])) {
-      return;
-    }
-
-    // Set entity.
-    $entity_list[$entity_type][$entity->id()] = $entity;
-
-    // GDPR config for this entity.
-    $config = GdprFieldConfigEntity::load($entity_type);
-
-    // Find relationships from this entity.
-    $fields = $this->entityFieldManager->getFieldDefinitions($entity_type, $entity->bundle());
-    foreach ($fields as $field_name => $field_definition) {
-      if ($field_definition->getType() == 'entity_reference') {
-        $target_type = $field_definition->getSetting('target_type');
-
-        // If there is no value, we don't need to proceed.
-        $referenced_entities = $entity->get($field_name)->referencedEntities();
-        if (empty($referenced_entities)) {
-          continue;
-        }
-
-        // If this field has not been configured for GDPR, skip it.
-        /* @var \Drupal\gdpr_fields\Entity\GdprField $field_config */
-        $field_config = $config->getField($entity->bundle(), $field_name);
-        if (!$field_config->enabled) {
-          continue;
-        }
-
-        // Skip if relationship traversal for this property has been disabled.
-        if (!$field_config->includeRelatedEntities()) {
-          continue;
-        }
-
-        // Loop through each child entity and traverse their relationships too.
-        foreach ($referenced_entities as $child_entity) {
-          $this->getEntities($entity_list, $target_type, $child_entity);
-        }
-      }
-    }
-
-    // Now we want to look up any reverse relationships that have been marked
-    // as owner.
-    foreach ($this->getAllReverseRelationships() as $relationship) {
-      if ($relationship['target_type'] == $entity_type) {
-        // Load all instances of this entity where the field value is the same
-        // as our entity's ID.
-        $storage = $this->entityTypeManager->getStorage($relationship['entity_type']);
-
-        $ids = $storage->getQuery()
-          ->condition($relationship['field'] . 'target_id')
-          ->execute();
-
-        foreach ($storage->loadMultiple($ids) as $related_entity) {
-          $this->getEntities($entity_list, $relationship['entity_type'], $related_entity);
-        }
-      }
-    }
   }
 
   /**
@@ -406,41 +329,6 @@ class GDPRCollector {
     }
 
     return TRUE;
-  }
-
-  /**
-   * Gets all reverse relationships configured in the system.
-   *
-   * @return array
-   *   Information about reversible relationships.
-   */
-  private function getAllReverseRelationships() {
-    if ($this->reverseRelationshipFields !== NULL) {
-      // Make sure reverse relationships are cached.
-      // as this is called many times in the recursion loop.
-      return $this->reverseRelationshipFields;
-    }
-
-    $this->reverseRelationshipFields = [];
-    /* @var \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity $config  */
-    foreach (GdprFieldConfigEntity::loadMultiple() as $config) {
-      foreach ($config->getAllFields() as $field) {
-        if ($field->enabled && $field->owner) {
-          foreach ($this->entityFieldManager->getFieldDefinitions($config->id(), $field->bundle) as $field_definition) {
-            if ($field_definition->getName() == $field->name && $field_definition->getType() == 'entity_reference') {
-              $this->reverseRelationshipFields[] = [
-                'entity_type' => $config->id(),
-                'bundle' => $field->bundle,
-                'field' => $field->name,
-                'target_type' => $field_definition->getSetting('target_type'),
-              ];
-            }
-          }
-        }
-      }
-    }
-
-    return $this->reverseRelationshipFields;
   }
 
 }

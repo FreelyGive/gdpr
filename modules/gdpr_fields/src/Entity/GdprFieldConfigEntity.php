@@ -99,4 +99,19 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
     return $results;
   }
 
+  /**
+   * Gets all field configuration for a bundle.
+   *
+   * @param $bundle
+   *   The bundle.
+   *
+   * @return \Drupal\gdpr_fields\Entity\GdprField[]
+   *   Array of fields within this bundle.
+   */
+  public function getFieldsForBundle($bundle) {
+    return array_map(function ($field) {
+      return GdprField::create($field);
+    }, $this->bundles[$bundle]);
+  }
+
 }

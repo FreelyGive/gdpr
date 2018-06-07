@@ -7,6 +7,8 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\gdpr_tasks\RightToAccessEntityTraversal;
+use Drupal\user\Entity\User;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -105,6 +107,12 @@ class GdprFieldFilterForm extends FormBase {
       '#name' => 'Reset',
     ];
 
+    $form['container']['test'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Test'),
+      '#name' => 'Test'
+    ];
+
     return $form;
   }
 
@@ -145,6 +153,10 @@ class GdprFieldFilterForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     if ($form_state->getTriggeringElement()['#name'] == 'Reset') {
       $arguments = [];
+    }
+    if ($form_state->getTriggeringElement()['#name'] == 'Test') {
+      $traverser = new RightToAccessEntityTraversal(\Drupal::entityTypeManager(), \Drupal::service('entity_field.manager'));
+      $traverser->traverse(User::load(27));
     }
     else {
       $arguments = [
