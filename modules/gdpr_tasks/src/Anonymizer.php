@@ -2,18 +2,11 @@
 
 namespace Drupal\gdpr_tasks;
 
-use Drupal\anonymizer\Anonymizer\AnonymizerFactory;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Extension\ModuleHandlerInterface;
-use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Session\AccountProxyInterface;
-use Drupal\Core\TypedData\Exception\ReadOnlyException;
-use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
-use Drupal\gdpr_fields\GDPRCollector;
 use Drupal\gdpr_tasks\Entity\TaskInterface;
 use Drupal\gdpr_tasks\Form\RemovalSettingsForm;
 use Drupal\gdpr_tasks\Traversal\RightToBeForgottenEntityTraversal;
@@ -61,20 +54,16 @@ class Anonymizer {
   /**
    * Anonymizer constructor.
    *
-   * @param \Drupal\gdpr_fields\GDPRCollector $collector
-   *   Fields collector.
    * @param \Drupal\Core\Database\Connection $database
    *   The database connection.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entity type manager.
-   * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
-   *   The module handler.
    * @param \Drupal\Core\Session\AccountProxyInterface $currentUser
    *   The current user.
-   * @param \Drupal\anonymizer\Anonymizer\AnonymizerFactory $anonymizerFactory
-   *   The anonymizer plugin factory.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
    *   The config factory.
+   * @param \Drupal\gdpr_tasks\Traversal\RightToBeForgottenEntityTraversal $traversal
+   *   Traverses the entity graph to perform the deletions.
    */
   public function __construct(
     Connection $database,
@@ -112,12 +101,14 @@ class Anonymizer {
 
     if (!$this->checkExportDirectoryExists()) {
       $errors[] = 'An export directory has not been set. Please set this under Configuration -> GDPR -> Right to be Forgotten';
+      return $errors;
     }
 
     // Traverser does the actual anonymizing.
     $result = $this->traversal->traverse($user);
+
     $log = $result['log'];
-    $errors += $result['errors'];
+    $errors = $result['errors'];
     $successes = $result['successes'];
     $failures = $result['failures'];
 
