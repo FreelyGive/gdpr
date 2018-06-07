@@ -164,7 +164,7 @@ class EntityTraversal {
         $storage = $this->entityTypeManager->getStorage($relationship['entity_type']);
 
         $ids = $storage->getQuery()
-          ->condition($relationship['field'] . 'target_id')
+          ->condition($relationship['field'] . '.target_id')
           ->execute();
 
         foreach ($storage->loadMultiple($ids) as $related_entity) {
