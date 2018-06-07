@@ -11,6 +11,7 @@ use Drupal\gdpr_fields\GDPRCollector;
 use Drupal\user\UserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\gdpr_fields\Form\GdprFieldFilterForm;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Returns responses for GDPR Field routes.
@@ -32,6 +33,13 @@ class GDPRController extends ControllerBase {
   protected $bundleInfo;
 
   /**
+   * Current request.
+   *
+   * @var \Symfony\Component\HttpFoundation\Request
+   */
+  protected $request;
+
+  /**
    * Constructs a new GDPRController.
    *
    * @param \Drupal\gdpr_fields\GDPRCollector $collector
@@ -39,9 +47,10 @@ class GDPRController extends ControllerBase {
    * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $bundle_info
    *   Entity bundle info.
    */
-  public function __construct(GDPRCollector $collector, EntityTypeBundleInfoInterface $bundle_info) {
+  public function __construct(GDPRCollector $collector, EntityTypeBundleInfoInterface $bundle_info, RequestStack $request_stack) {
     $this->collector = $collector;
     $this->bundleInfo = $bundle_info;
+    $this->request = $request_stack->getCurrentRequest();
   }
 
   /**
@@ -50,7 +59,8 @@ class GDPRController extends ControllerBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('gdpr_fields.collector'),
-      $container->get('entity_type.bundle.info')
+      $container->get('entity_type.bundle.info'),
+      $container->get('request_stack')
     );
   }
 
