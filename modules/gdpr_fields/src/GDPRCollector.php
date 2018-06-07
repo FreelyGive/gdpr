@@ -34,13 +34,6 @@ class GDPRCollector {
   private $entityFieldManager;
 
   /**
-   * Bundle info.
-   *
-   * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface
-   */
-  private $bundleInfo;
-
-  /**
    * Constructs a GDPRCollector object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManager $entity_type_manager
@@ -54,23 +47,6 @@ class GDPRCollector {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
     $this->bundleInfo = $bundle_info;
-  }
-
-  /**
-   * Get entity value tree for GDPR entities.
-   *
-   * @param array $entity_list
-   *   List of all gotten entities keyed by entity type and bundle id.
-   * @param string $entity_type
-   *   The entity type id.
-   * @param \Drupal\Core\Entity\EntityInterface $entity
-   *   The fully loaded entity for which values are gotten.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
-   */
-  public function getEntities(array &$entity_list, $entity_type, EntityInterface $entity) {
-
   }
 
   /**
@@ -191,90 +167,6 @@ class GDPRCollector {
     // checkbox.
     if ($filters['empty'] && !$has_at_least_one_configured_field) {
       return [];
-    }
-
-    return $fields;
-  }
-
-  /**
-   * List field values on an entity including their GDPR values.
-   *
-   * @param string $entity_type
-   *   The entity type id.
-   * @param \Drupal\Core\Entity\EntityInterface $entity
-   *   The fully loaded entity for which values are listed.
-   * @param array $extra_fields
-   *   Add extra fields if required.
-   *
-   * @return array
-   *   GDPR entity field value list.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
-   * @throws \Drupal\Core\Entity\EntityMalformedException
-   */
-  public function fieldValues($entity_type, EntityInterface $entity, array $extra_fields = []) {
-    $entity_definition = $this->entityTypeManager->getDefinition($entity_type);
-    $bundle_type = $entity_definition->getBundleEntityType();
-    $bundle_id = $entity->bundle();
-    if ($bundle_type) {
-      $bundle_storage = $this->entityTypeManager->getStorage($bundle_type);
-      $bundle_entity = $bundle_storage->load($bundle_id);
-      $bundle_label = $bundle_entity == NULL ? '' : $bundle_entity->label();
-    }
-    else {
-      $bundle_label = $entity->getEntityType()->getLabel();
-    }
-
-    // Get fields for entity.
-    $fields = [];
-
-    $gdpr_config = GdprFieldConfigEntity::load($entity_type);
-
-    if ($gdpr_config == NULL) {
-      // No fields have been configured on this entity for GDPR.
-      return $fields;
-    }
-
-    foreach ($entity as $field_id => $field) {
-      /** @var \Drupal\Core\Field\FieldItemListInterface $field */
-      $field_definition = $field->getFieldDefinition();
-
-      $field_config = $gdpr_config->getField($bundle_id, $field->getName());
-
-      if (!$field_config->enabled) {
-        continue;
-      }
-
-      $key = "$entity_type.{$entity->id()}.$field_id";
-
-      $fieldValue = $field->getString();
-      $fields[$key] = [
-        'title' => $field_definition->getLabel(),
-        'value' => $fieldValue,
-        'entity' => $entity->getEntityType()->getLabel(),
-        'bundle' => $bundle_label,
-        'notes' => $field_config->notes,
-      ];
-
-      if (empty($extra_fields)) {
-        continue;
-      }
-
-      // Fetch and validate based on field settings.
-      if (isset($extra_fields['rta'])) {
-        $rta_value = $field_config->rta;
-
-        if ($rta_value && $rta_value !== 'no') {
-          $fields[$key]['gdpr_rta'] = $rta_value;
-        }
-        else {
-          unset($fields[$key]);
-        }
-      }
-      if (isset($extra_fields['rtf'])) {
-
-      }
     }
 
     return $fields;

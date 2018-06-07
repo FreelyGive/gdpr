@@ -9,7 +9,7 @@ use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
 use Drupal\gdpr_fields\EntityTraversal;
 
 /**
- * Entity traversal for RTA requests.
+ * Entity traversal for performing Right to Access requests.
  *
  * @package Drupal\gdpr_tasks
  */

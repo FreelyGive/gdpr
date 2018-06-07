@@ -7,7 +7,7 @@ use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
 use Drupal\gdpr_fields\EntityTraversal;
 
 /**
- * Entity traversal for the right to be forgotten preview display.
+ * Entity traversal for the Right to Access preview display.
  *
  * @package Drupal\gdpr_tasks
  */

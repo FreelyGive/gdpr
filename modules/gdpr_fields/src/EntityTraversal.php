@@ -4,7 +4,6 @@ namespace Drupal\gdpr_fields;
 
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
@@ -86,7 +85,7 @@ class EntityTraversal {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  private function doTraversalRecursive(EntityInterface $entity, array &$progress, $row_id = NULL, array& $results) {
+  protected function doTraversalRecursive(EntityInterface $entity, array &$progress, $row_id = NULL, array& $results) {
     $entity_type = $entity->getEntityTypeId();
     $definition = $this->entityTypeManager->getDefinition($entity_type);
 
@@ -169,7 +168,7 @@ class EntityTraversal {
           ->execute();
 
         foreach ($storage->loadMultiple($ids) as $related_entity) {
-          $this->traverse($related_entity);
+          $this->doTraversalRecursive($related_entity, $progress, $row_id, $results);
         }
       }
     }

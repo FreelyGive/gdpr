@@ -26,7 +26,6 @@ class RightToBeForgottenDisplayTraversal extends EntityTraversal {
     $fields = $this->entityFieldManager->getFieldDefinitions($entity_type, $entity->bundle());
     $field_configs = $config->getFieldsForBundle($entity->bundle());
 
-
     foreach ($fields as $field_id => $field) {
       $field_config = isset($field_configs[$field_id]) ? $field_configs[$field_id] : NULL;
 
