@@ -6,5 +6,11 @@ services:
     class: Drupal\gdpr_tasks\Anonymizer
     arguments: ['@gdpr_fields.collector', '@database', '@entity_type.manager', '@module_handler', '@current_user', '@anonymizer.anonymizer_factory', '@config.factory']
   gdpr_tasks.rta_traversal:
-    class: Drupal\gdpr_tasks\RightToAccessEntityTraversal
+    class: Drupal\gdpr_tasks\Traversal\RightToAccessEntityTraversal
+    arguments: ['@entity_type.manager', '@entity_field.manager']
+  gdpr_tasks.rta_display_traversal:
+    class: Drupal\gdpr_tasks\Traversal\RightToAccessDisplayTraversal
+    arguments: ['@entity_type.manager', '@entity_field.manager']
+  gdpr_tasks.rtf_display_traversal:
+    class: Drupal\gdpr_tasks\Traversal\RightToBeForgottenDisplayTraversal
     arguments: ['@entity_type.manager', '@entity_field.manager']

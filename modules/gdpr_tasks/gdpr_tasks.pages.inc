@@ -39,7 +39,7 @@ function template_preprocess_gdpr_task(array &$variables) {
   /* @var \Drupal\gdpr_tasks\Entity\TaskInterface $entity */
   switch ($gdprTask->bundle()) {
     case 'gdpr_remove':
-      $rows = $controller->rtfData($gdprTask->getOwner());
+      $rows = \Drupal::service('gdpr_tasks.rtf_display_traversal')->traverse($gdprTask->getOwner());
 
       $variables['data'] = [
         '#type' => 'table',
@@ -61,7 +61,7 @@ function template_preprocess_gdpr_task(array &$variables) {
       break;
 
     case 'gdpr_sar':
-      $rows = $controller->rtaData($gdprTask->getOwner());
+      $rows = \Drupal::service('gdpr_tasks.rta_display_traversal')->traverse($gdprTask->getOwner());
 
       $variables['data'] = [
         '#type' => 'table',

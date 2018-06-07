@@ -1,13 +1,12 @@
 <?php
 
-namespace Drupal\gdpr_tasks;
+namespace Drupal\gdpr_tasks\Traversal;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
 use Drupal\gdpr_fields\EntityTraversal;
-
 
 /**
  * Entity traversal for RTA requests.
@@ -40,7 +39,7 @@ class RightToAccessEntityTraversal extends EntityTraversal {
       $field_config = isset($field_configs[$field_id]) ? $field_configs[$field_id] : NULL;
 
       // If the field is not configured, not enabled,
-      // or not enabled for RTF, then skip it.
+      // or not enabled for RTA, then skip it.
       if ($field_config === NULL || !$field_config->enabled || !in_array($field_config->rta, ['inc', 'maybe'])) {
         continue;
       }

@@ -4,6 +4,7 @@ namespace Drupal\gdpr_fields;
 
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
@@ -189,6 +190,7 @@ class EntityTraversal {
    *   Subclasses should add any data they need to collect to the results array.
    */
   protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results) {
+
   }
 
   /**
@@ -224,6 +226,32 @@ class EntityTraversal {
     }
 
     return $this->reverseRelationshipFields;
+  }
+
+  /**
+   * Gets the entity bundle label. Useful for display traversal.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to get the bundle label for.
+   *
+   * @return string
+   *   Bundle label
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   */
+  protected function getBundleLabel(EntityInterface $entity) {
+    $entity_definition = $entity->getEntityType();
+    $bundle_type = $entity_definition->getBundleEntityType();
+
+    if ($bundle_type) {
+      $bundle_storage = $this->entityTypeManager->getStorage($bundle_type);
+      $bundle_entity = $bundle_storage->load($entity->bundle());
+      $bundle_label = $bundle_entity == NULL ? '' : $bundle_entity->label();
+    }
+    else {
+      $bundle_label = $entity_definition->getLabel();
+    }
+    return $bundle_label;
   }
 
 }

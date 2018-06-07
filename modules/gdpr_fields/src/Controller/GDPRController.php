@@ -6,9 +6,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
-use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
 use Drupal\gdpr_fields\GDPRCollector;
-use Drupal\user\UserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\gdpr_fields\Form\GdprFieldFilterForm;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -46,6 +44,8 @@ class GDPRController extends ControllerBase {
    *   The GDPR collector service.
    * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $bundle_info
    *   Entity bundle info.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
+   *   HTTP Request stack.
    */
   public function __construct(GDPRCollector $collector, EntityTypeBundleInfoInterface $bundle_info, RequestStack $request_stack) {
     $this->collector = $collector;
@@ -201,31 +201,6 @@ class GDPRController extends ControllerBase {
     }
 
     return $table;
-  }
-
-  /**
-   * Builds data for Right to be Forgotten data requests.
-   *
-   * @param \Drupal\user\UserInterface $user
-   *   The user to fetch data for.
-   *
-   * @return array
-   *   Structured array of user related data.
-   */
-  public function rtfData(UserInterface $user) {
-    $rows = [];
-    $entities = [];
-    $this->collector->getEntities($entities, 'user', $user);
-
-    foreach ($entities as $entityType => $bundles) {
-      foreach ($bundles as $bundle_entity) {
-        $rows += $this->collector->fieldValues($bundle_entity, $entityType, ['rtf' => 'rtf']);
-      }
-    }
-
-    // Sort rows by field name.
-    ksort($rows);
-    return $rows;
   }
 
 }
