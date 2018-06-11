@@ -59,7 +59,7 @@ class GDPRTaskUIController extends EntityBundleableUIController {
     // Always show at least requested and complete tables.
     $rows = array(
       'requested' => array(),
-      'complete' => array(),
+      'closed' => array(),
     );
     foreach ($entities as $entity) {
       $rows[$entity->status][] = $this->overviewTableRow($conditions, entity_id($this->entityType, $entity), $entity);

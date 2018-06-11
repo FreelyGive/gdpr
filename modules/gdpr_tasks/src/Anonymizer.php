@@ -15,12 +15,15 @@ class Anonymizer {
    *   Returns array containing any error messages.
    */
   public function run(GDPRTask $task) {
+    set_time_limit(600);
+
     // Make sure we load a fresh copy of the entity (bypassing the cache)
     // so we don't end up affecting any other references to the entity.
     $user = $task->getOwner();
 
     $errors = array();
     $successes = array();
+    $entire_entities = array();
     $failures = array();
     $log = array();
 
@@ -37,6 +40,7 @@ class Anonymizer {
       $entity_bundle = $wrapper->type();
 
       $entity_success = TRUE;
+      $entire_entity = FALSE;
       $success = TRUE;
       $msg = NULL;
       $sanitizer = '';
@@ -46,6 +50,9 @@ class Anonymizer {
       }
       elseif ($mode == 'remove') {
         list($success, $msg) = $this->remove($data, $entity);
+      }
+      elseif ($mode == 'delete entire entity') {
+        $entire_entity = TRUE;
       }
 
       if ($success === TRUE) {
@@ -75,7 +82,12 @@ class Anonymizer {
       }
 
       if ($entity_success) {
-        $successes[$entity_type][$entity_id] = $entity;
+        if ($entire_entity) {
+          $entire_entities[$entity_type][$entity_id] = $entity_id;
+        }
+        else {
+          $successes[$entity_type][$entity_id] = $entity;
+        }
       }
       else {
         $failures[] = $entity;
@@ -90,11 +102,22 @@ class Anonymizer {
 
       try {
         /* @var EntityInterface $entity */
+        foreach ($entire_entities as $entity_type => $entities) {
+          foreach ($entities as $entity_id) {
+            entity_delete($entity_type, $entity_id);
+
+            // Make sure we don't try to save it later.
+            unset($successes[$entity_type][$entity_id]);
+          }
+        }
+
+        /* @var EntityInterface $entity */
         foreach ($successes as $entity_type => $entities) {
           foreach ($entities as $entity) {
             entity_save($entity_type, $entity);
           }
         }
+
         // Re-fetch the user so we see any changes that were made.
         $user = entity_load_unchanged('user', $task->user_id);
         user_save($user, array('status' => 0));
@@ -126,15 +149,6 @@ class Anonymizer {
     try {
       $entity_type = $field_info['entity_type'];
       $field = $field_info['plugin']->property_name;
-
-      // If this is the entity's ID, treat the removal as remove the entire
-      // entity.
-      if (self::propertyIsEntityId($entity_type, $field)) {
-        if (entity_delete($entity_type, $entity->{$field}) === FALSE) {
-          return array(FALSE, "Unable to delete entity type.");
-        }
-        return array(TRUE, NULL);
-      }
 
       // Check if the property can be removed.
       $wrapper = entity_metadata_wrapper($entity_type, $entity);
@@ -258,9 +272,14 @@ class Anonymizer {
    *   TRUE if the property can be removed, FALSE if not.
    */
   public static function propertyCanBeRemoved($entity_type, $field, $property_info, &$error_message = NULL) {
+    $msg_vars = array(
+      '%entity_type' => $entity_type,
+      '%field' => $field,
+    );
+
     // Fail on computed fields.
     if (!empty($property_info['computed'])) {
-      $error_message = "Unable to remove computed property.";
+      $error_message = t('Unable to remove computed property %entity_type: %field.', $msg_vars);
       return FALSE;
     }
 
@@ -272,12 +291,12 @@ class Anonymizer {
 
       // If the field is set to not NULL, fail.
       if (!empty($schema['fields'][$schema_field]['not null'])) {
-        $error_message = t("Unable to remove required database field %field.", array('%field' => $field));
+        $error_message = t("Unable to remove required database field %entity_type: %field.", $msg_vars);
         return FALSE;
       }
 
       if (in_array($schema_field, $schema['primary key'])) {
-        $error_message = t("Unable to remove part of a primary key %field.", array('%field' => $field));
+        $error_message = t("Unable to remove part of a primary key %entity_type: %field.", $msg_vars);
         return FALSE;
       }
     }

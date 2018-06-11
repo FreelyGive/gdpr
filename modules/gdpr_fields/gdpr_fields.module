@@ -77,6 +77,11 @@ function gdpr_fields_gdpr_fields_default_field_data() {
  *   The entity we want information for.
  * @param array $entity_list
  *   Internal use only, provide the entity list to build upon.
+ * @param string|null $source_plugin
+ *   Internal use only, the plugin that brought this entity in or NULL if none.
+ * @param int|null $row_id
+ *   The row ID to include this entity in, or NULL if we should use it's own
+ *   identifier.
  *
  * @return array
  *   The array of entities for the task.
@@ -91,20 +96,22 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
   /* @var \EntityDrupalWrapper $wrapper */
   $wrapper = entity_metadata_wrapper($entity_type, $entity);
   $entity_id = $wrapper->getIdentifier();
-  
+
   // Check for recursion.
   if (isset($entity_list[$entity_type][$entity_id])) {
     return $entity_list;
   }
 
   // Set entity.
+  $entity->_gdpr_row_source = FALSE;
   if (!isset($row_id)) {
     $row_id = $wrapper->getIdentifier();
+    $entity->_gdpr_row_source = TRUE;
   }
   $entity->_gdpr_row_id = $row_id;
   $entity->_gdpr_source_plugin = $source_plugin;
   $entity_list[$entity_type][$entity_id] = $entity;
-  
+
   // Loop over all defined properties and collect information.
   // @todo: Add a way to exclude specific properties.
   // @todo: Exclude entity types.
@@ -153,12 +160,20 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
         }
       }
       else {
+        $passed_row_id = NULL;
+        if ($source_plugin) {
+          $source_gdpr_data = GDPRFieldData::createFromName($source_plugin);
+          if ($GDPR_data->getSetting('gdpr_sars_filename','main') == $source_gdpr_data->getSetting('gdpr_sars_filename','main')) {
+            $passed_row_id = $row_id;
+          }
+        }
+        $property_wrapper = $wrapper->{$property_name};
         $entity_list = gdpr_fields_collect_gdpr_entities(
-          $wrapper->{$property_name}->type(),
-          $wrapper->{$property_name}->value(),
+          $property_wrapper->type(),
+          $property_wrapper->value(),
           $entity_list,
           $GDPR_data->name,
-          $row_id
+          $passed_row_id
         );
       }
     }
@@ -188,7 +203,7 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
               }
 
               if ($is_list) {
-                foreach ($property_wrapper->{$sub_property_name} as $sub_property_wrapper) {
+                foreach ($property_wrapper->{$sub_property_name} as $delta => $sub_property_wrapper) {
                   $entity_list = gdpr_fields_collect_gdpr_entities(
                     $sub_property_wrapper->type(),
                     $sub_property_wrapper->value(),
@@ -198,9 +213,10 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
                 }
               }
               else {
+                $sub_property_wrapper = $property_wrapper->{$sub_property_name};
                 $entity_list = gdpr_fields_collect_gdpr_entities(
-                  $property_wrapper->{$sub_property_name}->type(),
-                  $property_wrapper->{$sub_property_name}->value(),
+                  $sub_property_wrapper->type(),
+                  $sub_property_wrapper->value(),
                   $entity_list,
                   $GDPR_data->name,
                   $row_id
@@ -231,14 +247,19 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
 
       // If the target is our current entity type, find all owned entities.
       if ($type == $entity_type) {
+        $field_name = $field->property_name;
+        if (!empty($property_info['schema field'])) {
+          $field_name = $property_info['schema field'];
+        }
+
         $query = new EntityFieldQuery();
         $query->entityCondition('entity_type', $field->entity_type);
         $query->entityCondition('bundle', $field->entity_bundle);
         if (!empty($property_info['field'])) {
-          $query->fieldCondition($field->property_name, 'target_id', $entity_id);
+          $query->fieldCondition($field_name, 'target_id', $entity_id);
         }
         else {
-          $query->propertyCondition($field->property_name, $entity_id);
+          $query->propertyCondition($field_name, $entity_id);
         }
         $results = $query->execute();
         if (isset($results[$field->entity_type])) {

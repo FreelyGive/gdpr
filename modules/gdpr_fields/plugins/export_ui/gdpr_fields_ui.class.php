@@ -128,6 +128,13 @@ class gdpr_fields_ui extends ctools_export_ui {
       // Highlight entity reference fields.
       if ($type == 'entityreference') {
         $type = '<strong>' . $type . '</strong>';
+
+        if ($item->getSetting('gdpr_fields_owner', FALSE)) {
+          $type .= ' <small>Owner</small>';
+        }
+        if ($item->getSetting('gdpr_fields_no_follow', FALSE)) {
+          $type .= ' <small>Do not follow</small>';
+        }
       }
     }
     else {
@@ -146,13 +153,26 @@ class gdpr_fields_ui extends ctools_export_ui {
     $rta_labels = $this->rtaOptions();
     $rtf_labels = $this->rtfOptions();
 
-    $row['data'][] = array('data' => $rta_labels[$item->getSetting('gdpr_fields_rta', '')], 'class' => array('ctools-export-ui-rta'));
+    $rta_raw = $item->getSetting('gdpr_fields_rta', '');
+    $rta_text = $rta_labels[$rta_raw];
+    if ($rta_raw != 'not') {
+      $filename = $item->getSetting('gdpr_sars_filename');
+      if ($filename) {
+        $rta_text .= ' <small>' . check_plain($filename) . '.csv</small>';
+      }
+    }
+    $row['data'][] = array('data' => $rta_text, 'class' => array('ctools-export-ui-rta'));
 
-    $rtf_label = $rtf_labels[$item->getSetting('gdpr_fields_rtf', '')];
+    $rtf_raw = $item->getSetting('gdpr_fields_rtf', '');
+    $rtf_label = $rtf_labels[$rtf_raw];
 
     // Label id with removal as remove entity.
-    if ($is_id && $item->getSetting('gdpr_fields_rtf', '') == 'remove') {
+    if ($is_id && $rtf_raw == 'remove') {
       $rtf_label = t('Delete entire entity');
+    }
+    // Otherwise list any anonymiser.
+    elseif ($rtf_raw == 'anonymise') {
+      $rtf_label .= ' <small>' . $item->getSetting('gdpr_fields_sanitizer') . '</small>';
     }
 
     $row['data'][] = array('data' => $rtf_label, 'class' => array('ctools-export-ui-rtf'));
@@ -207,11 +227,25 @@ class gdpr_fields_ui extends ctools_export_ui {
       $tables[$entity_type][$entity_bundle][$name] = $row;
     }
 
-    foreach ($tables as $entity_type => $entities) {
+    // Sort the tables;
+    $sorted_tables = array();
+    $entity_types = $this->getSortedEntityTypes();
+    foreach ($entity_types as $entity_type => $label) {
+      if (isset($tables[$entity_type])) {
+        $sorted_tables[$entity_type] = $tables[$entity_type];
+        unset($tables[$entity_type]);
+      }
+    }
+    foreach ($tables as $entity_type => $table) {
+      $sorted_tables[$entity_type] = $table;
+    }
+
+    foreach ($sorted_tables as $entity_type => $entities) {
       $fieldset_entity = array(
         'element' => array(
-          '#title' => t('Entity: @entity', array(
-            '@entity' => $entity_type,
+          '#title' => t('Entity: @label [@type]', array(
+            '@label' => $entity_types[$entity_type],
+            '@type' => $entity_type,
           )),
           '#value' => '',
           '#children' => '<div>',
@@ -285,15 +319,10 @@ class gdpr_fields_ui extends ctools_export_ui {
     // Shrink search field slightly.
     $form['top row']['search']['#size'] = 30;
 
-    $entities = array();
-    foreach (entity_get_info() as $key => $entity_info) {
-      $entities[$key] = $entity_info['label'];
-    }
-
     $form['top row']['gdpr_entity'] = array(
       '#type' => 'select',
       '#title' => t('Entity'),
-      '#options' => $entities,
+      '#options' => $this->getSortedEntityTypes(),
       '#multiple' => TRUE,
       '#default_value' => array(),
     );
@@ -363,6 +392,20 @@ class gdpr_fields_ui extends ctools_export_ui {
         return TRUE;
       }
     }
+  }
+
+  /**
+   * Get a list of entity types sorted by label.
+   *
+   * @return array
+   */
+  protected function getSortedEntityTypes() {
+    $types = array();
+    foreach (entity_get_info() as $entity_type => $info) {
+      $types[$entity_type] = $info['label'];
+    }
+    ksort($types);
+    return $types;
   }
 
 }

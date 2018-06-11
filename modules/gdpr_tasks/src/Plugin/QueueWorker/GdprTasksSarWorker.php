@@ -93,22 +93,17 @@ class GdprTasksSarWorker {
         continue;
       }
 
-      // Build the headers if required.
-      if (!isset($csvs[$data['file']]['_header'][$data['plugin_name']])) {
-        $csvs[$data['file']]['_plugin_id'][$data['plugin_name']] = $data['plugin_name'];
-        $csvs[$data['file']]['_header'][$data['plugin_name']] = $data['label'];
+      // Populate our main CSV, with maybe as an empty cell.
+      $this->populateCsvValues($csvs[$data['file']], $data['plugin_name'], $data['label'], $data['rta'] == 'maybe' ? '' : $data['value'], $data['row_id'], $data['row_source']);
+
+      // If this is a maybe or the row source, put in the maybe file.
+      if ($data['rta'] == 'maybe' || $data['row_source']) {
+        $this->populateCsvValues($csvs['maybe.' . $data['file']], $data['plugin_name'], $data['label'], $data['value'], $data['row_id'], $data['row_source']);
       }
 
-      // Initialise and fill out the row to make sure things come in a
-      // consistent order.
-      if (!isset($csvs[$data['file']][$data['row_id']])) {
-        $csvs[$data['file']][$data['row_id']] = array();
-      }
-      $csvs[$data['file']][$data['row_id']] += array_fill_keys(array_keys($csvs[$data['file']]['_header']), '');
-
-      // Put our piece of information in place.
-      $csvs[$data['file']][$data['row_id']][$data['plugin_name']] = $data['value'];
     }
+
+    drupal_alter('gdpr_tasks_sars_data', $csvs, $task->getOwner());
 
     // Gather existing files.
     $files = array();
@@ -131,6 +126,12 @@ class GdprTasksSarWorker {
       }
       else {
         $file = $files[$filename];
+      }
+
+      // If this file only has the row ID, remove it.
+      if (count($data['_header']) === 1) {
+        file_delete($file);
+        continue;
       }
 
       $this->writeCsv($file->uri, $data);
@@ -166,6 +167,11 @@ class GdprTasksSarWorker {
     foreach ($wrapper->gdpr_tasks_sar_export_parts as $item) {
       $part_file = $item->file->value();
       $part_files[] = $part_file;
+
+      // Skip any maybe.* files.
+      if (substr($part_file->filename, 0, 6) == 'maybe.') {
+        continue;
+      }
 
       // Re-write the file to remove the header.
       $data = $this->readCsv($part_file->uri);
@@ -210,6 +216,33 @@ class GdprTasksSarWorker {
     // Update the status as completed.
     $task->status = 'closed';
     $task->save();
+  }
+
+  protected function populateCsvValues(&$csv_data, $plugin_name, $label, $value, $row_id, $row_source) {
+    // Build the headers if required.
+    if (!isset($csv_data['_header'][$plugin_name])) {
+      // If this is the row source, make it the first column.
+      if ($row_source && isset($csv_data['_header'])) {
+        // For every row, add this column to the start.
+        foreach ($csv_data as &$row_data) {
+          $row_data = array($plugin_name => '') + $row_data;
+        }
+      }
+
+      // Add the header data.
+      $csv_data['_plugin_id'][$plugin_name] = $plugin_name;
+      $csv_data['_header'][$plugin_name] = $label;
+    }
+
+    // Initialise and fill out the row to make sure things come in a
+    // consistent order.
+    if (!isset($csv_data[$row_id])) {
+      $csv_data[$row_id] = array();
+    }
+    $csv_data[$row_id] += array_fill_keys(array_keys($csv_data['_header']), '');
+
+    // Put our piece of information in place.
+    $csv_data[$row_id][$plugin_name] = $value;
   }
 
   /**

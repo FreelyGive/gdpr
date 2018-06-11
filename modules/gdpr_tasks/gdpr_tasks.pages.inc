@@ -20,7 +20,7 @@ function gdpr_task_user_request($user) {
  * Request page for user.
  */
 function gdpr_tasks_request($account, $gdpr_task_type) {
-  $tasks = gdpr_tasks_get_user_tasks($account, $gdpr_task_type);
+  $tasks = gdpr_tasks_get_user_tasks($account, $gdpr_task_type, FALSE);
 
   if (!empty($tasks)) {
     drupal_set_message('You already have a pending task.', 'warning');

@@ -77,20 +77,58 @@ function gdpr_task_edit_gdpr_remove_form($form, &$form_state) {
   $task = $form_state['task'] = $form_state['build_info']['args'][0];
   $form = gdpr_task_form($form, $form_state);
 
+  // Ensure the confirmation checkboxes aren't pre-ticked (options buttons does
+  // this if there is only one option and it's required).
+  if (empty($task->field_confirm) && !empty($form['field_confirm'][LANGUAGE_NONE]['#default_value'])) {
+    $form['field_confirm'][LANGUAGE_NONE]['#default_value'] = array();
+  }
+
   $header_table = array(
-    'Name',
+    'Entity type',
+    'ID',
+    'Property',
     'Data',
     'Notes',
     'Right to access',
   );
-  $rows = gdpr_tasks_collect_rtf_data(user_load($task->user_id));
+
+  $gdpr_data = gdpr_tasks_collect_rtf_data(user_load($task->user_id), TRUE);
+  $entity_types = entity_get_info();
 
   $data_table = array(
     '#theme' => 'table',
     '#header' => $header_table,
-    '#rows' => $rows,
-    '#caption' => 'Export data',
+    '#rows' => array(),
+    '#caption' => 'Erasure data',
   );
+  foreach ($gdpr_data as $data) {
+    $entity_type_info = $entity_types[$data['entity_type']];
+    $entity_label = $entity_type_info['label'];
+    if (!empty($entity_type_info['entity keys']['bundle'])) {
+      $bundle = $data['entity']->$entity_type_info['entity keys']['bundle'];
+      if (isset($entity_type_info['bundles'][$bundle]['label'])) {
+        $entity_label = format_string('@bundle [@type]', array(
+          '@bundle' => $entity_type_info['bundles'][$bundle]['label'],
+          '@type' => $entity_label,
+        ));
+      }
+    }
+
+    $rtf = check_plain($data['rtf']);
+    if ($rtf == 'anonymise') {
+      $sanitiszer = $data['plugin']->getSetting('gdpr_fields_sanitizer');
+      $rtf .= ' [' . check_plain($sanitiszer) . ']';
+    }
+
+    $data_table['#rows'][] = array(
+      $entity_label,
+      $data['entity_id'],
+      $data['label'],
+      $data['value'],
+      $data['notes'],
+      $rtf,
+    );
+  }
 
   $form['data'] = array(
     '#markup' => drupal_render($data_table),
@@ -223,7 +261,9 @@ function gdpr_task_edit_gdpr_remove_form_submit($form, &$form_state) {
     gdpr_task_form_submit($form, $form_state);
   }
   else {
-    dpm($errors);
+    foreach ($errors as $message) {
+      form_error($form, $message);
+    }
     $form_state['rebuild'] = TRUE;
   }
 

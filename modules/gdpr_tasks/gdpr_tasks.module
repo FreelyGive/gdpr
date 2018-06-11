@@ -312,14 +312,33 @@ function gdpr_task_load_multiple($ids = FALSE, $conditions = array(), $reset = F
   return entity_load('gdpr_task', $ids, $conditions, $reset);
 }
 
-
-function gdpr_tasks_get_user_tasks($user, $gdpr_task_type = NULL) {
+/**
+ * Get GDPR tasks for a user.
+ *
+ * @param stdClass $user
+ *   The user entity
+ * @param string|null $gdpr_task_type
+ *   The task type.
+ * @param bool|null $complete
+ *   Whether to include complete:
+ *   - TRUE: Only include complete.
+ *   - FALSE: Exclude complete.
+ *   - NULL: Include all.
+ *
+ * @return GdprTask[]
+ *   An array of GDPR Tasks.
+ */
+function gdpr_tasks_get_user_tasks($user, $gdpr_task_type = NULL, $complete = NULL) {
   $query = db_select('gdpr_task', 't')
     ->fields('t', array('id'))
     ->condition('user_id', $user->uid);
 
   if ($gdpr_task_type) {
     $query->condition('type', $gdpr_task_type);
+  }
+
+  if (isset($complete)) {
+    $query->condition('status', 'closed', $complete ? '=' : '!=');
   }
 
   $result = $query->execute()
@@ -329,7 +348,7 @@ function gdpr_tasks_get_user_tasks($user, $gdpr_task_type = NULL) {
     return gdpr_task_load_multiple($result);
   }
 
-  return $result;
+  return array();
 }
 
 /**
@@ -501,61 +520,84 @@ function gdpr_tasks_collect_rta_data($user) {
     foreach ($entities as $entity) {
       /* @var \EntityDrupalWrapper $wrapper */
       $wrapper = entity_metadata_wrapper($entity_type, $entity);
+      $entity_info = entity_get_info($entity_type);
+      $entity_id_key = isset($entity_info['entity keys']['id']) ? $entity_info['entity keys']['id'] : NULL;
       foreach ($wrapper->getPropertyInfo() as $property => $property_info) {
+        $is_row_id_source = $entity->_gdpr_row_source && $property == $entity_id_key;
+
+        // Skip if there is no value for the property.
+        $value = $wrapper->{$property}->value();
+        if (empty($value)) {
+          continue;
+        }
+
         $entity_id = $wrapper->getIdentifier();
         $plugin_name = "{$entity_type}|{$wrapper->getBundle()}|{$property}";
 
         if (isset($plugins[$plugin_name])) {
           $field_config = $plugins[$plugin_name];
+        }
+        else {
+          $field_config = GDPRFieldData::createFromProperty($entity_type, $wrapper->getBundle(), $property);
+          $field_config->setSetting('gdpr_fields_rta', 'not');
+        }
 
-          /* @var GDPRFieldData $field_config */
-          if ($field_config->disabled || !in_array($field_config->getSetting('gdpr_fields_rta'), array('inc', 'maybe'))) {
+        // Always include the row ID.
+        if ($is_row_id_source) {
+          $field_config->setSetting('gdpr_fields_rta', 'inc');
+        }
+
+        /* @var GDPRFieldData $field_config */
+        if (!in_array($field_config->getSetting('gdpr_fields_rta'), array('inc', 'maybe'))) {
+          continue;
+        }
+
+        if ($field_config->getSetting('gdpr_fields_rta')) {
+          // Figure out what to do based on the type.
+          $type = isset($property_info['type']) ? $property_info['type'] : 'string';
+          $is_list = substr($type, 0, 5) == 'list<';
+          if ($is_list) {
+            $type = entity_property_extract_innermost_type($type);
+          }
+
+          // Check if the type is an entity, except for files.
+          if ($type != 'file' && ($type == 'entity' || entity_get_info($type))) {
+            $type = 'entity';
+          }
+
+          // If this is a list, loop over getting the output.
+          $values = array();
+          if ($is_list) {
+            foreach ($wrapper->{$property} as $delta => $value) {
+              $values[] = trim(gdpr_tasks_collect_rta_data_extract_value($type, $value, $fields['_assets']));
+            }
+          }
+          else {
+            $values[] = trim(gdpr_tasks_collect_rta_data_extract_value($type, $wrapper->{$property}, $fields['_assets']));
+          }
+          $values = array_filter($values);
+          if (empty($values)) {
             continue;
           }
 
-          if ($field_config->getSetting('gdpr_fields_rta')) {
-            // Figure out what to do based on the type.
-            $type = isset($property_info['type']) ? $property_info['type'] : 'string';
-            $is_list = substr($type, 0, 5) == 'list<';
-            if ($is_list) {
-              $type = entity_property_extract_innermost_type($type);
-            }
-
-            // Check if the type is an entity, except for files.
-            if ($type != 'file' && ($type == 'entity' || entity_get_info($type))) {
-              $type = 'entity';
-            }
-
-            // If this is a list, loop over getting the output.
-            $values = array();
-            if ($is_list) {
-              foreach ($wrapper->{$property} as $value) {
-                $values[] = gdpr_tasks_collect_rta_data_extract_value($type, $value, $fields['_assets']);
-              }
-            }
-            else {
-              $values[] = gdpr_tasks_collect_rta_data_extract_value($type, $wrapper->{$property}, $fields['_assets']);
-            }
-
-            $filename = 'main';
-            if ($entity->_gdpr_source_plugin && isset($plugins[$entity->_gdpr_source_plugin])) {
-              $filename = $plugins[$entity->_gdpr_source_plugin]->getSetting('gdpr_sars_filename', $filename);
-            }
-            $data = array(
-              'plugin_name' => $plugin_name,
-              'entity_type' => $entity_type,
-              'entity_id' => $entity_id,
-              // @todo: Make this configurable.
-              'file' => $filename,
-              'row_id' => $entity->_gdpr_row_id,
-              'label' => $field_config->getSetting('label'),
-              'value' => implode(', ', array_filter($values)),
-              'notes' => $field_config->getSetting('notes'),
-              'rta' => $field_config->getSetting('gdpr_fields_rta'),
-            );
-
-            $fields["{$plugin_name}|{$entity_id}"] = $data;
+          $filename = 'main';
+          if ($entity->_gdpr_source_plugin && isset($plugins[$entity->_gdpr_source_plugin])) {
+            $filename = $plugins[$entity->_gdpr_source_plugin]->getSetting('gdpr_sars_filename', $filename);
           }
+          $data = array(
+            'plugin_name' => $plugin_name,
+            'entity_type' => $entity_type,
+            'entity_id' => $entity_id,
+            'file' => $filename,
+            'row_id' => $entity->_gdpr_row_id,
+            'row_source' => $is_row_id_source,
+            'label' => $field_config->getSetting('label'),
+            'value' => implode(', ', $values),
+            'notes' => $field_config->getSetting('notes'),
+            'rta' => $field_config->getSetting('gdpr_fields_rta'),
+          );
+
+          $fields["{$plugin_name}|{$entity_id}"] = $data;
         }
       }
     }
@@ -625,11 +667,17 @@ function gdpr_tasks_collect_rtf_data($user, $include_plugins = FALSE) {
         $entity_id = $wrapper->getIdentifier();
         $plugin_name = "{$entity_type}|{$wrapper->getBundle()}|{$property}";
 
+        // Skip if there is no value for the property.
+        $value = $wrapper->{$property}->value();
+        if (empty($value)) {
+          continue;
+        }
+
         if (isset($plugins[$plugin_name])) {
           $field_config = $plugins[$plugin_name];
 
           /* @var GDPRFieldData $field_config */
-          if ($field_config->disabled || !in_array($field_config->getSetting('gdpr_fields_rtf'), array('anonymise', 'remove', 'maybe'))) {
+          if (!in_array($field_config->getSetting('gdpr_fields_rtf'), array('anonymise', 'remove', 'maybe'))) {
             continue;
           }
 
