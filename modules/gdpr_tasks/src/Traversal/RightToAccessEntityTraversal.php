@@ -5,6 +5,7 @@ namespace Drupal\gdpr_tasks\Traversal;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\gdpr_fields\Entity\GdprField;
 use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
 use Drupal\gdpr_fields\EntityTraversal;
 
@@ -29,7 +30,7 @@ class RightToAccessEntityTraversal extends EntityTraversal {
   /**
    * {@inheritdoc}
    */
-  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results) {
+  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results, GdprField $parent_config = NULL) {
     $entity_type = $entity->getEntityTypeId();
 
     $fields = $this->entityFieldManager->getFieldDefinitions($entity_type, $entity->bundle());

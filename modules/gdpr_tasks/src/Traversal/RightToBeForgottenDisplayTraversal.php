@@ -3,6 +3,7 @@
 namespace Drupal\gdpr_tasks\Traversal;
 
 use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\gdpr_fields\Entity\GdprField;
 use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
 use Drupal\gdpr_fields\EntityTraversal;
 
@@ -19,7 +20,7 @@ class RightToBeForgottenDisplayTraversal extends EntityTraversal {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Core\Entity\EntityMalformedException
    */
-  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results) {
+  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results, GdprField $parent_config = NULL) {
     $entity_type = $entity->getEntityTypeId();
     $entity_definition = $entity->getEntityType();
 

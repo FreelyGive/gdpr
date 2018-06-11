@@ -58,7 +58,7 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
     ];
 
     $progress = [];
-    $this->doTraversalRecursive($entity, $progress, NULL, $results);
+    $this->doTraversalRecursive($entity, $progress, NULL, $results, NULL);
     return $results;
   }
 
@@ -68,7 +68,7 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
-  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results) {
+  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results, GdprField $parent_config = NULL) {
     $entity_success = TRUE;
     $entity_type = $entity->getEntityTypeId();
 

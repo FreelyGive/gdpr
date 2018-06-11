@@ -6,6 +6,7 @@ use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\gdpr_fields\Entity\GdprField;
 use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
 
 /**
@@ -68,7 +69,7 @@ class EntityTraversal {
   public function traverse(EntityInterface $entity) {
     $progress = [];
     $results = [];
-    $this->doTraversalRecursive($entity, $progress, NULL, $results);
+    $this->doTraversalRecursive($entity, $progress, NULL, $results, NULL);
     return $results;
   }
 
@@ -85,7 +86,7 @@ class EntityTraversal {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  protected function doTraversalRecursive(EntityInterface $entity, array &$progress, $row_id = NULL, array& $results) {
+  protected function doTraversalRecursive(EntityInterface $entity, array &$progress, $row_id = NULL, array& $results, $parent_config) {
     $entity_type = $entity->getEntityTypeId();
     $definition = $this->entityTypeManager->getDefinition($entity_type);
 
@@ -119,7 +120,7 @@ class EntityTraversal {
     $config = GdprFieldConfigEntity::load($entity_type);
 
     // Let subclasses do with the entity. They will add to the $results array.
-    $this->processEntity($entity, $config, $row_id, $results);
+    $this->processEntity($entity, $config, $row_id, $results, $parent_config);
 
     // Find relationships from this entity.
     $fields = $this->entityFieldManager->getFieldDefinitions($entity_type, $entity->bundle());
@@ -146,10 +147,10 @@ class EntityTraversal {
         // Loop through each child entity and traverse their relationships too.
         foreach ($referenced_entities as $child_entity) {
           if ($field_definition->getFieldStorageDefinition()->getCardinality() != 1) {
-            $this->doTraversalRecursive($child_entity, $progress, NULL, $results);
+            $this->doTraversalRecursive($child_entity, $progress, NULL, $results, $field_config);
           }
           else {
-            $this->doTraversalRecursive($child_entity, $progress, $row_id, $results);
+            $this->doTraversalRecursive($child_entity, $progress, $row_id, $results, $field_config);
           }
         }
       }
@@ -168,7 +169,7 @@ class EntityTraversal {
           ->execute();
 
         foreach ($storage->loadMultiple($ids) as $related_entity) {
-          $this->doTraversalRecursive($related_entity, $progress, $row_id, $results);
+          $this->doTraversalRecursive($related_entity, $progress, $row_id, $results, $relationship['config']);
         }
       }
     }
@@ -188,7 +189,7 @@ class EntityTraversal {
    * @param array $results
    *   Subclasses should add any data they need to collect to the results array.
    */
-  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results) {
+  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results, GdprField $parent_config = NULL) {
 
   }
 
@@ -216,6 +217,7 @@ class EntityTraversal {
                 'entity_type' => $config->id(),
                 'bundle' => $field->bundle,
                 'field' => $field->name,
+                'config' => $field,
                 'target_type' => $field_definition->getSetting('target_type'),
               ];
             }
