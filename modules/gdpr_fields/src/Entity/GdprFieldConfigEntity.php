@@ -80,12 +80,13 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
    *
    * @return \Drupal\gdpr_fields\Entity\GdprField[]
    *   Array of GDPR field settings.
+   *   Keys are in the format of "bundle.fieldname".
    */
   public function getAllFields() {
     $results = [];
-    foreach ($this->bundles as $fields_in_bundle) {
-      foreach ($fields_in_bundle as $field) {
-        $results[] = GdprField::create($field);
+    foreach ($this->bundles as $bundle_id => $fields_in_bundle) {
+      foreach ($fields_in_bundle as $field_name => $field) {
+        $results["$bundle_id.$field_name"] = GdprField::create($field);
       }
     }
     return $results;
@@ -98,7 +99,7 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
    *   The bundle.
    *
    * @return \Drupal\gdpr_fields\Entity\GdprField[]
-   *   Array of fields within this bundle.
+   *   Array of fields within this bundle keyed by field name.
    */
   public function getFieldsForBundle($bundle) {
     return array_map(function ($field) {

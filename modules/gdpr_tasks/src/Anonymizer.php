@@ -111,6 +111,7 @@ class Anonymizer {
     $errors = $result['errors'];
     $successes = $result['successes'];
     $failures = $result['failures'];
+    $deletions = $result['to_delete'];
 
     $task->get('removal_log')->setValue($log);
 
@@ -122,6 +123,11 @@ class Anonymizer {
         foreach ($successes as $entity) {
           $entity->save();
         }
+
+        foreach ($deletions as $entity) {
+          $entity->delete();
+        }
+
         // Re-fetch the user so we see any changes that were made.
         $user = $this->refetchUser($task->getOwnerId());
         $user->block();

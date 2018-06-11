@@ -55,6 +55,7 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
       'successes' => [],
       'failures' => [],
       'log' => [],
+      'to_delete' => [],
     ];
 
     $progress = [];
@@ -103,7 +104,7 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
         list($success, $msg, $anonymizer) = $this->anonymize($field, $field_definition, $field_config);
       }
       elseif ($mode == 'remove') {
-        list($success, $msg) = $this->remove($field, $entity);
+        list($success, $msg, $should_delete) = $this->remove($field, $entity);
       }
 
       if ($success === TRUE) {
@@ -124,7 +125,12 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
     }
 
     if ($entity_success) {
-      $results['successes'][] = $entity;
+      if (isset($should_delete) && $should_delete) {
+        $results['to_delete'][] = $entity;
+      }
+      else {
+        $results['successes'][] = $entity;
+      }
     }
     else {
       $results['failures'][] = $entity;
@@ -140,29 +146,31 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
    *   The entity to remove.
    *
    * @return array
-   *   First element is success boolean, second element is the error message.
-   *
-   * @throws \Drupal\Core\Entity\EntityStorageException
+   *   First element is success boolean, second element is the error message,
+   *   third element is boolean indicating whether the whole
+   *   entity should be deleted.
    */
   private function remove(FieldItemListInterface $field, EntityInterface $entity) {
     try {
+      $should_delete = FALSE;
       // If this is the entity's ID, treat the removal as remove the entire
       // entity.
       $entity_type = $entity->getEntityType();
       if ($entity_type->getKey('id') == $field->getName()) {
-        $entity->delete();
+        $should_delete = TRUE;
+        return [TRUE, NULL, $should_delete];
       }
       // Check if the property can be removed.
       elseif (!GDPRCollector::propertyCanBeRemoved($entity_type, $field->getFieldDefinition(), $error_message)) {
-        return [FALSE, $error_message];
+        return [FALSE, $error_message, $should_delete];
       }
 
       // Otherwise assume we can simply clear the field.
       $field->setValue(NULL);
-      return [TRUE, NULL];
+      return [TRUE, NULL, $should_delete];
     }
     catch (ReadOnlyException $e) {
-      return [FALSE, $e->getMessage()];
+      return [FALSE, $e->getMessage(), $should_delete];
     }
   }
 
