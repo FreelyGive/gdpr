@@ -88,7 +88,6 @@ class EntityTraversal {
    */
   protected function doTraversalRecursive(EntityInterface $entity, array &$progress, $row_id = NULL, array& $results, $parent_config) {
     $entity_type = $entity->getEntityTypeId();
-    $definition = $this->entityTypeManager->getDefinition($entity_type);
 
     // If the entity is not fieldable, don't continue.
     if (!$entity instanceof FieldableEntityInterface) {
