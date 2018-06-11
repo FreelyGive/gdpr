@@ -72,12 +72,12 @@ class GdprFieldFilterForm extends FormBase {
       '#default_value' => $filters['search'],
     ];
 
-    $form['container']['gdpr_entity'] = [
+    $form['container']['entity'] = [
       '#type' => 'select',
       '#title' => t('Entity'),
       '#options' => $entities,
       '#multiple' => TRUE,
-      '#default_value' => $filters['gdpr_entity'],
+      '#default_value' => $filters['entity'],
     ];
 
     $form['container']['rta'] = [
@@ -159,7 +159,7 @@ class GdprFieldFilterForm extends FormBase {
     else {
       $arguments = [
         'search' => $form_state->getValue('search'),
-        'gdpr_entity' => $form_state->getValue('gdpr_entity'),
+        'entity' => $form_state->getValue('entity'),
         'rta' => $form_state->getValue('rta'),
         'rtf' => $form_state->getValue('rtf'),
         'empty' => $form_state->getValue('empty'),
@@ -181,7 +181,7 @@ class GdprFieldFilterForm extends FormBase {
   public static function getFilters(Request $request) {
     $filters = [
       'search' => $request->get('search'),
-      'gdpr_entity' => $request->get('gdpr_entity'),
+      'entity' => $request->get('entity'),
       'rta' => $request->get('rta'),
       'rtf' => $request->get('rtf'),
       'empty' => $request->get('empty'),

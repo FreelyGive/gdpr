@@ -5,6 +5,7 @@ namespace Drupal\gdpr_fields\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\gdpr_fields\GDPRCollector;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\gdpr_fields\Form\GdprFieldFilterForm;
@@ -72,7 +73,7 @@ class GDPRController extends ControllerBase {
       }
 
       // If a filter is active, exclude any entities that don't match.
-      if (!empty($filters['gdpr_entity']) && !in_array($entity_type_id, $filters['gdpr_entity'])) {
+      if (!empty($filters['entity']) && !in_array($entity_type_id, $filters['entity'])) {
         continue;
       }
 
@@ -93,7 +94,7 @@ class GDPRController extends ControllerBase {
             $at_least_one_bundle_has_fields = TRUE;
             $output[$entity_type_id][$bundle_id] = [
               '#type' => 'details',
-              '#title' => $bundle_info['label'] . " [$bundle_id]",
+              '#title' => new TranslatableMarkup('%label [%bundle]', ['%label' => $bundle_info['label'], '%bundle' => $bundle_id]),
               '#open' => TRUE,
             ];
             $output[$entity_type_id][$bundle_id]['fields'] = $field_table;
@@ -168,12 +169,12 @@ class GDPRController extends ControllerBase {
         '#markup' => $row['is_id'] || $row['type'] == 'entity_reference' ? "<strong>{$row['type']}</strong>" : $row['type'],
       ];
 
-      $table[$i]['gdpr_rta'] = [
-        '#plain_text' => $row['gdpr_rta'],
+      $table[$i]['rta'] = [
+        '#plain_text' => $row['rta'],
       ];
 
-      $table[$i]['gdpr_rtf'] = [
-        '#plain_text' => $row['gdpr_rtf'],
+      $table[$i]['rtf'] = [
+        '#plain_text' => $row['rtf'],
       ];
 
       $table[$i]['notes'] = [

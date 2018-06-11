@@ -130,8 +130,8 @@ class GDPRCollector {
       $fields[$key] = [
         'title' => $label,
         'type' => $is_id ? 'primary_key' : $field_definition->getType(),
-        'gdpr_rta' => 'Not Configured',
-        'gdpr_rtf' => 'Not Configured',
+        'rta' => 'Not Configured',
+        'rtf' => 'Not Configured',
         'notes' => '',
         'edit' => '',
         'is_id' => $is_id,
@@ -153,8 +153,8 @@ class GDPRCollector {
           $rta = $field_settings->rta;
           $rtf = $field_settings->rtf;
 
-          $fields[$key]['gdpr_rta'] = $field_settings->rtaDescription();
-          $fields[$key]['gdpr_rtf'] = $field_settings->rtfDescription();
+          $fields[$key]['rta'] = $field_settings->rtaDescription();
+          $fields[$key]['rtf'] = $field_settings->rtfDescription();
           $fields[$key]['notes'] = $field_settings->notes;
         }
       }
