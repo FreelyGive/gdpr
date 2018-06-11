@@ -99,7 +99,7 @@ class GdprFieldSettingsForm extends FormBase {
    *   Anonymizer to use.
    * @param string $notes
    *   Notes.
-   * @param bool $no_follow
+   * @param bool $follow
    *   Whether the relationship should not be traversed.
    * @param bool $owner
    *   Whether this is a reverse relationship owned by the entity.
@@ -109,7 +109,7 @@ class GdprFieldSettingsForm extends FormBase {
    * @return \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity
    *   The config entity.
    */
-  private static function setConfig($entity_type, $bundle, $field_name, $enabled, $rta, $rtf, $anonymizer, $notes, $no_follow, $owner, $sars_filename) {
+  private static function setConfig($entity_type, $bundle, $field_name, $enabled, $rta, $rtf, $anonymizer, $notes, $follow, $owner, $sars_filename) {
     $config = GdprFieldConfigEntity::load($entity_type) ?? GdprFieldConfigEntity::create(['id' => $entity_type]);
     $config->setField($bundle, $field_name, [
       'enabled' => $enabled,
@@ -119,7 +119,7 @@ class GdprFieldSettingsForm extends FormBase {
       'notes' => $notes,
       'sars_filename' => $sars_filename,
       'owner' => $owner,
-      'no_follow' => $no_follow,
+      'follow' => $follow,
     ]);
     return $config;
   }
@@ -275,11 +275,11 @@ class GdprFieldSettingsForm extends FormBase {
         ],
       ];
 
-      $form['gdpr_no_follow'] = [
+      $form['gdpr_follow'] = [
         '#type' => 'checkbox',
-        '#default_value' => $config->noFollow,
-        '#title' => t('Do no follow this relationship'),
-        '#description' => t('If checked, this relationship will not be followed when looking for additional personal information.'),
+        '#default_value' => $config->follow,
+        '#title' => t('Follow this relationship'),
+        '#description' => t('If checked, this relationship will be followed when looking for additional personal information.'),
         '#states' => [
           'visible' => [
             ':input[name="gdpr_enabled"]' => [
@@ -307,7 +307,7 @@ class GdprFieldSettingsForm extends FormBase {
         '#states' => [
           'visible' => [
             ':input[name="gdpr_enabled"]' => ['checked' => TRUE],
-            ':input[name="gdpr_no_follow"]' => ['checked' => FALSE],
+            ':input[name="gdpr_follow"]' => ['checked' => TRUE],
           ],
         ],
       ];
@@ -430,7 +430,7 @@ class GdprFieldSettingsForm extends FormBase {
       $form_state->getValue('gdpr_rtf'),
       $form_state->getValue('gdpr_anonymizer'),
       $form_state->getValue('gdpr_notes'),
-      $form_state->getValue('gdpr_no_follow'),
+      $form_state->getValue('gdpr_follow'),
       $form_state->getValue('gdpr_owner'),
       $form_state->getValue('gdpr_sars_filename')
     );

@@ -78,7 +78,7 @@ class GdprField {
    *
    * @var bool
    */
-  public $noFollow = FALSE;
+  public $follow = FALSE;
 
   /**
    * Whether this is a reverse relationship where this side is the owner.
@@ -127,7 +127,7 @@ class GdprField {
     $field->anonymizer = $values['anonymizer'];
     $field->notes = $values['notes'];
     $field->owner = array_key_exists('owner', $values) ? $values['owner'] : FALSE;
-    $field->noFollow = array_key_exists('no_follow', $values) ? $values['no_follow'] : FALSE;
+    $field->follow = array_key_exists('follow', $values) ? $values['follow'] : FALSE;
     $field->sarsFilename = array_key_exists('sars_filename', $values) ? $values['sars_filename'] : '';
     $field->configured = TRUE;
     return $field;
@@ -197,11 +197,11 @@ class GdprField {
     }
 
     // Don't follow if we've been explicitly set not to.
-    if ($this->noFollow) {
-      return FALSE;
+    if ($this->follow) {
+      return TRUE;
     }
 
-    return TRUE;
+    return FALSE;
   }
 
 }
