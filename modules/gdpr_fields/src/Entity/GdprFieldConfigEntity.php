@@ -75,12 +75,17 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
         return $f['name'] == $field_name;
       });
 
+      if (!array_key_exists('entity_type_id', $result)) {
+        // Make sure entity type is set even if it's not saved in the config.
+        $result['entity_type_id'] = $this->id();
+      }
+
       if (\count($result)) {
         return GdprField::create(\reset($result));
       }
     }
 
-    return new GdprField($bundle, $field_name);
+    return new GdprField($bundle, $field_name, $this->id());
   }
 
   /**
@@ -93,6 +98,10 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
     $results = [];
     foreach ($this->bundles as $fields_in_bundle) {
       foreach ($fields_in_bundle as $field) {
+        if (!array_key_exists('entity_type_id', $field)) {
+          // Make sure entity type is set even if it's not saved in the config.
+          $field['entity_type_id'] = $this->id();
+        }
         $results[] = GdprField::create($field);
       }
     }
@@ -102,7 +111,7 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
   /**
    * Gets all field configuration for a bundle.
    *
-   * @param $bundle
+   * @param string $bundle
    *   The bundle.
    *
    * @return \Drupal\gdpr_fields\Entity\GdprField[]
@@ -110,6 +119,10 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
    */
   public function getFieldsForBundle($bundle) {
     return array_map(function ($field) {
+      if (!array_key_exists('entity_type_id', $field)) {
+        // Make sure entity type is set even if it's not saved in the config.
+        $field['entity_type_id'] = $this->id();
+      }
       return GdprField::create($field);
     }, $this->bundles[$bundle]);
   }

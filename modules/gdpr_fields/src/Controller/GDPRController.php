@@ -2,6 +2,7 @@
 
 namespace Drupal\gdpr_fields\Controller;
 
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
@@ -165,8 +166,10 @@ class GDPRController extends ControllerBase {
         '#plain_text' => $row['title'],
       ];
 
+      $type_markup = $row['is_id'] || $row['type'] == 'entity_reference' ? "<strong>{$row['type']}</strong>" : $row['type'];
+
       $table[$i]['type'] = [
-        '#markup' => $row['is_id'] || $row['type'] == 'entity_reference' ? "<strong>{$row['type']}</strong>" : $row['type'],
+        '#markup' => new FormattableMarkup($type_markup, []),
       ];
 
       $table[$i]['rta'] = [

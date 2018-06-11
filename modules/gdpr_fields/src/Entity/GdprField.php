@@ -87,6 +87,14 @@ class GdprField {
    */
   public $owner = FALSE;
 
+
+  /**
+   * Entity type.
+   *
+   * @var string
+   */
+  public $entity_type_id;
+
   /**
    * GdprField constructor.
    *
@@ -95,9 +103,10 @@ class GdprField {
    * @param string $name
    *   Field name.
    */
-  public function __construct($bundle, $name) {
+  public function __construct($bundle, $name, $entity_type_id) {
     $this->bundle = $bundle;
     $this->name = $name;
+    $this->entity_type_id = $entity_type_id;
   }
 
   /**
@@ -110,7 +119,7 @@ class GdprField {
    *   The field metadata instance.
    */
   public static function create(array $values) {
-    $field = new static($values['bundle'], $values['name']);
+    $field = new static($values['bundle'], $values['name'], $values['entity_type_id']);
     $field->rtf = $values['rtf'];
     $field->rta = $values['rta'];
     $field->enabled = $values['enabled'];
@@ -118,7 +127,7 @@ class GdprField {
     $field->notes = $values['notes'];
     $field->owner = array_key_exists('owner', $values) ? $values['owner'] : FALSE;
     $field->noFollow = array_key_exists('no_follow', $values) ? $values['no_follow'] : FALSE;
-    $field->sarsFilename = array_key_exists('sars_filename', $values) ?  $values['sars_filename'] : '';
+    $field->sarsFilename = array_key_exists('sars_filename', $values) ? $values['sars_filename'] : '';
     $field->configured = TRUE;
     return $field;
   }
