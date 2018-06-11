@@ -31,6 +31,14 @@ class GDPRCollector {
    */
   private $entityFieldManager;
 
+
+  /**
+   * Bundle info.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface
+   */
+  private $bundleInfo;
+
   /**
    * Constructs a GDPRCollector object.
    *
@@ -168,6 +176,21 @@ class GDPRCollector {
     }
 
     return $fields;
+  }
+
+  /**
+   * Gets bundles belonging to an entity type.
+   *
+   * @param string $entity_type_id
+   *   The entity type for which bundles should be located.
+   *
+   * @return array
+   *   Array of bundles.
+   */
+  public function getBundles($entity_type_id) {
+    $all_bundles = $this->bundleInfo->getAllBundleInfo();
+    $bundles = isset($all_bundles[$entity_type_id]) ? $all_bundles[$entity_type_id] : [$entity_type_id => []];
+    return $bundles;
   }
 
   /**

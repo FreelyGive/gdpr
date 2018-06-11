@@ -3,7 +3,6 @@
 namespace Drupal\gdpr_fields\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\gdpr_fields\GDPRCollector;
@@ -24,13 +23,6 @@ class GDPRController extends ControllerBase {
   protected $collector;
 
   /**
-   * Used to get bundle info metadata.
-   *
-   * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface
-   */
-  protected $bundleInfo;
-
-  /**
    * Current request.
    *
    * @var \Symfony\Component\HttpFoundation\Request
@@ -42,14 +34,11 @@ class GDPRController extends ControllerBase {
    *
    * @param \Drupal\gdpr_fields\GDPRCollector $collector
    *   The GDPR collector service.
-   * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $bundle_info
-   *   Entity bundle info.
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   HTTP Request stack.
    */
-  public function __construct(GDPRCollector $collector, EntityTypeBundleInfoInterface $bundle_info, RequestStack $request_stack) {
+  public function __construct(GDPRCollector $collector, RequestStack $request_stack) {
     $this->collector = $collector;
-    $this->bundleInfo = $bundle_info;
     $this->request = $request_stack->getCurrentRequest();
   }
 
@@ -59,7 +48,6 @@ class GDPRController extends ControllerBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('gdpr_fields.collector'),
-      $container->get('entity_type.bundle.info'),
       $container->get('request_stack')
     );
   }
@@ -76,7 +64,6 @@ class GDPRController extends ControllerBase {
     $output = [];
     $output['filter'] = $this->formBuilder()->getForm('Drupal\gdpr_fields\Form\GdprFieldFilterForm');
     $output['#attached']['library'][] = 'gdpr_fields/field-list';
-    $all_bundles = $this->bundleInfo->getAllBundleInfo();
 
     foreach ($this->entityTypeManager()->getDefinitions() as $entity_type_id => $definition) {
       // Skip non-fieldable/config entities.
@@ -89,7 +76,7 @@ class GDPRController extends ControllerBase {
         continue;
       }
 
-      $bundles = isset($all_bundles[$entity_type_id]) ? $all_bundles[$entity_type_id] : [$entity_type_id => []];
+      $bundles = $this->collector->getBundles($entity_type_id);
 
       $output[$entity_type_id] = [
         '#type' => 'details',
