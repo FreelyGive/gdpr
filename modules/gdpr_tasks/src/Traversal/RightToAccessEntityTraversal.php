@@ -46,7 +46,11 @@ class RightToAccessEntityTraversal extends EntityTraversal {
       }
 
       $plugin_name = "{$entity_type}|{$entity->bundle()}|{$field_id}";
-      $filename = empty($field_config->sarsFilename) ? 'main' : $field_config->sarsFilename;
+
+      $filename = 'main';
+      if ($parent_config) {
+        $filename = !empty($parent_config->sarsFilename) ? $parent_config->sarsFilename : $filename;
+      }
 
       $field_value = $this->getFieldValue($entity, $field, $field_id);
 
@@ -88,7 +92,7 @@ class RightToAccessEntityTraversal extends EntityTraversal {
       /* @var \Drupal\file\Entity\File $file */
       $file = $entity->get($field_id)->entity;
       if ($file) {
-        $this->assets[] = ['fid' => $file->id(), 'display' => 1];
+        $this->assets[] = ['target_id' => $file->id(), 'display' => 1];
         $field_value = "assets/{$file->id()}." . pathinfo($file->getFileUri(), PATHINFO_EXTENSION);
       }
     }

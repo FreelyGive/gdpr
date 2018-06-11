@@ -257,13 +257,14 @@ class GdprFieldSettingsForm extends FormBase {
 
     if ($field_definition->getType() == 'entity_reference') {
       $inner_entity_type = $field_definition->getSetting('target_type');
+      $inner_entity_definition = $entity_type_manager->getDefinition($inner_entity_type);
 
       $form['gdpr_owner'] = [
         '#type' => 'checkbox',
         '#default_value' => $config->owner,
         '#title' => t('Field is owner'),
         '#description' => t('If checked, this entity will be included for any task including the %type this property references.', [
-          '%type' => $entity_definition->getLabel(),
+          '%type' => $inner_entity_definition->getLabel(),
         ]),
         '#states' => [
           'visible' => [

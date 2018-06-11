@@ -165,11 +165,11 @@ class EntityTraversal {
         $storage = $this->entityTypeManager->getStorage($relationship['entity_type']);
 
         $ids = $storage->getQuery()
-          ->condition($relationship['field'] . '.target_id')
+          ->condition($relationship['field'] . '.target_id', $entity->id())
           ->execute();
 
         foreach ($storage->loadMultiple($ids) as $related_entity) {
-          $this->doTraversalRecursive($related_entity, $progress, $row_id, $results, $relationship['config']);
+          $this->doTraversalRecursive($related_entity, $progress, NULL, $results, $relationship['config']);
         }
       }
     }
