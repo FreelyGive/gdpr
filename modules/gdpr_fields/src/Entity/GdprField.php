@@ -87,13 +87,12 @@ class GdprField {
    */
   public $owner = FALSE;
 
-
   /**
    * Entity type.
    *
    * @var string
    */
-  public $entity_type_id;
+  public $entityTypeId;
 
   /**
    * GdprField constructor.
@@ -102,11 +101,13 @@ class GdprField {
    *   Bundle.
    * @param string $name
    *   Field name.
+   * @param string $entity_type_id
+   *   The entity type that this GDPR field is tied to.
    */
   public function __construct($bundle, $name, $entity_type_id) {
     $this->bundle = $bundle;
     $this->name = $name;
-    $this->entity_type_id = $entity_type_id;
+    $this->entityTypeId = $entity_type_id;
   }
 
   /**

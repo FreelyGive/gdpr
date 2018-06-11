@@ -46,6 +46,7 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
   public function setField($bundle, $field_name, array $values) {
     $values['bundle'] = $bundle;
     $values['name'] = $field_name;
+    $values['entity_type_id'] = $this->id();
 
     foreach ($values as $key => $value) {
       $this->bundles[$bundle][$field_name][$key] = $value;
@@ -66,23 +67,9 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
    *   Field metadata.
    */
   public function getField($bundle, $field_name) {
-    $bundle_fields = \array_filter($this->bundles, function ($key) use ($bundle) {
-      return $key == $bundle;
-    }, ARRAY_FILTER_USE_KEY);
-
-    if (\count($bundle_fields)) {
-      $result = \array_filter($bundle_fields[$bundle], function ($f) use ($field_name) {
-        return $f['name'] == $field_name;
-      });
-
-      if (!array_key_exists('entity_type_id', $result)) {
-        // Make sure entity type is set even if it's not saved in the config.
-        $result['entity_type_id'] = $this->id();
-      }
-
-      if (\count($result)) {
-        return GdprField::create(\reset($result));
-      }
+    if (isset($this->bundles[$bundle][$field_name])) {
+      $result = $this->bundles[$bundle][$field_name];
+      return GdprField::create($result);
     }
 
     return new GdprField($bundle, $field_name, $this->id());
@@ -98,10 +85,6 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
     $results = [];
     foreach ($this->bundles as $fields_in_bundle) {
       foreach ($fields_in_bundle as $field) {
-        if (!array_key_exists('entity_type_id', $field)) {
-          // Make sure entity type is set even if it's not saved in the config.
-          $field['entity_type_id'] = $this->id();
-        }
         $results[] = GdprField::create($field);
       }
     }
@@ -119,10 +102,6 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
    */
   public function getFieldsForBundle($bundle) {
     return array_map(function ($field) {
-      if (!array_key_exists('entity_type_id', $field)) {
-        // Make sure entity type is set even if it's not saved in the config.
-        $field['entity_type_id'] = $this->id();
-      }
       return GdprField::create($field);
     }, $this->bundles[$bundle]);
   }
