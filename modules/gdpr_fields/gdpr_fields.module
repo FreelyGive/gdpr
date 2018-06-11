@@ -77,6 +77,11 @@ function gdpr_fields_gdpr_fields_default_field_data() {
  *   The entity we want information for.
  * @param array $entity_list
  *   Internal use only, provide the entity list to build upon.
+ * @param string|null $source_plugin
+ *   Internal use only, the plugin that brought this entity in or NULL if none.
+ * @param int|null $row_id
+ *   The row ID to include this entity in, or NULL if we should use it's own
+ *   identifier.
  *
  * @return array
  *   The array of entities for the task.
@@ -91,20 +96,30 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
   /* @var \EntityDrupalWrapper $wrapper */
   $wrapper = entity_metadata_wrapper($entity_type, $entity);
   $entity_id = $wrapper->getIdentifier();
-  
+
   // Check for recursion.
   if (isset($entity_list[$entity_type][$entity_id])) {
     return $entity_list;
   }
 
   // Set entity.
+  $entity->_gdpr_row_source = FALSE;
   if (!isset($row_id)) {
     $row_id = $wrapper->getIdentifier();
+    $entity->_gdpr_row_source = TRUE;
   }
   $entity->_gdpr_row_id = $row_id;
   $entity->_gdpr_source_plugin = $source_plugin;
   $entity_list[$entity_type][$entity_id] = $entity;
-  
+
+  static $depth;
+  if (!isset($depth)) {
+    $depth = &drupal_static(__FUNCTION__, 0);
+  }
+  $depth++;
+
+  gdpr_debug("START: {$entity_type}:{$entity_id}");
+
   // Loop over all defined properties and collect information.
   // @todo: Add a way to exclude specific properties.
   // @todo: Exclude entity types.
@@ -117,6 +132,10 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
     }
     catch (Exception $e) {
       // Treat exceptions like no value.
+      gdpr_debug("Property: {$entity_type}|{$property_name}.", 'error');
+      gdpr_debug('Exception: ' . $e->getMessage(), 'error');
+      gdpr_debug($e->getTraceAsString());
+      throw $e;
       continue;
     }
 
@@ -135,6 +154,7 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
       // this property then exclude them.
       $GDPR_data = GDPRFieldData::createFromWrapper($wrapper->{$property_name});
       if (!$GDPR_data) {
+        gdpr_debug("NO DEFINITION: {$entity_type} {$property_name}");
         continue;
       }
       if (!$GDPR_data->includeRelatedEntities()) {
@@ -144,22 +164,52 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
       // If the property is a list then loop over each item.
       if ($is_list) {
         foreach ($wrapper->{$property_name} as $delta => $property_wrapper) {
+          try {
+            gdpr_debug("RELATIONSHIP MULTI: {$property_name}[{$delta}] - {$property_wrapper->type()} {$property_wrapper->getIdentifier()}");
+            $entity_list = gdpr_fields_collect_gdpr_entities(
+              $property_wrapper->type(),
+              $property_wrapper->value(),
+              $entity_list,
+              $GDPR_data->name
+            );
+          }
+          catch (Exception $e) {
+            // Treat exceptions like no value.
+            gdpr_debug("Property: {$GDPR_data->property_name}.", 'error');
+            gdpr_debug('Exception: ' . $e->getMessage(), 'error');
+            gdpr_debug($e->getTraceAsString());
+            throw $e;
+            continue;
+          }
+        }
+      }
+      else {
+        try {
+          $passed_row_id = NULL;
+          if ($source_plugin) {
+            $source_gdpr_data = GDPRFieldData::createFromName($source_plugin);
+            if ($GDPR_data->getSetting('gdpr_sars_filename','main') == $source_gdpr_data->getSetting('gdpr_sars_filename','main')) {
+              $passed_row_id = $row_id;
+            }
+          }
+          $property_wrapper = $wrapper->{$property_name};
+          gdpr_debug("RELATIONSHIP SINGLE: {$property_name} - {$property_wrapper->type()} {$property_wrapper->getIdentifier()}");
           $entity_list = gdpr_fields_collect_gdpr_entities(
             $property_wrapper->type(),
             $property_wrapper->value(),
             $entity_list,
-            $GDPR_data->name
+            $GDPR_data->name,
+            $passed_row_id
           );
         }
-      }
-      else {
-        $entity_list = gdpr_fields_collect_gdpr_entities(
-          $wrapper->{$property_name}->type(),
-          $wrapper->{$property_name}->value(),
-          $entity_list,
-          $GDPR_data->name,
-          $row_id
-        );
+        catch (Exception $e) {
+          // Treat exceptions like no value.
+          gdpr_debug("Property: {$GDPR_data->property_name}.", 'error');
+          gdpr_debug('Exception: ' . $e->getMessage(), 'error');
+          gdpr_debug($e->getTraceAsString());
+          throw $e;
+          continue;
+        }
       }
     }
     elseif (!empty($property_info['property info'])) {
@@ -188,23 +238,48 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
               }
 
               if ($is_list) {
-                foreach ($property_wrapper->{$sub_property_name} as $sub_property_wrapper) {
+                foreach ($property_wrapper->{$sub_property_name} as $delta => $sub_property_wrapper) {
+                  try {
+                    gdpr_debug("RELATIONSHIP SUB MULTI: {$property_name}[{$delta}]->{$sub_property_name} - {$sub_property_wrapper->type()} {$sub_property_wrapper->getIdentifier()}");
+                    $entity_list = gdpr_fields_collect_gdpr_entities(
+                      $sub_property_wrapper->type(),
+                      $sub_property_wrapper->value(),
+                      $entity_list,
+                      $GDPR_data->name
+                    );
+                  }
+                  catch (Exception $e) {
+                    // Treat exceptions like no value.
+                    gdpr_debug("Property: {$GDPR_data->property_name}.", 'error');
+                    gdpr_debug('Exception: ' . $e->getMessage(), 'error');
+                    gdpr_debug($e->getTraceAsString());
+                    throw $e;
+                    continue;
+                  }
+                }
+              }
+              else {
+                try {
+                  $sub_property_wrapper = $property_wrapper->{$sub_property_name};
+                  if (drupal_is_cli() && function_exists('drush_log')) {
+                    drush_log("RELATIONSHIP SUB SINGLE: {$property_name}->{$sub_property_name} - {$sub_property_wrapper->type()} {$sub_property_wrapper->getIdentifier()}");
+                  }
                   $entity_list = gdpr_fields_collect_gdpr_entities(
                     $sub_property_wrapper->type(),
                     $sub_property_wrapper->value(),
                     $entity_list,
-                    $GDPR_data->name
+                    $GDPR_data->name,
+                    $row_id
                   );
                 }
-              }
-              else {
-                $entity_list = gdpr_fields_collect_gdpr_entities(
-                  $property_wrapper->{$sub_property_name}->type(),
-                  $property_wrapper->{$sub_property_name}->value(),
-                  $entity_list,
-                  $GDPR_data->name,
-                  $row_id
-                );
+                catch (Exception $e) {
+                  // Treat exceptions like no value.
+                  gdpr_debug("Property: {$GDPR_data->property_name}.", 'error');
+                  gdpr_debug('Exception: ' . $e->getMessage(), 'error');
+                  gdpr_debug($e->getTraceAsString());
+                  throw $e;
+                  continue;
+                }
               }
             }
           }
@@ -231,31 +306,88 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
 
       // If the target is our current entity type, find all owned entities.
       if ($type == $entity_type) {
-        $query = new EntityFieldQuery();
-        $query->entityCondition('entity_type', $field->entity_type);
-        $query->entityCondition('bundle', $field->entity_bundle);
-        if (!empty($property_info['field'])) {
-          $query->fieldCondition($field->property_name, 'target_id', $entity_id);
+        $field_name = $field->property_name;
+        if (!empty($property_info['schema field'])) {
+          $field_name = $property_info['schema field'];
         }
-        else {
-          $query->propertyCondition($field->property_name, $entity_id);
-        }
-        $results = $query->execute();
-        if (isset($results[$field->entity_type])) {
-          foreach (entity_load($field->entity_type, array_keys($results[$field->entity_type])) as $owned_entity) {
-            $entity_list = gdpr_fields_collect_gdpr_entities(
-              $field->entity_type,
-              $owned_entity,
-              $entity_list,
-              $field->name
-            );
+
+        gdpr_debug("OWNER: {$field->name}");
+
+        try {
+          $query = new EntityFieldQuery();
+          $query->entityCondition('entity_type', $field->entity_type);
+          $query->entityCondition('bundle', $field->entity_bundle);
+          if (!empty($property_info['field'])) {
+            $query->fieldCondition($field_name, 'target_id', $entity_id);
           }
+          else {
+            $query->propertyCondition($field_name, $entity_id);
+          }
+          $results = $query->execute();
+          if (isset($results[$field->entity_type])) {
+            foreach (entity_load($field->entity_type, array_keys($results[$field->entity_type])) as $owned_entity) {
+              $entity_list = gdpr_fields_collect_gdpr_entities(
+                $field->entity_type,
+                $owned_entity,
+                $entity_list,
+                $field->name
+              );
+            }
+          }
+        }
+        catch (Exception $e) {
+          // Treat exceptions like no value.
+          gdpr_debug("Owner: {$entity_type} {$entity_id}. Property: {$field->property_name}.", 'error');
+          gdpr_debug('Exception: ' . $e->getMessage(), 'error');
+          gdpr_debug($e->getTraceAsString());
+          throw $e;
+          continue;
         }
       }
     }
   }
 
+  $depth--;
+
   return $entity_list;
+}
+
+function gdpr_debug($message, $type = NULL, $passed_depth = NULL) {
+  static $drupal_static_fast;
+  if (!isset($drupal_static_fast)) {
+    $drupal_static_fast['debug'] = &drupal_static(__FUNCTION__ . ':d');
+    $drupal_static_fast['verbose'] = &drupal_static(__FUNCTION__ . ':v');
+  }
+  $debug = &$drupal_static_fast['debug'];
+  $verbose = &$drupal_static_fast['verbose'];
+
+  if ($debug === FALSE) {
+    return;
+  }
+
+  if (drupal_is_cli()) {
+    $debug= 'cli';
+    $verbose = function_exists('drush_get_context') && !drush_get_context('DRUSH_VERBOSE');
+  }
+  elseif (user_access('access devel information')) {
+    $debug = 'dsm';
+    $verbose = isset($_REQUEST['debug']);
+  }
+
+  if (!$debug || ($type != 'error' && !$verbose)) {
+    return;
+  }
+
+  if ($debug == 'cli') {
+    static $depth;
+    if (!isset($depth)) {
+      $depth = &drupal_static('gdpr_fields_collect_gdpr_entities', 0);
+    }
+    print str_repeat(' ', $passed_depth ?: $depth) . $message . "\n";
+  }
+  else {
+    drupal_set_message($message, $type);
+  }
 }
 
 /**

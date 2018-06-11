@@ -98,29 +98,58 @@ class GDPRFieldData {
 
     return $field;
   }
-  
+
   /**
-   * Create field data from property name, entity type and bundle.
+   * Create field data from the GDPR field name.
    *
-   * @param $entity_type
-   * @param $bundle
-   * @param $property_name
+   * @param string $name
+   *   The GDPR field name in the format entity_type|bundle|property.
+   *
+   * @return static|null
+   *   Either a GDPR field or NULL if it doesn't exist.
    */
-  public static function createFromProperty($entity_type, $bundle, $property_name) {
+  public static function createFromName($name) {
+    // Attempt to load the configured version.
+    ctools_include('export');
+    $plugins = ctools_export_load_object('gdpr_fields_field_data');
+    if (isset($plugins[$name])) {
+      return $plugins[$name];
+    }
+
+    // Otherwise fall back to the defaults.
     ctools_include('plugins');
-    $plugin = ctools_get_plugins('gdpr_fields', 'gdpr_data', implode('|', array($entity_type, $bundle, $property_name)));
-    
+    $plugin = ctools_get_plugins('gdpr_fields', 'gdpr_data', $name);
     if ($plugin) {
       return static::createFromPlugin($plugin);
     }
-    
+
     return NULL;
+  }
+
+  /**
+   * Create field data from property name, entity type and bundle.
+   *
+   * @param string $entity_type
+   *   The entity type.
+   * @param string $bundle
+   *   The bundle.
+   * @param string $property_name
+   *   The property name.
+   *
+   * @return static|null
+   *   Either a GDPR field or NULL if it doesn't exist.
+   */
+  public static function createFromProperty($entity_type, $bundle, $property_name) {
+    return static::createFromName(implode('|', array($entity_type, $bundle, $property_name)));
   }
   
   /**
    * Create the field data from a property wrapper.
    *
    * @param EntityMetadataWrapper $wrapper
+   *
+   * @return static|null
+   *   Either a GDPR field or NULL if it doesn't exist.
    */
   public static function createFromWrapper(EntityMetadataWrapper $wrapper) {
     $entity_type = $bundle = $property_name = FALSE;
@@ -129,24 +158,16 @@ class GDPRFieldData {
       if (empty($info['parent'])) {
         return NULL;
       }
-      
+
       $wrapper = $info['parent'];
       if ($wrapper instanceof EntityDrupalWrapper) {
         $entity_type = $wrapper->type();
         $bundle = $wrapper->getBundle();
         $property_name = $info['name'];
-        
+
         break;
       }
     }
-
-    // @todo improve performance by loading specific plugin and not all.
-    $plugins = ctools_export_load_object('gdpr_fields_field_data');
-    $name = implode('|', array($entity_type, $bundle, $property_name));
-    if (isset($plugins[$name])) {
-      return $plugins[$name];
-    }
-
 
     return static::createFromProperty($entity_type, $bundle, $property_name);
   }
