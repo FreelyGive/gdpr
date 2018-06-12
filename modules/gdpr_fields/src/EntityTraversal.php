@@ -143,14 +143,13 @@ class EntityTraversal {
           continue;
         }
 
+        $single_cardinality = $entity->get($field_config->name)->getFieldDefinition()
+          ->getFieldStorageDefinition()->getCardinality() == 1;
+
+        $passed_row_id = $single_cardinality ? $row_id : NULL;
         // Loop through each child entity and traverse their relationships too.
         foreach ($referenced_entities as $child_entity) {
-          if ($entity->get($field_config->name)->getFieldDefinition()->getFieldStorageDefinition()->getCardinality() != 1) {
-            $this->doTraversalRecursive($child_entity, $progress, NULL, $results, $field_config);
-          }
-          else {
-            $this->doTraversalRecursive($child_entity, $progress, $row_id, $results, $field_config);
-          }
+          $this->doTraversalRecursive($child_entity, $progress, $passed_row_id, $results, $field_config);
         }
       }
     }
