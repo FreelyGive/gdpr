@@ -69,10 +69,10 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
   public function getField($bundle, $field_name) {
     if (isset($this->bundles[$bundle][$field_name])) {
       $result = $this->bundles[$bundle][$field_name];
-      return GdprField::create($result);
+      return new GdprField($result);
     }
 
-    return new GdprField($bundle, $field_name, $this->id());
+    return new GdprField(['bundle' => $bundle, 'name' => $field_name, 'entity_type_id' => $this->id()]);
   }
 
   /**
@@ -86,7 +86,7 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
     $results = [];
     foreach ($this->bundles as $bundle_id => $fields_in_bundle) {
       foreach ($fields_in_bundle as $field_name => $field) {
-        $results["$bundle_id.$field_name"] = GdprField::create($field);
+        $results["$bundle_id.$field_name"] = new GdprField($field);
       }
     }
     return $results;
@@ -103,7 +103,7 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
    */
   public function getFieldsForBundle($bundle) {
     return array_map(function ($field) {
-      return GdprField::create($field);
+      return new GdprField($field);
     }, $this->bundles[$bundle]);
   }
 

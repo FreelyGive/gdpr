@@ -97,40 +97,23 @@ class GdprField {
   /**
    * GdprField constructor.
    *
-   * @param string $bundle
-   *   Bundle.
-   * @param string $name
-   *   Field name.
-   * @param string $entity_type_id
-   *   The entity type that this GDPR field is tied to.
-   */
-  public function __construct($bundle, $name, $entity_type_id) {
-    $this->bundle = $bundle;
-    $this->name = $name;
-    $this->entityTypeId = $entity_type_id;
-  }
-
-  /**
-   * Creates a GdprField instance based on array data from the config entity.
-   *
    * @param array $values
-   *   The underlying data.
-   *
-   * @return \Drupal\gdpr_fields\Entity\GdprField
-   *   The field metadata instance.
+   *   Underlying data values for the field.
    */
-  public static function create(array $values) {
-    $field = new static($values['bundle'], $values['name'], $values['entity_type_id']);
-    $field->rtf = $values['rtf'];
-    $field->rta = $values['rta'];
-    $field->enabled = $values['enabled'];
-    $field->anonymizer = $values['anonymizer'];
-    $field->notes = $values['notes'];
-    $field->owner = array_key_exists('owner', $values) ? $values['owner'] : FALSE;
-    $field->follow = array_key_exists('follow', $values) ? $values['follow'] : FALSE;
-    $field->sarsFilename = array_key_exists('sars_filename', $values) ? $values['sars_filename'] : '';
-    $field->configured = TRUE;
-    return $field;
+  public function __construct(array $values = []) {
+    $this->bundle = $values['bundle'];
+    $this->name = $values['name'];
+    $this->entityTypeId = $values['entity_type_id'];
+
+    $this->rtf = $values['rtf'];
+    $this->rta = $values['rta'];
+    $this->enabled = $values['enabled'];
+    $this->anonymizer = $values['anonymizer'];
+    $this->notes = $values['notes'];
+    $this->owner = array_key_exists('owner', $values) ? $values['owner'] : FALSE;
+    $this->follow = array_key_exists('follow', $values) ? $values['follow'] : FALSE;
+    $this->sarsFilename = array_key_exists('sars_filename', $values) ? $values['sars_filename'] : '';
+    $this->configured = TRUE;
   }
 
   /**
