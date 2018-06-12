@@ -305,11 +305,7 @@ class GdprFieldSettingsForm extends FormBase {
       '#type' => 'select',
       '#weight' => 10,
       '#title' => t('Right to access'),
-      '#options' => [
-        'inc' => 'Included',
-        'maybe' => 'Maybe',
-        'no' => 'Not Included',
-      ],
+      '#options' => GdprField::rtaOptions(),
       '#default_value' => $config->rta,
       '#states' => [
         'visible' => [
@@ -324,12 +320,7 @@ class GdprFieldSettingsForm extends FormBase {
       '#weight' => 20,
       '#type' => 'select',
       '#title' => t('Right to be forgotten'),
-      '#options' => [
-        'anonymize' => 'Anonymize',
-        'remove' => 'Remove',
-        'maybe' => 'Maybe',
-        'no' => 'Not Included',
-      ],
+      '#options' => GdprField::rtfOptions(),
       '#default_value' => $config->rtf,
       '#states' => [
         'visible' => [

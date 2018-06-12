@@ -6,6 +6,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\gdpr_fields\Entity\GdprField;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -80,7 +81,7 @@ class GdprFieldFilterForm extends FormBase {
     $form['container']['rta'] = [
       '#type' => 'select',
       '#title' => $this->t('Right to access'),
-      '#options' => $this->rtaOptions(),
+      '#options' => ['' => 'Not configured'] + GdprField::rtaOptions(),
       '#multiple' => TRUE,
       '#default_value' => $filters['rta'],
     ];
@@ -88,7 +89,7 @@ class GdprFieldFilterForm extends FormBase {
     $form['container']['rtf'] = [
       '#type' => 'select',
       '#title' => $this->t('Right to be forgotten'),
-      '#options' => $this->rtfOptions(),
+      '#options' => ['' => 'Not configured'] + GdprField::rtfOptions(),
       '#multiple' => TRUE,
       '#default_value' => $filters['rtf'],
     ];
@@ -113,37 +114,6 @@ class GdprFieldFilterForm extends FormBase {
     ];
 
     return $form;
-  }
-
-  /**
-   * Get the options array for right to access field.
-   *
-   * @return array
-   *   Right to access field options array.
-   */
-  protected function rtaOptions() {
-    return [
-      '' => 'Not configured',
-      'inc' => 'Included',
-      'maybe' => 'Maybe included',
-      'no' => 'Not included',
-    ];
-  }
-
-  /**
-   * Get the options array for right to be forgotten field.
-   *
-   * @return array
-   *   Right to be forgotten field options array.
-   */
-  protected function rtfOptions() {
-    return [
-      '' => 'Not configured',
-      'anonymise' => 'Anonymise',
-      'remove' => 'Remove',
-      'maybe' => 'Maybe included',
-      'no' => 'Not included',
-    ];
   }
 
   /**

@@ -214,4 +214,33 @@ class GdprField {
     return FALSE;
   }
 
+  /**
+   * Get the options array for right to access field.
+   *
+   * @return array
+   *   Right to access field options array.
+   */
+  public static function rtaOptions() {
+    return [
+      'inc' => 'Included',
+      'maybe' => 'Maybe included',
+      'no' => 'Not included',
+    ];
+  }
+
+  /**
+   * Get the options array for right to be forgotten field.
+   *
+   * @return array
+   *   Right to be forgotten field options array.
+   */
+  public static function rtfOptions() {
+    return [
+      'anonymise' => 'Anonymise',
+      'remove' => 'Remove',
+      'maybe' => 'Maybe included',
+      'no' => 'Not included',
+    ];
+  }
+
 }
