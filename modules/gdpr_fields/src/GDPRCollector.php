@@ -148,7 +148,7 @@ class GDPRCollector {
       if ($gdpr_settings != NULL) {
         /* @var \Drupal\gdpr_fields\Entity\GdprField $field_settings */
         $field_settings = $gdpr_settings->getField($bundle_id, $field_id);
-        if ($field_settings->configured && $field_settings->enabled) {
+        if ($field_settings->enabled) {
           $has_at_least_one_configured_field = TRUE;
           $rta = $field_settings->rta;
           $rtf = $field_settings->rtf;

@@ -74,16 +74,6 @@ class GdprField {
   public $notes = '';
 
   /**
-   * Whether this field has been configured for GDPR.
-   *
-   * This is different for enabled -
-   * something can be configured but not enabled.
-   *
-   * @var bool
-   */
-  public $configured = FALSE;
-
-  /**
    * SARS filename when handling multiple cardinality fields.
    *
    * @var string
@@ -127,7 +117,6 @@ class GdprField {
     $this->notes = array_key_exists('notes', $values) ? $values['notes'] : '';
     $this->relationship = array_key_exists('relationship', $values) ? $values['relationship'] : self::RELATIONSHIP_DISABLED;
     $this->sarsFilename = array_key_exists('sars_filename', $values) ? $values['sars_filename'] : '';
-    $this->configured = TRUE;
   }
 
   /**
