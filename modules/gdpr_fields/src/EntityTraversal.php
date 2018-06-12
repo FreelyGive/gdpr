@@ -31,6 +31,13 @@ class EntityTraversal {
   protected $entityFieldManager;
 
   /**
+   * Entity storage for GDPR config entities.
+   *
+   * @var \Drupal\Core\Entity\EntityStorageInterface
+   */
+  protected $configStorage;
+
+  /**
    * Reverse relationship information.
    *
    * @var \Drupal\gdpr_fields\Entity\GdprField[]
@@ -44,10 +51,13 @@ class EntityTraversal {
    *   The entity type manager.
    * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
    *   The entity field manager.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    */
   public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager) {
     $this->entityTypeManager = $entityTypeManager;
     $this->entityFieldManager = $entityFieldManager;
+    $this->configStorage = $this->entityTypeManager->getStorage('gdpr_fields_config');
   }
 
   /**
@@ -87,14 +97,12 @@ class EntityTraversal {
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   protected function doTraversalRecursive(EntityInterface $entity, array &$progress, $row_id = NULL, array& $results, $parent_config) {
-    $entity_type = $entity->getEntityTypeId();
-
     // If the entity is not fieldable, don't continue.
     if (!$entity instanceof FieldableEntityInterface) {
       return;
     }
 
-    /* @var \Drupal\Core\Entity\FieldableEntityInterface $entity */
+    $entity_type = $entity->getEntityTypeId();
 
     if ($entity_type == 'gdpr_task') {
       // Explicitly make sure we don't traverse any links to gdpr_task
@@ -116,7 +124,8 @@ class EntityTraversal {
     $progress[$entity_type][$entity->id()] = $entity;
 
     // GDPR config for this entity.
-    $config = GdprFieldConfigEntity::load($entity_type);
+    /* @var \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity $config */
+    $config = $this->configStorage->load($entity_type);
 
     // Let subclasses do with the entity. They will add to the $results array.
     $this->processEntity($entity, $config, $row_id, $results, $parent_config);
@@ -185,8 +194,12 @@ class EntityTraversal {
    *   The entity to handle.
    * @param \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity $config
    *   GDPR config for this entity.
+   * @param string $row_id
+   *   Row identifier used in SARs.
    * @param array $results
    *   Subclasses should add any data they need to collect to the results array.
+   * @param \Drupal\gdpr_fields\Entity\GdprField $parent_config
+   *   Parent's config.
    */
   protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results, GdprField $parent_config = NULL) {
 
@@ -207,7 +220,7 @@ class EntityTraversal {
 
     $this->reverseRelationshipFields = [];
     /* @var \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity $config  */
-    foreach (GdprFieldConfigEntity::loadMultiple() as $config) {
+    foreach ($this->configStorage->loadMultiple() as $config) {
       foreach ($config->getAllFields() as $field) {
         if ($field->enabled && $field->isOwner()) {
           foreach ($this->entityFieldManager->getFieldDefinitions($config->id(), $field->bundle) as $field_definition) {
