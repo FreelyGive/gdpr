@@ -8,6 +8,23 @@ namespace Drupal\gdpr_fields\Entity;
 class GdprField {
 
   /**
+   * Indicates a relationship is not enabled for GDPR processing.
+   */
+  const RELATIONSHIP_DISABLED = 0;
+
+  /**
+   * Indicates a relationship should be followed.
+   */
+  const RELATIONSHIP_FOLLOW = 1;
+
+  /**
+   * Indicates this is a reverse relationship.
+   *
+   * Indicates that the current entity is the owner.
+   */
+  const RELATIONSHIP_OWNER = 2;
+
+  /**
    * Bundle name.
    *
    * @var string
@@ -73,19 +90,17 @@ class GdprField {
    */
   public $sarsFilename = '';
 
-  /**
-   * Whether this relationship should be followed or not.
-   *
-   * @var bool
-   */
-  public $follow = FALSE;
 
   /**
-   * Whether this is a reverse relationship where this side is the owner.
+   * Relationship status.
    *
-   * @var bool
+   * 0 = Disabled
+   * 1 = Follow
+   * 2 = Owner/Reverse.
+   *
+   * @var int
    */
-  public $owner = FALSE;
+  public $relationship = 0;
 
   /**
    * Entity type.
@@ -105,13 +120,12 @@ class GdprField {
     $this->name = $values['name'];
     $this->entityTypeId = $values['entity_type_id'];
 
-    $this->rtf = $values['rtf'];
-    $this->rta = $values['rta'];
-    $this->enabled = $values['enabled'];
-    $this->anonymizer = $values['anonymizer'];
-    $this->notes = $values['notes'];
-    $this->owner = array_key_exists('owner', $values) ? $values['owner'] : FALSE;
-    $this->follow = array_key_exists('follow', $values) ? $values['follow'] : FALSE;
+    $this->rtf = array_key_exists('rtf', $values) ? $values['rtf'] : 'no';
+    $this->rta = array_key_exists('rta', $values) ? $values['rta'] : 'no';
+    $this->enabled = array_key_exists('enabled', $values) ? $values['enabled'] : FALSE;
+    $this->anonymizer = array_key_exists('anonymizer', $values) ? $values['anonymizer'] : NULL;
+    $this->notes = array_key_exists('notes', $values) ? $values['notes'] : '';
+    $this->relationship = array_key_exists('relationship', $values) ? $values['relationship'] : self::RELATIONSHIP_DISABLED;
     $this->sarsFilename = array_key_exists('sars_filename', $values) ? $values['sars_filename'] : '';
     $this->configured = TRUE;
   }
@@ -166,6 +180,30 @@ class GdprField {
   }
 
   /**
+   * Indicates that this is a reverse relationship.
+   *
+   * Indicates that the current entity is the owner of the relationship, and
+   * traversal should take place from this side, rather than from the root
+   * entity.
+   *
+   * @return bool
+   *   True if owner, otherwise false.
+   */
+  public function isOwner() {
+    return $this->relationship === self::RELATIONSHIP_OWNER;
+  }
+
+  /**
+   * Indicates if the relationship should be followed.
+   *
+   * @return bool
+   *   True if it should be followed, otherwise false.
+   */
+  public function followRelationship() {
+    return $this->relationship === self::RELATIONSHIP_FOLLOW;
+  }
+
+  /**
    * Whether to recurse to entities included in this property.
    */
   public function includeRelatedEntities() {
@@ -175,12 +213,12 @@ class GdprField {
     }
 
     // If the field is an owner, don't recurse.
-    if ($this->owner) {
+    if ($this->isOwner()) {
       return FALSE;
     }
 
-    // Only follow the relationship if it's been explicitly enabled
-    if ($this->follow) {
+    // Only follow the relationship if it's been explicitly enabled.
+    if ($this->followRelationship()) {
       return TRUE;
     }
 

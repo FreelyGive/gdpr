@@ -8,6 +8,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Messenger\MessengerInterface;
+use Drupal\gdpr_fields\Entity\GdprField;
 use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
 use Drupal\gdpr_fields\GDPRCollector;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -109,7 +110,7 @@ class GdprFieldSettingsForm extends FormBase {
    * @return \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity
    *   The config entity.
    */
-  private static function setConfig($entity_type, $bundle, $field_name, $enabled, $rta, $rtf, $anonymizer, $notes, $follow, $owner, $sars_filename) {
+  private static function setConfig($entity_type, $bundle, $field_name, $enabled, $rta, $rtf, $anonymizer, $notes, $relationship, $sars_filename) {
     $config = GdprFieldConfigEntity::load($entity_type) ?? GdprFieldConfigEntity::create(['id' => $entity_type]);
     $config->setField($bundle, $field_name, [
       'enabled' => $enabled,
@@ -118,8 +119,7 @@ class GdprFieldSettingsForm extends FormBase {
       'anonymizer' => $anonymizer,
       'notes' => $notes,
       'sars_filename' => $sars_filename,
-      'owner' => $owner,
-      'follow' => $follow,
+      'relationship' => $relationship,
     ]);
     return $config;
   }
@@ -242,14 +242,11 @@ class GdprFieldSettingsForm extends FormBase {
       '#default_value' => $config->enabled,
     ];
 
-    $form['gdpr_owner'] = [
+    $form['gdpr_relationship'] = [
       '#type' => 'value',
-      '#value' => FALSE,
+      '#value' => GdprField::RELATIONSHIP_DISABLED,
     ];
-    $form['gdpr_no_follow'] = [
-      '#type' => 'value',
-      '#value' => FALSE,
-    ];
+
     $form['gdpr_sars_filename'] = [
       '#type' => 'value',
       '#value' => FALSE,
@@ -259,27 +256,18 @@ class GdprFieldSettingsForm extends FormBase {
       $inner_entity_type = $field_definition->getSetting('target_type');
       $inner_entity_definition = $entity_type_manager->getDefinition($inner_entity_type);
 
-      $form['gdpr_owner'] = [
-        '#type' => 'checkbox',
-        '#default_value' => $config->owner,
-        '#title' => t('Field is owner'),
-        '#description' => t('If checked, this entity will be included for any task including the %type this property references.', [
+      $form['gdpr_relationship'] = [
+        '#type' => 'select',
+        '#default_value' => $config->relationship,
+        '#options' => [
+          GdprField::RELATIONSHIP_DISABLED => 'Disabled',
+          GdprField::RELATIONSHIP_FOLLOW => 'Follow Relationship',
+          GdprField::RELATIONSHIP_OWNER => 'Field is Owner',
+        ],
+        '#title' => t('Relationship Handling'),
+        '#description' => t('If set to "Follow Relationship", this relationship will be followed when looking for additional personal information. If set to "Field is Owner", this entity will be included for any task including the %type this property references.', [
           '%type' => $inner_entity_definition->getLabel(),
         ]),
-        '#states' => [
-          'visible' => [
-            ':input[name="gdpr_enabled"]' => [
-              'checked' => TRUE,
-            ],
-          ],
-        ],
-      ];
-
-      $form['gdpr_follow'] = [
-        '#type' => 'checkbox',
-        '#default_value' => $config->follow,
-        '#title' => t('Follow this relationship'),
-        '#description' => t('If checked, this relationship will be followed when looking for additional personal information.'),
         '#states' => [
           'visible' => [
             ':input[name="gdpr_enabled"]' => [
@@ -307,7 +295,7 @@ class GdprFieldSettingsForm extends FormBase {
         '#states' => [
           'visible' => [
             ':input[name="gdpr_enabled"]' => ['checked' => TRUE],
-            ':input[name="gdpr_follow"]' => ['checked' => TRUE],
+            ':input[name="gdpr_relationship"]' => ['value' => GdprField::RELATIONSHIP_FOLLOW],
           ],
         ],
       ];
@@ -430,8 +418,7 @@ class GdprFieldSettingsForm extends FormBase {
       $form_state->getValue('gdpr_rtf'),
       $form_state->getValue('gdpr_anonymizer'),
       $form_state->getValue('gdpr_notes'),
-      $form_state->getValue('gdpr_follow'),
-      $form_state->getValue('gdpr_owner'),
+      $form_state->getValue('gdpr_relationship'),
       $form_state->getValue('gdpr_sars_filename')
     );
 

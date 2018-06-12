@@ -28,11 +28,9 @@ gdpr_fields.gdpr_fields_config.*:
               type: string
             notes:
               type: string
-            follow:
-              type: boolean
+            relationship:
+              type: integer
             sars_filename:
               type: string
-            owner:
-              type: boolean
             entity_type_id:
               type: string

@@ -209,7 +209,7 @@ class EntityTraversal {
     /* @var \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity $config  */
     foreach (GdprFieldConfigEntity::loadMultiple() as $config) {
       foreach ($config->getAllFields() as $field) {
-        if ($field->enabled && $field->owner) {
+        if ($field->enabled && $field->isOwner()) {
           foreach ($this->entityFieldManager->getFieldDefinitions($config->id(), $field->bundle) as $field_definition) {
             if ($field_definition->getName() == $field->name && $field_definition->getType() == 'entity_reference') {
               $this->reverseRelationshipFields[] = [
