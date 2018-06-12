@@ -120,6 +120,24 @@ class GdprField {
   }
 
   /**
+   * Returns an array representation of the GDPR field config.
+   */
+  public function toArray() {
+    return [
+      'bundle' => $this->bundle,
+      'name' => $this->name,
+      'entity_type_id' => $this->entityTypeId,
+      'rtf' => $this->rtf,
+      'rta' => $this->rta,
+      'enabled' => $this->enabled,
+      'anonymizer' => $this->anonymizer,
+      'notes' => $this->notes,
+      'relationship' => $this->relationship,
+      'sars_filename' => $this->sarsFilename,
+    ];
+  }
+
+  /**
    * Gets the RTF description.
    *
    * @return string
@@ -212,6 +230,97 @@ class GdprField {
     }
 
     return FALSE;
+  }
+
+  /**
+   * Sets whether this is a GDPR field.
+   *
+   * @param bool $enabled
+   *   Enabled/disabled.
+   *
+   * @return $this
+   */
+  public function setEnabled($enabled) {
+    $this->enabled = $enabled;
+    return $this;
+  }
+
+  /**
+   * Sets the RTA setting.
+   *
+   * @param string $rta
+   *   RTA.
+   *
+   * @return $this
+   */
+  public function setRta($rta) {
+    $this->rta = $rta;
+    return $this;
+  }
+
+  /**
+   * Sets the RTF setting.
+   *
+   * @param string $rtf
+   *   RTF setting.
+   *
+   * @return $this
+   */
+  public function setRtf($rtf) {
+    $this->rtf = $rtf;
+    return $this;
+  }
+
+  /**
+   * Sets the anonymizer ID.
+   *
+   * @param string $anonymizer
+   *   Anonymizer ID.
+   *
+   * @return $this
+   */
+  public function setAnonymizer($anonymizer) {
+    $this->anonymizer = $anonymizer;
+    return $this;
+  }
+
+  /**
+   * Sets field notes.
+   *
+   * @param string $notes
+   *   Notes.
+   *
+   * @return $this
+   */
+  public function setNotes($notes) {
+    $this->notes = $notes;
+    return $this;
+  }
+
+  /**
+   * Sets SAR filename.
+   *
+   * @param string $filename
+   *   Filename.
+   *
+   * @return $this
+   */
+  public function setSarsFilename($filename) {
+    $this->sarsFilename = $filename;
+    return $this;
+  }
+
+  /**
+   * Sets the relationship.
+   *
+   * @param int $relationship
+   *   Relationship setting.
+   *
+   * @return $this
+   */
+  public function setRelationship($relationship) {
+    $this->relationship = $relationship;
+    return $this;
   }
 
   /**

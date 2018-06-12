@@ -34,19 +34,16 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
   /**
    * Sets a GDPR field's settings.
    *
-   * @param string $bundle
-   *   Bundle.
-   * @param string $field_name
-   *   Field.
-   * @param array $values
-   *   Additional values. Keys should be enabled, rtf, rta, anonymizer, notes.
+   * @param \Drupal\gdpr_fields\Entity\GdprField $field
+   *   Field settings.
    *
    * @return $this
    */
-  public function setField($bundle, $field_name, array $values) {
-    $values['bundle'] = $bundle;
-    $values['name'] = $field_name;
-    $values['entity_type_id'] = $this->id();
+  public function setField(GdprField $field) {
+    $values = $field->toArray();
+
+    $bundle = $values['bundle'];
+    $field_name = $values['name'];
 
     foreach ($values as $key => $value) {
       $this->bundles[$bundle][$field_name][$key] = $value;

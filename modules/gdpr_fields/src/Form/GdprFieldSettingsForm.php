@@ -109,18 +109,28 @@ class GdprFieldSettingsForm extends FormBase {
    *
    * @return \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity
    *   The config entity.
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    */
-  private static function setConfig($entity_type, $bundle, $field_name, $enabled, $rta, $rtf, $anonymizer, $notes, $relationship, $sars_filename) {
-    $config = GdprFieldConfigEntity::load($entity_type) ?? GdprFieldConfigEntity::create(['id' => $entity_type]);
-    $config->setField($bundle, $field_name, [
-      'enabled' => $enabled,
-      'rta' => $rta,
-      'rtf' => $rtf,
-      'anonymizer' => $anonymizer,
-      'notes' => $notes,
-      'sars_filename' => $sars_filename,
-      'relationship' => $relationship,
+  private function setConfig($entity_type, $bundle, $field_name, $enabled, $rta, $rtf, $anonymizer, $notes, $relationship, $sars_filename) {
+    $field = new GdprField([
+      'bundle' => $bundle,
+      'name' => $field_name,
+      'entity_type_id' => $entity_type,
     ]);
+
+    $field->setEnabled($enabled)
+      ->setRta($rta)
+      ->setRtf($rtf)
+      ->setAnonymizer($anonymizer)
+      ->setNotes($notes)
+      ->setRelationship($relationship)
+      ->setSarsFilename($sars_filename);
+
+    $storage = $this->entityTypeManager->getStorage($entity_type);
+    /* @var \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity $config */
+    $config = $storage->load($entity_type) ?? $storage->create(['id' => $entity_type]);
+    $config->setField($field);
+
     return $config;
   }
 
@@ -400,7 +410,7 @@ class GdprFieldSettingsForm extends FormBase {
       return;
     }
 
-    $config = static::setConfig(
+    $config = $this->setConfig(
       $form_state->getValue('entity_type'),
       $form_state->getValue('bundle'),
       $form_state->getValue('field_name'),
