@@ -43,4 +43,5 @@ class GdprTraversalResult {
    * @var \Drupal\gdpr_fields\Entity\GdprField
    */
   public $parentConfig;
+
 }

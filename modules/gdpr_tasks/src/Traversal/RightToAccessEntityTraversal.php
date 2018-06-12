@@ -84,7 +84,7 @@ class RightToAccessEntityTraversal extends EntityTraversal {
    * @return string
    *   Field value
    */
-  protected function getFieldValue(FieldableEntityInterface $entity, FieldDefinitionInterface $field, $field_id): string {
+  protected function getFieldValue(FieldableEntityInterface $entity, FieldDefinitionInterface $field, $field_id) {
     $field_value = '';
 
     // Special handling for file references.

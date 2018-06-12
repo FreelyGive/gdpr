@@ -100,10 +100,8 @@ class GdprFieldSettingsForm extends FormBase {
    *   Anonymizer to use.
    * @param string $notes
    *   Notes.
-   * @param bool $follow
-   *   Whether the relationship should not be traversed.
-   * @param bool $owner
-   *   Whether this is a reverse relationship owned by the entity.
+   * @param int $relationship
+   *   Relationship setting.
    * @param string $sars_filename
    *   Filename to store data from this relationship in subject access requests.
    *
@@ -129,7 +127,12 @@ class GdprFieldSettingsForm extends FormBase {
 
     $storage = $this->entityTypeManager->getStorage($entity_type);
     /* @var \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity $config */
-    $config = $storage->load($entity_type) ?? $storage->create(['id' => $entity_type]);
+    $config = $storage->load($entity_type);
+
+    if (!$config) {
+      $config = $storage->create(['id' => $entity_type]);
+    }
+
     $config->setField($field);
 
     return $config;
@@ -230,6 +233,9 @@ class GdprFieldSettingsForm extends FormBase {
    *   Bundle.
    * @param string $field_name
    *   Field.
+   *
+   * @return array
+   *   Form.
    *
    * @see gdpr_fields_form_field_config_edit_form_submit
    *
@@ -365,7 +371,7 @@ class GdprFieldSettingsForm extends FormBase {
     if ($field_definition->isComputed()) {
       $form['gdpr_rtf']['#default_value'] = 'no';
       $form['gdpr_rtf']['#disabled'] = TRUE;
-      $form['gdpr_rtf']['#description'] = '*This is a computed field and cannot be removed.';
+      $form['gdpr_rtf']['#description'] = t('*This is a computed field and cannot be removed.');
     }
 
     $sanitizer_options = ['' => ''] + array_map(function ($s) {

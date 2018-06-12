@@ -61,7 +61,7 @@ class GDPRController extends ControllerBase {
    *   The Views plugins report page.
    */
   public function fieldsList() {
-    $filters = GdprFieldFilterForm::getFilters(\Drupal::request());
+    $filters = GdprFieldFilterForm::getFilters($this->request);
 
     $output = [];
     $output['filter'] = $this->formBuilder()->getForm('Drupal\gdpr_fields\Form\GdprFieldFilterForm');
@@ -150,11 +150,11 @@ class GDPRController extends ControllerBase {
     $table = [
       '#type' => 'table',
       '#header' => [
-        t('Name'),
-        t('Type'),
-        t('Right to access'),
-        t('Right to be forgotten'),
-        t('Notes'),
+        $this->t('Name'),
+        $this->t('Type'),
+        $this->t('Right to access'),
+        $this->t('Right to be forgotten'),
+        $this->t('Notes'),
         '',
       ],
       '#sticky' => TRUE,

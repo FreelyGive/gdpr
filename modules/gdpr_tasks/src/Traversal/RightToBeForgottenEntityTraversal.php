@@ -59,7 +59,7 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
     ];
 
     $progress = [];
-    $this->doTraversalRecursive($entity, $progress, NULL, $results, NULL);
+    $this->doTraversalRecursive($entity, $progress, $results);
     return $results;
   }
 

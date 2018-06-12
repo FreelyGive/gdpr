@@ -66,7 +66,7 @@ class GdprFieldFilterForm extends FormBase {
 
     $form['container']['search'] = [
       '#type' => 'textfield',
-      '#title' => t('Search'),
+      '#title' => $this->t('Search'),
       '#default_value' => $filters['search'],
     ];
 

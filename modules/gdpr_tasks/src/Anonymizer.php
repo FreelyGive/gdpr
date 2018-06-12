@@ -4,7 +4,6 @@ namespace Drupal\gdpr_tasks;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\gdpr_tasks\Entity\TaskInterface;
@@ -119,7 +118,7 @@ class Anonymizer {
       $transaction = $this->database->startTransaction();
 
       try {
-        /* @var EntityInterface $entity */
+        /* @var \Drupal\Core\Entity\EntityInterface $entity */
         foreach ($successes as $entity) {
           $entity->save();
         }

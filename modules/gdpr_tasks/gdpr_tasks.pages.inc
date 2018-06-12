@@ -33,9 +33,6 @@ function template_preprocess_gdpr_task(array &$variables) {
   $bundleStorage = \Drupal::entityTypeManager()->getStorage($gdprTask->getEntityType()->getBundleEntityType());
   $variables['type'] = $bundleStorage->load($gdprTask->bundle())->label();
 
-  /* @var \Drupal\gdpr_fields\Controller\GDPRController $controller */
-  $controller = \Drupal::classResolver()->getInstanceFromDefinition(GDPRController::class);
-
   /* @var \Drupal\gdpr_tasks\Entity\TaskInterface $entity */
   switch ($gdprTask->bundle()) {
     case 'gdpr_remove':

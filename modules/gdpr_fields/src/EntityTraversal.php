@@ -79,7 +79,7 @@ abstract class EntityTraversal {
   public function traverse(EntityInterface $entity) {
     $progress = [];
     $results = [];
-    $this->doTraversalRecursive($entity, $progress, NULL, $results, NULL);
+    $this->doTraversalRecursive($entity, $progress, $results);
     return $results;
   }
 
@@ -92,11 +92,17 @@ abstract class EntityTraversal {
    *   The root entity to traverse.
    * @param array $progress
    *   Tracks which entities have been handled.
+   * @param array $results
+   *   Tracks resulting metadata about processed entity fields.
+   * @param \Drupal\gdpr_fields\Entity\GdprField|null $parent_config
+   *   (Optional) The parent config field settings.
+   * @param int|null $row_id
+   *   (Optional) The row to place the information in.
    *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  protected function doTraversalRecursive(EntityInterface $entity, array &$progress, $row_id = NULL, array& $results, $parent_config) {
+  protected function doTraversalRecursive(EntityInterface $entity, array &$progress, array& $results, GdprField $parent_config = NULL, $row_id = NULL) {
     // If the entity is not fieldable, don't continue.
     if (!$entity instanceof FieldableEntityInterface) {
       return;
@@ -149,7 +155,7 @@ abstract class EntityTraversal {
         $passed_row_id = $single_cardinality ? $row_id : NULL;
         // Loop through each child entity and traverse their relationships too.
         foreach ($referenced_entities as $child_entity) {
-          $this->doTraversalRecursive($child_entity, $progress, $passed_row_id, $results, $field_config);
+          $this->doTraversalRecursive($child_entity, $progress, $results, $field_config, $passed_row_id);
         }
       }
     }
@@ -167,7 +173,7 @@ abstract class EntityTraversal {
           ->execute();
 
         foreach ($storage->loadMultiple($ids) as $related_entity) {
-          $this->doTraversalRecursive($related_entity, $progress, NULL, $results, $relationship['config']);
+          $this->doTraversalRecursive($related_entity, $progress, $results, $relationship['config']);
         }
       }
     }
@@ -188,7 +194,7 @@ abstract class EntityTraversal {
    *   Row identifier used in SARs.
    * @param array $results
    *   Subclasses should add any data they need to collect to the results array.
-   * @param \Drupal\gdpr_fields\Entity\GdprField $parent_config
+   * @param \Drupal\gdpr_fields\Entity\GdprField|null $parent_config
    *   Parent's config.
    */
   abstract protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results, GdprField $parent_config = NULL);

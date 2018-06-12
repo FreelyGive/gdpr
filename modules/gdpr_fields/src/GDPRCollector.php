@@ -9,7 +9,6 @@ use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
-use Drupal\Core\Url;
 use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
 
 /**
@@ -75,13 +74,6 @@ class GDPRCollector {
   public function listFields(EntityTypeInterface $entity_type, $bundle_id, array $filters) {
     $bundle_type = $entity_type->getBundleEntityType();
     $gdpr_settings = GdprFieldConfigEntity::load($entity_type->id());
-
-    // Create a blank entity.
-    $values = [];
-    if ($entity_type->hasKey('bundle')) {
-      $bundle_key = $entity_type->getKey('bundle');
-      $values[$bundle_key] = $bundle_id;
-    }
 
     // @todo explicitly skip commerce_order_item for now as they break bundles
     if ($entity_type->id() == 'commerce_order_item') {

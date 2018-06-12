@@ -69,7 +69,11 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
       return new GdprField($result);
     }
 
-    return new GdprField(['bundle' => $bundle, 'name' => $field_name, 'entity_type_id' => $this->id()]);
+    return new GdprField([
+      'bundle' => $bundle,
+      'name' => $field_name,
+      'entity_type_id' => $this->id(),
+    ]);
   }
 
   /**
