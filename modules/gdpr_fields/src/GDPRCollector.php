@@ -121,7 +121,7 @@ class GDPRCollector {
       $label = $field_definition->getLabel();
 
       // If we're searching by name, check if the label matches search.
-      if ($filters['search'] && !stripos($label, $filters['search'])) {
+      if ($filters['search'] && (!stripos($label, $filters['search']) || !stripos($field_definition->getName(), $filters['search']))) {
         continue;
       }
 
@@ -138,11 +138,7 @@ class GDPRCollector {
       ];
 
       if ($entity_type->get('field_ui_base_route')) {
-        $url = Url::fromRoute($route_name, $route_params);
-
-        if ($url->access()) {
-          $fields[$key]['edit'] = Link::fromTextAndUrl('edit', $url);
-        }
+        $fields[$key]['edit'] = Link::createFromRoute('edit', $route_name, $route_params);
       }
 
       if ($gdpr_settings != NULL) {

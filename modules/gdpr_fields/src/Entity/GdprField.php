@@ -345,7 +345,7 @@ class GdprField {
    */
   public static function rtfOptions() {
     return [
-      'anonymise' => 'Anonymise',
+      'anonymize' => 'Anonymize',
       'remove' => 'Remove',
       'maybe' => 'Maybe included',
       'no' => 'Not included',

@@ -24,6 +24,7 @@ class RightToAccessEntityTraversal extends EntityTraversal {
     $this->assets = [];
     $results = parent::traverse($entity);
     $results['_assets'] = $this->assets;
+    unset($this->assets);
     return $results;
   }
 

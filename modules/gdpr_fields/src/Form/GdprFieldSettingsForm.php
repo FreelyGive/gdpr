@@ -247,6 +247,11 @@ class GdprFieldSettingsForm extends FormBase {
     $entity_definition = $entity_type_manager->getDefinition($entity_type);
     $field_definition = $field_manager->getFieldDefinitions($entity_type, $bundle_name)[$field_name];
 
+    // Exclude uuid/bundle.
+    if ($entity_definition->getKey('uuid') == $field_name || $entity_definition->getKey('bundle') == $field_name) {
+      return [];
+    }
+
     $form['gdpr_enabled'] = [
       '#type' => 'checkbox',
       '#title' => t('This is a GDPR field'),
@@ -271,12 +276,12 @@ class GdprFieldSettingsForm extends FormBase {
         '#type' => 'select',
         '#default_value' => $config->relationship,
         '#options' => [
-          GdprField::RELATIONSHIP_DISABLED => t('Do not follow this relationship.'),
-          GdprField::RELATIONSHIP_FOLLOW => t('This %entity_type_label owns the referenced %target_entity_type_label (Relationship will be followed)', ['%entity_type_label' => $entity_definition->getLabel(), '%target_entity_type_label' => $inner_entity_definition->getLabel()]),
-          GdprField::RELATIONSHIP_OWNER => t('This %entity_type_label is owned by the referenced %target_entity_type_label', ['%entity_type_label' => $entity_definition->getLabel(), '%target_entity_type_label' => $inner_entity_definition->getLabel()]),
+          GdprField::RELATIONSHIP_DISABLED => new TranslatableMarkup('Do not follow this relationship.'),
+          GdprField::RELATIONSHIP_FOLLOW => new TranslatableMarkup('This %entity_type_label owns the referenced %target_entity_type_label (Relationship will be followed)', ['%entity_type_label' => $entity_definition->getLabel(), '%target_entity_type_label' => $inner_entity_definition->getLabel()]),
+          GdprField::RELATIONSHIP_OWNER => new TranslatableMarkup('This %entity_type_label is owned by the referenced %target_entity_type_label', ['%entity_type_label' => $entity_definition->getLabel(), '%target_entity_type_label' => $inner_entity_definition->getLabel()]),
         ],
         '#title' => t('Relationship Handling'),
-        '#description' => t('Owned entities are included in any task which contains the owner.', [
+        '#description' => new TranslatableMarkup('Owned entities are included in any task which contains the owner.', [
           '%type' => $inner_entity_definition->getLabel(),
         ]),
         '#states' => [
@@ -292,10 +297,8 @@ class GdprFieldSettingsForm extends FormBase {
       // @todo: Move to a form alter in gdpr_tasks.
       $form['gdpr_sars_filename'] = [
         '#type' => 'textfield',
-        '#title' => t('SARs filename'),
-        '#description' => t('Specify which file this should be included in. The base user will go into %main.', [
-          '%main' => 'main.csv',
-        ]),
+        '#title' => t('Right to access filename'),
+        '#description' => t('Specify the filename for the owned entity to go in. Use %inherit to keep the related entity in the same file.', []),
         // Default to the entity type.
         '#default_value' => $config->sarsFilename ? $config->sarsFilename : $inner_entity_type,
         '#field_suffix' => '.csv',
@@ -365,8 +368,6 @@ class GdprFieldSettingsForm extends FormBase {
       $form['gdpr_rtf']['#description'] = '*This is a computed field and cannot be removed.';
     }
 
-    // @todo what aboyt system fields (uuid etc?)
-
     $sanitizer_options = ['' => ''] + array_map(function ($s) {
         return $s['label'];
     }, $anonymizer_definitions);
@@ -404,6 +405,7 @@ class GdprFieldSettingsForm extends FormBase {
    * {@inheritdoc}
    *
    * @throws \Drupal\Core\Entity\EntityStorageException
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     if ($form_state->getTriggeringElement()['#name'] == 'Cancel') {

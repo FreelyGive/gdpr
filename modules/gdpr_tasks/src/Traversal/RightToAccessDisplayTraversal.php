@@ -30,7 +30,7 @@ class RightToAccessDisplayTraversal extends EntityTraversal {
       $field_config = isset($field_configs[$field_id]) ? $field_configs[$field_id] : NULL;
 
       // If the field is not configured, not enabled,
-      // or not enabled for RTF, then skip it.
+      // or not enabled for RTA, then skip it.
       if ($field_config === NULL
         || !$field_config->enabled
         || !in_array($field_config->rta, ['inc', 'maybe'])) {
