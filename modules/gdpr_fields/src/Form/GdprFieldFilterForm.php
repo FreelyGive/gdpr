@@ -69,17 +69,17 @@ class GdprFieldFilterForm extends FormBase {
       '#default_value' => $filters['search'],
     ];
 
-    $form['container']['entity'] = [
+    $form['container']['entity_type'] = [
       '#type' => 'select',
-      '#title' => t('Entity'),
+      '#title' => $this->t('Entity Type'),
       '#options' => $entities,
       '#multiple' => TRUE,
-      '#default_value' => $filters['entity'],
+      '#default_value' => $filters['entity_type'],
     ];
 
     $form['container']['rta'] = [
       '#type' => 'select',
-      '#title' => t('Right to access'),
+      '#title' => $this->t('Right to access'),
       '#options' => $this->rtaOptions(),
       '#multiple' => TRUE,
       '#default_value' => $filters['rta'],
@@ -87,7 +87,7 @@ class GdprFieldFilterForm extends FormBase {
 
     $form['container']['rtf'] = [
       '#type' => 'select',
-      '#title' => t('Right to be forgotten'),
+      '#title' => $this->t('Right to be forgotten'),
       '#options' => $this->rtfOptions(),
       '#multiple' => TRUE,
       '#default_value' => $filters['rtf'],
@@ -95,7 +95,7 @@ class GdprFieldFilterForm extends FormBase {
 
     $form['container']['empty'] = [
       '#type' => 'checkbox',
-      '#title' => t('Filter out Entities where all fields are not configured'),
+      '#title' => $this->t('Filter out Entities where all fields are not configured'),
       '#default_value' => $filters['empty'],
     ];
 
@@ -156,7 +156,7 @@ class GdprFieldFilterForm extends FormBase {
     else {
       $arguments = [
         'search' => $form_state->getValue('search'),
-        'entity' => $form_state->getValue('entity'),
+        'entity_type' => $form_state->getValue('entity_type'),
         'rta' => $form_state->getValue('rta'),
         'rtf' => $form_state->getValue('rtf'),
         'empty' => $form_state->getValue('empty'),
@@ -178,7 +178,7 @@ class GdprFieldFilterForm extends FormBase {
   public static function getFilters(Request $request) {
     $filters = [
       'search' => $request->get('search'),
-      'entity' => $request->get('entity'),
+      'entity_type' => $request->get('entity_type'),
       'rta' => $request->get('rta'),
       'rtf' => $request->get('rtf'),
       'empty' => $request->get('empty'),

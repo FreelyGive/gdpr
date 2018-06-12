@@ -74,7 +74,7 @@ class GDPRController extends ControllerBase {
       }
 
       // If a filter is active, exclude any entities that don't match.
-      if (!empty($filters['entity']) && !in_array($entity_type_id, $filters['entity'])) {
+      if (!empty($filters['entity_type']) && !in_array($entity_type_id, $filters['entity_type'])) {
         continue;
       }
 
