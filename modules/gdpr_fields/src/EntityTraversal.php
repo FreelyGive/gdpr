@@ -131,30 +131,21 @@ class EntityTraversal {
     $this->processEntity($entity, $config, $row_id, $results, $parent_config);
 
     // Find relationships from this entity.
-    $fields = $this->entityFieldManager->getFieldDefinitions($entity_type, $entity->bundle());
-    foreach ($fields as $field_name => $field_definition) {
-      if ($field_definition->getType() == 'entity_reference') {
+    $fields = $config->getFieldsForBundle($entity->bundle());
+
+    foreach ($fields as $field_config) {
+      // Only include fields explicitly enabled for entity traversal.
+      if ($field_config->includeRelatedEntities() && $entity->hasField($field_config->name)) {
         // If there is no value, we don't need to proceed.
-        $referenced_entities = $entity->get($field_name)->referencedEntities();
+        $referenced_entities = $entity->get($field_config->name)->referencedEntities();
+
         if (empty($referenced_entities)) {
-          continue;
-        }
-
-        // If this field has not been configured for GDPR, skip it.
-        /* @var \Drupal\gdpr_fields\Entity\GdprField $field_config */
-        $field_config = $config->getField($entity->bundle(), $field_name);
-        if (!$field_config->enabled) {
-          continue;
-        }
-
-        // Skip if relationship traversal for this property has been disabled.
-        if (!$field_config->includeRelatedEntities()) {
           continue;
         }
 
         // Loop through each child entity and traverse their relationships too.
         foreach ($referenced_entities as $child_entity) {
-          if ($field_definition->getFieldStorageDefinition()->getCardinality() != 1) {
+          if ($entity->get($field_config->name)->getFieldDefinition()->getFieldStorageDefinition()->getCardinality() != 1) {
             $this->doTraversalRecursive($child_entity, $progress, NULL, $results, $field_config);
           }
           else {
