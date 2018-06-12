@@ -14,7 +14,7 @@ use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
  *
  * @package Drupal\gdpr_fields
  */
-class EntityTraversal {
+abstract class EntityTraversal {
 
   /**
    * Entity type manager.
@@ -163,7 +163,7 @@ class EntityTraversal {
         $storage = $this->entityTypeManager->getStorage($relationship['entity_type']);
 
         $ids = $storage->getQuery()
-          ->condition($relationship['field'] . '.target_id', $entity->id())
+          ->condition($relationship['field'], $entity->id())
           ->execute();
 
         foreach ($storage->loadMultiple($ids) as $related_entity) {
@@ -191,9 +191,7 @@ class EntityTraversal {
    * @param \Drupal\gdpr_fields\Entity\GdprField $parent_config
    *   Parent's config.
    */
-  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results, GdprField $parent_config = NULL) {
-
-  }
+  abstract protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results, GdprField $parent_config = NULL);
 
   /**
    * Gets all reverse relationships configured in the system.
