@@ -109,6 +109,7 @@ class GdprFieldSettingsForm extends FormBase {
    *
    * @return \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity
    *   The config entity.
+   *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    */
   private function setConfig($entity_type, $bundle, $field_name, $enabled, $rta, $rtf, $anonymizer, $notes, $relationship, $sars_filename) {
@@ -270,12 +271,12 @@ class GdprFieldSettingsForm extends FormBase {
         '#type' => 'select',
         '#default_value' => $config->relationship,
         '#options' => [
-          GdprField::RELATIONSHIP_DISABLED => 'Disabled',
-          GdprField::RELATIONSHIP_FOLLOW => 'Follow Relationship',
-          GdprField::RELATIONSHIP_OWNER => 'Field is Owner',
+          GdprField::RELATIONSHIP_DISABLED => t('Do not follow this relationship.'),
+          GdprField::RELATIONSHIP_FOLLOW => t('This %entity_type_label owns the referenced %target_entity_type_label (Relationship will be followed)', ['%entity_type_label' => $entity_definition->getLabel(), '%target_entity_type_label' => $inner_entity_definition->getLabel()]),
+          GdprField::RELATIONSHIP_OWNER => t('This %entity_type_label is owned by the referenced %target_entity_type_label', ['%entity_type_label' => $entity_definition->getLabel(), '%target_entity_type_label' => $inner_entity_definition->getLabel()]),
         ],
         '#title' => t('Relationship Handling'),
-        '#description' => t('If set to "Follow Relationship", this relationship will be followed when looking for additional personal information. If set to "Field is Owner", this entity will be included for any task including the %type this property references.', [
+        '#description' => t('Owned entities are included in any task which contains the owner.', [
           '%type' => $inner_entity_definition->getLabel(),
         ]),
         '#states' => [
