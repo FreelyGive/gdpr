@@ -179,7 +179,7 @@ class GdprField {
       return FALSE;
     }
 
-    // Don't follow if we've been explicitly set not to.
+    // Only follow the relationship if it's been explicitly enabled
     if ($this->follow) {
       return TRUE;
     }
