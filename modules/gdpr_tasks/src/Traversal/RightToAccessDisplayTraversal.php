@@ -19,7 +19,7 @@ class RightToAccessDisplayTraversal extends EntityTraversal {
    *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    */
-  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results, GdprField $parent_config = NULL) {
+  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, GdprField $parent_config = NULL) {
     $entity_type = $entity->getEntityTypeId();
     $entity_definition = $entity->getEntityType();
 
@@ -41,7 +41,7 @@ class RightToAccessDisplayTraversal extends EntityTraversal {
 
       $field_value = $entity->get($field_id)->getString();
 
-      $results[$key] = [
+      $this->results[$key] = [
         'title' => $field->getLabel(),
         'value' => $field_value,
         'entity' => $entity_definition->getLabel(),

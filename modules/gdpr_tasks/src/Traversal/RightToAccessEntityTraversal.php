@@ -15,23 +15,13 @@ use Drupal\gdpr_fields\EntityTraversal;
  * @package Drupal\gdpr_tasks
  */
 class RightToAccessEntityTraversal extends EntityTraversal {
-  private $assets;
+
+  private $assets = [];
 
   /**
    * {@inheritdoc}
    */
-  public function traverse(EntityInterface $entity) {
-    $this->assets = [];
-    $results = parent::traverse($entity);
-    $results['_assets'] = $this->assets;
-    unset($this->assets);
-    return $results;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results, GdprField $parent_config = NULL) {
+  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, GdprField $parent_config = NULL) {
     $entity_type = $entity->getEntityTypeId();
 
     $fields = $this->entityFieldManager->getFieldDefinitions($entity_type, $entity->bundle());
@@ -67,7 +57,7 @@ class RightToAccessEntityTraversal extends EntityTraversal {
         'rta' => $field_config->rta,
       ];
 
-      $results["{$plugin_name}|{$entity->id()}"] = $data;
+      $this->results["{$plugin_name}|{$entity->id()}"] = $data;
     }
   }
 

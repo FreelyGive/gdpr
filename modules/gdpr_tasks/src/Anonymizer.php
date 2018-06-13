@@ -6,9 +6,9 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Session\AccountProxyInterface;
+use Drupal\gdpr_fields\EntityTraversalFactory;
 use Drupal\gdpr_tasks\Entity\TaskInterface;
 use Drupal\gdpr_tasks\Form\RemovalSettingsForm;
-use Drupal\gdpr_tasks\Traversal\RightToBeForgottenEntityTraversal;
 
 /**
  * Anonymizes or removes field values for GDPR.
@@ -48,7 +48,7 @@ class Anonymizer {
    *
    * @var \Drupal\gdpr_tasks\Traversal\RightToBeForgottenEntityTraversal
    */
-  private $traversal;
+  private $traversalFactory;
 
   /**
    * Anonymizer constructor.
@@ -61,21 +61,21 @@ class Anonymizer {
    *   The current user.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
    *   The config factory.
-   * @param \Drupal\gdpr_tasks\Traversal\RightToBeForgottenEntityTraversal $traversal
-   *   Traverses the entity graph to perform the deletions.
+   * @param \Drupal\gdpr_fields\EntityTraversalFactory $traversalFactory
+   *   Instantiates a traverser class.
    */
   public function __construct(
     Connection $database,
     EntityTypeManagerInterface $entityTypeManager,
     AccountProxyInterface $currentUser,
     ConfigFactoryInterface $configFactory,
-    RightToBeForgottenEntityTraversal $traversal
+    EntityTraversalFactory $traversalFactory
   ) {
     $this->database = $database;
     $this->entityTypeManager = $entityTypeManager;
     $this->currentUser = $currentUser;
     $this->configFactory = $configFactory;
-    $this->traversal = $traversal;
+    $this->traversalFactory = $traversalFactory;
   }
 
   /**
@@ -104,7 +104,8 @@ class Anonymizer {
     }
 
     // Traverser does the actual anonymizing.
-    $result = $this->traversal->traverse($user);
+    $traverser = $this->traversalFactory->getTraversal($user);
+    $result = $traverser->getResults();
 
     $log = $result['log'];
     $errors = $result['errors'];

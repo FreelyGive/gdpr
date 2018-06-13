@@ -125,7 +125,7 @@ class GdprFieldSettingsForm extends FormBase {
       ->setRelationship($relationship)
       ->setSarsFilename($sars_filename);
 
-    $storage = $this->entityTypeManager->getStorage($entity_type);
+    $storage = $this->entityTypeManager->getStorage('gdpr_fields_config');
     /* @var \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity $config */
     $config = $storage->load($entity_type);
 

@@ -40,8 +40,8 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
   /**
    * {@inheritdoc}
    */
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager, ModuleHandlerInterface $module_handler, AnonymizerFactory $anonymizer_factory) {
-    parent::__construct($entityTypeManager, $entityFieldManager);
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager, ModuleHandlerInterface $module_handler, AnonymizerFactory $anonymizer_factory, $base_entity) {
+    parent::__construct($entityTypeManager, $entityFieldManager, $base_entity);
     $this->moduleHandler = $module_handler;
     $this->anonymizerFactory = $anonymizer_factory;
   }
@@ -49,8 +49,8 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
   /**
    * {@inheritdoc}
    */
-  public function traverse(EntityInterface $entity) {
-    $results = [
+  public function traverseEntity(EntityInterface $entity) {
+    $this->results = [
       'errors' => [],
       'successes' => [],
       'failures' => [],
@@ -58,9 +58,7 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
       'to_delete' => [],
     ];
 
-    $progress = [];
-    $this->doTraversalRecursive($entity, $progress, $results);
-    return $results;
+    $this->doTraversalRecursive($entity);
   }
 
   /**
@@ -69,7 +67,7 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
-  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results, GdprField $parent_config = NULL) {
+  protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, GdprField $parent_config = NULL) {
     $entity_success = TRUE;
     $entity_type = $entity->getEntityTypeId();
 
@@ -108,7 +106,7 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
       }
 
       if ($success === TRUE) {
-        $results['log'][] = [
+        $this->results['log'][] = [
           'entity_id' => $entity->id(),
           'entity_type' => $entity_type . '.' . $entity->bundle(),
           'field_name' => $field->getName(),
@@ -120,20 +118,20 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
         // Could not anonymize/remove field. Record to errors list.
         // Prevent entity from being saved.
         $entity_success = FALSE;
-        $results['errors'][] = $msg;
+        $this->results['errors'][] = $msg;
       }
     }
 
     if ($entity_success) {
       if (isset($should_delete) && $should_delete) {
-        $results['to_delete'][] = $entity;
+        $this->results['to_delete'][] = $entity;
       }
       else {
-        $results['successes'][] = $entity;
+        $this->results['successes'][] = $entity;
       }
     }
     else {
-      $results['failures'][] = $entity;
+      $this->results['failures'][] = $entity;
     }
   }
 

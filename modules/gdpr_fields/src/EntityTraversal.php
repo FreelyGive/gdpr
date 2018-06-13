@@ -8,13 +8,14 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\gdpr_fields\Entity\GdprField;
 use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Base class for traversing entities.
  *
  * @package Drupal\gdpr_fields
  */
-abstract class EntityTraversal {
+abstract class EntityTraversal implements EntityTraversalInterface {
 
   /**
    * Entity type manager.
@@ -45,42 +46,90 @@ abstract class EntityTraversal {
   private $reverseRelationshipFields = NULL;
 
   /**
+   * The starting entity for the traversal.
+   *
+   * @var \Drupal\Core\Entity\EntityInterface
+   */
+  protected $baseEntity;
+
+  /**
+   * Whether or not the traversal has happened successfully.
+   *
+   * @var bool
+   */
+  protected $success = NULL;
+
+  /**
+   * The processed entities.
+   *
+   * @var \Drupal\Core\Entity\EntityInterface[]
+   */
+  protected $entities = [];
+
+  /**
+   * The results of the traversal.
+   *
+   * @var array
+   */
+  protected $results = [];
+
+  /**
    * EntityTraversal constructor.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entity type manager.
    * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
    *   The entity field manager.
+   * @param \Drupal\Core\Entity\EntityInterface $base_entity
+   * The starting entity for the traversal.
    *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    */
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager) {
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager, EntityInterface $base_entity) {
     $this->entityTypeManager = $entityTypeManager;
     $this->entityFieldManager = $entityFieldManager;
     $this->configStorage = $this->entityTypeManager->getStorage('gdpr_fields_config');
+    $this->baseEntity = $base_entity;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, EntityInterface $base_entity) {
+    return new static(
+      $container->get('entity_type.manager'),
+      $container->get('entity_field.manager'),
+      $base_entity
+    );
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public function traverse() {
+    if (is_null($this->success)) {
+      try {
+        $this->traverseEntity($this->baseEntity);
+        $this->success = TRUE;
+      }
+      catch (\Exception $e) {
+        $this->success = FALSE;
+      }
+    }
+
+    return $this->success;
   }
 
   /**
    * Traverses the entity relationship tree.
    *
-   * @param \Drupal\Core\Entity\EntityInterface $entity
-   *   The entity to traverse.
-   *
-   * @return array
-   *   Results collected by the traversal.
-   *   By default this will be a nested array. The first dimension is
-   *   keyed by entity type and contains an array keyed by  entity ID.
-   *   The values will be the entity instances (although this can be changed by
-   *   overriding the handleEntity method).
-   *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function traverse(EntityInterface $entity) {
-    $progress = [];
-    $results = [];
-    $this->doTraversalRecursive($entity, $progress, $results);
-    return $results;
+  protected function traverseEntity(EntityInterface $entity) {
+    // Check recursion against $this->entities;
+    $this->doTraversalRecursive($entity);
   }
 
   /**
@@ -90,10 +139,6 @@ abstract class EntityTraversal {
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The root entity to traverse.
-   * @param array $progress
-   *   Tracks which entities have been handled.
-   * @param array $results
-   *   Tracks resulting metadata about processed entity fields.
    * @param \Drupal\gdpr_fields\Entity\GdprField|null $parent_config
    *   (Optional) The parent config field settings.
    * @param int|null $row_id
@@ -102,7 +147,7 @@ abstract class EntityTraversal {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  protected function doTraversalRecursive(EntityInterface $entity, array &$progress, array& $results, GdprField $parent_config = NULL, $row_id = NULL) {
+  protected function doTraversalRecursive(EntityInterface $entity, GdprField $parent_config = NULL, $row_id = NULL) {
     // If the entity is not fieldable, don't continue.
     if (!$entity instanceof FieldableEntityInterface) {
       return;
@@ -134,7 +179,7 @@ abstract class EntityTraversal {
     $config = $this->configStorage->load($entity_type);
 
     // Let subclasses do with the entity. They will add to the $results array.
-    $this->processEntity($entity, $config, $row_id, $results, $parent_config);
+    $this->processEntity($entity, $config, $row_id, $parent_config);
 
     // Find relationships from this entity.
     $fields = $config->getFieldsForBundle($entity->bundle());
@@ -155,7 +200,7 @@ abstract class EntityTraversal {
         $passed_row_id = $single_cardinality ? $row_id : NULL;
         // Loop through each child entity and traverse their relationships too.
         foreach ($referenced_entities as $child_entity) {
-          $this->doTraversalRecursive($child_entity, $progress, $results, $field_config, $passed_row_id);
+          $this->doTraversalRecursive($child_entity, $field_config, $passed_row_id);
         }
       }
     }
@@ -173,7 +218,7 @@ abstract class EntityTraversal {
           ->execute();
 
         foreach ($storage->loadMultiple($ids) as $related_entity) {
-          $this->doTraversalRecursive($related_entity, $progress, $results, $relationship['config']);
+          $this->doTraversalRecursive($related_entity, $relationship['config']);
         }
       }
     }
@@ -192,12 +237,10 @@ abstract class EntityTraversal {
    *   GDPR config for this entity.
    * @param string $row_id
    *   Row identifier used in SARs.
-   * @param array $results
-   *   Subclasses should add any data they need to collect to the results array.
    * @param \Drupal\gdpr_fields\Entity\GdprField|null $parent_config
    *   Parent's config.
    */
-  abstract protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, array &$results, GdprField $parent_config = NULL);
+  abstract protected function processEntity(FieldableEntityInterface $entity, GdprFieldConfigEntity $config, $row_id, GdprField $parent_config = NULL);
 
   /**
    * Gets all reverse relationships configured in the system.
@@ -259,6 +302,39 @@ abstract class EntityTraversal {
       $bundle_label = $entity_definition->getLabel();
     }
     return $bundle_label;
+  }
+
+  /**
+   * Get the calculated actual calling points.
+   *
+   * This will calculate them if they haven't been calculated exist.
+   *
+   * @return \Drupal\Core\Entity\EntityInterface[]|null
+   *   Either an array of entities or NULL if we couldn't find them.
+   */
+  public function getEntities() {
+    try {
+      if ($this->traverse()) {
+        return $this->entities;
+      }
+    }
+    catch (\Exception $exception) {
+      return NULL;
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getResults() {
+    try {
+      if ($this->traverse()) {
+        return $this->results;
+      }
+    }
+    catch (\Exception $exception) {
+      return NULL;
+    }
   }
 
 }

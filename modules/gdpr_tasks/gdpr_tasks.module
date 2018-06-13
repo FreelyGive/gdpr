@@ -90,9 +90,10 @@ function gdpr_tasks_theme_suggestions_gdpr_task(array $variables) {
  * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
  */
 function gdpr_tasks_generate_sar_report(UserInterface $user) {
-  /* @var \Drupal\gdpr_tasks\RightToAccessEntityTraversal $traversal */
-  $traversal = Drupal::service('gdpr_tasks.rta_traversal');
-  $data = $traversal->traverse($user);
+  /* @var \Drupal\gdpr_fields\EntityTraversalFactory $traversalFactory */
+  $traversalFactory = Drupal::service('gdpr_tasks.rta_traversal');
+  $traversal = $traversalFactory->getTraversal($user);
+  $data = $traversal->getResults();
   return $data;
 }
 
