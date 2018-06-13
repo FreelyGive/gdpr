@@ -18,7 +18,7 @@ class GDPRSanitizerDate extends GDPRSanitizerDefault {
   /**
    * {@inheritdoc}
    */
-  public function sanitize($input, $field = NULL) {
+  public function sanitize($input, $field = NULL, $wrapper = NULL) {
     $date = new DateTime('1000-01-01');
     return $date->format('U');
   }

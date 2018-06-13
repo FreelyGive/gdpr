@@ -196,7 +196,7 @@ class Anonymizer {
 
       $wrapper = entity_metadata_wrapper($field_info['entity_type'], $entity);
 
-      $wrapper->{$field} = $sanitizer->sanitize($field_info['value'], $wrapper->{$field});
+      $wrapper->{$field} = $sanitizer->sanitize($field_info['value'], $field, $wrapper);
       return array(TRUE, NULL, $sanitizer_id);
     }
     catch (\Exception $e) {

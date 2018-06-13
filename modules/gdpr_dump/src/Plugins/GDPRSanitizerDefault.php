@@ -100,13 +100,15 @@ class GDPRSanitizerDefault {
    *
    * @var int|string $input
    *   The input.
-   * @var EntityMetadataWrapper|null $field
-   *   The input.
+   * @var string|null $field
+   *   The field we are acting on.
+   * @var \EntityDrupalWrapper $wrapper
+   *   The entity wrapper.
    *
    * @return int|string
    *   The sanitized input.
    */
-  public function sanitize($input, $field = NULL) {
+  public function sanitize($input, $field = NULL, $wrapper = NULL) {
 
     return $input;
   }

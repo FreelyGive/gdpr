@@ -20,7 +20,7 @@ class GDPRSanitizerPartyArchived extends GDPRSanitizerDefault {
   /**
    * {@inheritdoc}
    */
-  public function sanitize($input, $field = NULL) {
+  public function sanitize($input, $field = NULL, $wrapper = NULL) {
     return 1;
   }
 

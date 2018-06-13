@@ -25,7 +25,7 @@ class GDPRSanitizerEmail extends GDPRSanitizerDefault {
    *
    * @todo See if we can pass in field settings.
    */
-  public function sanitize($input, $field = NULL) {
+  public function sanitize($input, $field = NULL, $wrapper = NULL) {
     if (empty($input)) {
       return $input;
     }
