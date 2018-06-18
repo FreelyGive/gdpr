@@ -2,8 +2,8 @@
 
 namespace Drupal\gdpr_tasks\Traversal;
 
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\Field\EntityReferenceFieldItemList;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\gdpr_fields\Entity\GdprField;
 use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
@@ -75,21 +75,31 @@ class RightToAccessEntityTraversal extends EntityTraversal {
    *   Field value
    */
   protected function getFieldValue(FieldableEntityInterface $entity, FieldDefinitionInterface $field, $field_id) {
-    $field_value = '';
-
     // Special handling for file references.
     // For files, we want to add to the assets collection.
-    if (($field->getType() == 'image' || $field->getType() == 'entity_reference') && $field->getSetting('target_type') == 'file') {
+    $labels = [];
+    if ($entity->{$field_id} instanceof EntityReferenceFieldItemList && $field->getSetting('target_type') == 'file') {
       /* @var \Drupal\file\Entity\File $file */
-      $file = $entity->get($field_id)->entity;
-      if ($file) {
+      foreach ($entity->{$field_id}->referencedEntities() as $file) {
         $this->assets[] = ['target_id' => $file->id(), 'display' => 1];
-        $field_value = "assets/{$file->id()}." . pathinfo($file->getFileUri(), PATHINFO_EXTENSION);
+        $labels[] = "assets/{$file->id()}." . pathinfo($file->getFileUri(), PATHINFO_EXTENSION);
+      }
+    }
+    elseif ($entity->{$field_id} instanceof EntityReferenceFieldItemList) {
+      /* @var \Drupal\Core\Entity\EntityInterface $referenced_entity */
+      foreach ($entity->{$field_id}->referencedEntities() as $referenced_entity) {
+        if ($referenced_entity->label()) {
+          $labels[] = "{$referenced_entity->label()} [{$referenced_entity->id()}]";
+        }
+        else {
+          $labels[] = $referenced_entity->id();
+        }
       }
     }
     else {
-      $field_value = $entity->get($field_id)->getString();
+      $labels[] = $entity->get($field_id)->getString();
     }
+    $field_value = implode(', ', $labels);
     return $field_value;
   }
 
