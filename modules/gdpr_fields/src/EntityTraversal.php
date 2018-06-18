@@ -155,9 +155,9 @@ abstract class EntityTraversal implements EntityTraversalInterface {
 
     $entity_type = $entity->getEntityTypeId();
 
-    if ($entity_type == 'gdpr_task') {
-      // Explicitly make sure we don't traverse any links to gdpr_task
-      // even if the user has explicitly included the reference for traversal.
+    // Explicitly make sure we don't traverse any links to excluded entities.
+    $definition = $this->entityTypeManager->getDefinition($entity_type);
+    if ($definition->get('gdpr_entity_traversal_exclude')) {
       return;
     }
 
