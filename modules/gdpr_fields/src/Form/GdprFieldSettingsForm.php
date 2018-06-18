@@ -271,7 +271,7 @@ class GdprFieldSettingsForm extends FormBase {
 
     $form['gdpr_sars_filename'] = [
       '#type' => 'value',
-      '#value' => FALSE,
+      '#value' => $config->sarsFilename,
     ];
 
     if ($field_definition->getType() == 'entity_reference') {
@@ -295,27 +295,6 @@ class GdprFieldSettingsForm extends FormBase {
             ':input[name="gdpr_enabled"]' => [
               'checked' => TRUE,
             ],
-          ],
-        ],
-      ];
-
-      // Target file.
-      // @todo: Move to a form alter in gdpr_tasks.
-      $form['gdpr_sars_filename'] = [
-        '#type' => 'textfield',
-        '#title' => t('Right to access filename'),
-        '#description' => t('Specify the filename for the owned entity to go in. Use %inherit to keep the related entity in the same file.', []),
-        // Default to the entity type.
-        '#default_value' => $config->sarsFilename ? $config->sarsFilename : $inner_entity_type,
-        '#field_suffix' => '.csv',
-        '#size' => 20,
-        // Between RTA and RTF.
-        '#weight' => 15,
-        '#required' => TRUE,
-        '#states' => [
-          'visible' => [
-            ':input[name="gdpr_enabled"]' => ['checked' => TRUE],
-            ':input[name="gdpr_relationship"]' => ['value' => GdprField::RELATIONSHIP_FOLLOW],
           ],
         ],
       ];
@@ -351,11 +330,31 @@ class GdprFieldSettingsForm extends FormBase {
       ],
     ];
 
-    // If this is the entity's ID, treat the removal as remove the entire
-    // entity.
     if ($entity_definition->getKey('id') == $field_name) {
+      // If this is the entity's ID, treat the removal as remove the entire
+      // entity.
       unset($form['gdpr_rtf']['#options']['anonymise']);
       $form['gdpr_rtf']['#options']['remove'] = new TranslatableMarkup('Delete entire entity');
+
+      // Define target filename for this bundle.
+      // @todo: Move to a form alter in gdpr_tasks.
+      $form['gdpr_sars_filename'] = [
+        '#type' => 'textfield',
+        '#title' => t('Right to access filename'),
+        '#description' => t('Specify the filename for the owned entity to go in. Use %inherit to keep the related entity in the same file.', []),
+        // Default to the entity type.
+        '#default_value' => $config->sarsFilename,
+        '#field_suffix' => '.csv',
+        '#size' => 20,
+        // Between RTA and RTF.
+        '#weight' => 15,
+        '#required' => TRUE,
+        '#states' => [
+          'visible' => [
+            ':input[name="gdpr_enabled"]' => ['checked' => TRUE],
+          ],
+        ],
+      ];
     }
     // Otherwise check if this can be removed.
     elseif (!GDPRCollector::propertyCanBeRemoved($entity_definition, $field_definition, $error_message)) {

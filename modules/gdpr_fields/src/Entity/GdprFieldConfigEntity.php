@@ -20,6 +20,13 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
 class GdprFieldConfigEntity extends ConfigEntityBase {
 
   /**
+   * The entity type ID of the base entity.
+   *
+   * @var string
+   */
+  protected $id;
+
+  /**
    * Associative array.
    *
    * Each element is keyed by bundle name and contains an array representing
@@ -30,6 +37,16 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
    * @var array
    */
   public $bundles = [];
+
+  /**
+   * Associative array of filenames.
+   *
+   * Each element is keyed by bundle name the filename of the files to store
+   * exports in.
+   *
+   * @var array
+   */
+  public $filenames = [];
 
   /**
    * Sets a GDPR field's settings.
@@ -49,6 +66,8 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
       $this->bundles[$bundle][$field_name][$key] = $value;
     }
 
+    $this->filenames[$bundle] = $values['sars_filename'];
+
     return $this;
   }
 
@@ -66,6 +85,11 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
   public function getField($bundle, $field_name) {
     if (isset($this->bundles[$bundle][$field_name])) {
       $result = $this->bundles[$bundle][$field_name];
+
+      if (empty($result['sars_filename'])) {
+        $result['sars_filename'] = $this->getFilename($bundle);
+      }
+
       return new GdprField($result);
     }
 
@@ -73,6 +97,7 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
       'bundle' => $bundle,
       'name' => $field_name,
       'entity_type_id' => $this->id(),
+      'sars_filename' => $this->getFilename($bundle),
     ]);
   }
 
@@ -86,8 +111,8 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
   public function getAllFields() {
     $results = [];
     foreach ($this->bundles as $bundle_id => $fields_in_bundle) {
-      foreach ($fields_in_bundle as $field_name => $field) {
-        $results["$bundle_id.$field_name"] = new GdprField($field);
+      foreach (array_keys($fields_in_bundle) as $field_name) {
+        $results["$bundle_id.$field_name"] = $this->getField($bundle_id, $field_name);
       }
     }
     return $results;
@@ -106,6 +131,23 @@ class GdprFieldConfigEntity extends ConfigEntityBase {
     return array_map(function ($field) {
       return new GdprField($field);
     }, $this->bundles[$bundle]);
+  }
+
+  /**
+   * Gets the export filename.
+   *
+   * @param string $bundle
+   *   The bundle.
+   *
+   * @return string
+   *   The filename of the file to store export data in.
+   */
+  public function getFilename($bundle) {
+    if (isset($this->filenames[$bundle])) {
+      return $this->filenames[$bundle];
+    }
+
+    return $this->id;
   }
 
 }
