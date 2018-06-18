@@ -338,6 +338,7 @@ class GdprFieldSettingsForm extends FormBase {
 
       // Define target filename for this bundle.
       // @todo: Move to a form alter in gdpr_tasks.
+      // @todo: Add <inherit> option to inherit owned entity filename.
       $form['gdpr_sars_filename'] = [
         '#type' => 'textfield',
         '#title' => t('Right to access filename'),
@@ -373,7 +374,7 @@ class GdprFieldSettingsForm extends FormBase {
       $form['gdpr_rtf']['#description'] = t('*This is a computed field and cannot be removed.');
     }
 
-    $sanitizer_options = ['' => ''] + array_map(function ($s) {
+    $sanitizer_options = array_map(function ($s) {
         return $s['label'];
     }, $anonymizer_definitions);
 
@@ -385,6 +386,10 @@ class GdprFieldSettingsForm extends FormBase {
       '#default_value' => $config->anonymizer,
       '#states' => [
         'visible' => [
+          ':input[name="gdpr_enabled"]' => ['checked' => TRUE],
+          ':input[name="gdpr_rtf"]' => ['value' => 'anonymize'],
+        ],
+        'required' => [
           ':input[name="gdpr_enabled"]' => ['checked' => TRUE],
           ':input[name="gdpr_rtf"]' => ['value' => 'anonymize'],
         ],
