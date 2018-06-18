@@ -81,7 +81,7 @@ abstract class EntityTraversal implements EntityTraversalInterface {
    * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
    *   The entity field manager.
    * @param \Drupal\Core\Entity\EntityInterface $base_entity
-   * The starting entity for the traversal.
+   *   The starting entity for the traversal.
    *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    */
@@ -102,7 +102,6 @@ abstract class EntityTraversal implements EntityTraversalInterface {
       $base_entity
     );
   }
-
 
   /**
    * {@inheritdoc}
@@ -128,7 +127,6 @@ abstract class EntityTraversal implements EntityTraversalInterface {
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   protected function traverseEntity(EntityInterface $entity) {
-    // Check recursion against $this->entities;
     $this->doTraversalRecursive($entity);
   }
 
@@ -162,7 +160,7 @@ abstract class EntityTraversal implements EntityTraversalInterface {
     }
 
     // Check for infinite loop.
-    if (isset($progress[$entity_type][$entity->id()])) {
+    if (isset($this->entities[$entity_type][$entity->id()])) {
       return;
     }
 
@@ -172,7 +170,7 @@ abstract class EntityTraversal implements EntityTraversalInterface {
 
     // Store the entity in progress to make sure we don't get stuck
     // in an infinite loop by processing the same entity again.
-    $progress[$entity_type][$entity->id()] = $entity;
+    $this->entities[$entity_type][$entity->id()] = $entity;
 
     // GDPR config for this entity.
     /* @var \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity $config */

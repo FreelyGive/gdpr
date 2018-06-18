@@ -101,7 +101,7 @@ class GDPRCollector {
         'field_name' => $field_id,
       ];
 
-      if (isset($bundle_key)) {
+      if (isset($bundle_type)) {
         $route_params[$bundle_type] = $bundle_id;
       }
 

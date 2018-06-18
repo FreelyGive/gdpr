@@ -2,9 +2,6 @@
 
 namespace Drupal\gdpr_fields;
 
-use Drupal\Core\Entity\EntityInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-
 /**
  * Defines a common interface for dependency container injection.
  *

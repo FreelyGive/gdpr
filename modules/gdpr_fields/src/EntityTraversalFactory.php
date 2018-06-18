@@ -43,15 +43,16 @@ class EntityTraversalFactory {
    * Instantiates the traversal class.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   Base entity to start recursive traversal.
    *
    * @return \Drupal\gdpr_fields\EntityTraversalInterface
+   *   Traversal class.
    */
   public function getTraversal(EntityInterface $entity) {
     $traversal_class = $this->traverser;
     $class = new \ReflectionClass($traversal_class);
     if ($class->implementsInterface(EntityTraversalInterface::class)) {
-      return call_user_func($traversal_class . '::create', $this->container, $entity);
-//      return $traversal_class::create($this->container, $entity);
+      return $traversal_class::create($this->container, $entity);
     }
 
     // @todo Handle exceptions?
