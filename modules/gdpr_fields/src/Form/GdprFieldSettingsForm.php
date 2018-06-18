@@ -10,7 +10,6 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\gdpr_fields\Entity\GdprField;
 use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
-use Drupal\gdpr_fields\GDPRCollector;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -330,6 +329,7 @@ class GdprFieldSettingsForm extends FormBase {
       ],
     ];
 
+    $error_message = NULL;
     if ($entity_definition->getKey('id') == $field_name) {
       // If this is the entity's ID, treat the removal as remove the entire
       // entity.
@@ -358,7 +358,7 @@ class GdprFieldSettingsForm extends FormBase {
       ];
     }
     // Otherwise check if this can be removed.
-    elseif (!GDPRCollector::propertyCanBeRemoved($entity_definition, $field_definition, $error_message)) {
+    elseif (!$config->propertyCanBeRemoved($field_definition, $error_message)) {
       unset($form['gdpr_rtf']['#options']['remove']);
       $form['gdpr_rtf_disabled'] = [
         '#type' => 'item',

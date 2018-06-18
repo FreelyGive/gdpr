@@ -5,10 +5,8 @@ namespace Drupal\gdpr_fields;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Entity\EntityTypeManager;
-use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
 
 /**
@@ -179,43 +177,6 @@ class GDPRCollector {
     $all_bundles = $this->bundleInfo->getAllBundleInfo();
     $bundles = isset($all_bundles[$entity_type_id]) ? $all_bundles[$entity_type_id] : [$entity_type_id => []];
     return $bundles;
-  }
-
-  /**
-   * Check whether a property can be removed.
-   *
-   * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
-   *   The entity type.
-   * @param \Drupal\Core\Field\FieldDefinitionInterface $field_definition
-   *   The property info.
-   * @param string $error_message
-   *   A variable to fill with an error message.
-   *
-   * @return bool
-   *   TRUE if the property can be removed, FALSE if not.
-   */
-  public static function propertyCanBeRemoved(EntityTypeInterface $entity_type, FieldDefinitionInterface $field_definition, &$error_message = NULL) {
-    if ($field_definition->isComputed()) {
-      $error_message = new TranslatableMarkup('Unable to remove computed field %field.', ['%field' => $field_definition->getName()]);
-      return FALSE;
-    }
-
-    if ($field_definition->isRequired()) {
-      $error_message = new TranslatableMarkup('Unable to remove required field %field.', ['%field' => $field_definition->getName()]);
-      return FALSE;
-    }
-
-    if ($field_definition->isReadOnly()) {
-      $error_message = new TranslatableMarkup('Unable to remove readonly field %field.', ['%field' => $field_definition->getName()]);
-      return FALSE;
-    }
-
-    if (in_array($field_definition->getName(), $entity_type->getKeys())) {
-      $error_message = new TranslatableMarkup('Unable to remove entity key %field.', ['%field' => $field_definition->getName()]);
-      return FALSE;
-    }
-
-    return TRUE;
   }
 
 }

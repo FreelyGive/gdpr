@@ -2,6 +2,9 @@
 
 namespace Drupal\gdpr_fields\Entity;
 
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+
 /**
  * Metadata for a GDPR field.
  */
@@ -350,6 +353,43 @@ class GdprField {
       'maybe' => 'Maybe included',
       'no' => 'Not included',
     ];
+  }
+
+  /**
+   * Check whether a property can be removed.
+   *
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field_definition
+   *   The property info.
+   * @param string $error_message
+   *   A variable to fill with an error message.
+   *
+   * @return bool
+   *   TRUE if the property can be removed, FALSE if not.
+   */
+  public function propertyCanBeRemoved(FieldDefinitionInterface $field_definition, &$error_message = NULL) {
+    if ($field_definition->isComputed()) {
+      $error_message = new TranslatableMarkup('Unable to remove computed field %field.', ['%field' => $field_definition->getName()]);
+      return FALSE;
+    }
+
+    if ($field_definition->isRequired()) {
+      $error_message = new TranslatableMarkup('Unable to remove required field %field.', ['%field' => $field_definition->getName()]);
+      return FALSE;
+    }
+
+    if ($field_definition->isReadOnly()) {
+      $error_message = new TranslatableMarkup('Unable to remove readonly field %field.', ['%field' => $field_definition->getName()]);
+      return FALSE;
+    }
+
+    $entity_type = \Drupal::entityTypeManager()->getDefinition($this->entityTypeId);
+    // @todo Find something less generic than `getKeys()`.
+    if (in_array($field_definition->getName(), $entity_type->getKeys())) {
+      $error_message = new TranslatableMarkup('Unable to remove entity key %field.', ['%field' => $field_definition->getName()]);
+      return FALSE;
+    }
+
+    return TRUE;
   }
 
 }

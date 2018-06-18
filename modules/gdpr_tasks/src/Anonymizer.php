@@ -5,7 +5,10 @@ namespace Drupal\gdpr_tasks;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Link;
 use Drupal\Core\Session\AccountProxyInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\Core\Url;
 use Drupal\gdpr_fields\EntityTraversalFactory;
 use Drupal\gdpr_tasks\Entity\TaskInterface;
 use Drupal\gdpr_tasks\Form\RemovalSettingsForm;
@@ -99,7 +102,8 @@ class Anonymizer {
     $errors = [];
 
     if (!$this->checkExportDirectoryExists()) {
-      $errors[] = 'An export directory has not been set. Please set this under Configuration -> GDPR -> Right to be Forgotten';
+      $link = Link::fromTextAndUrl('here', Url::fromRoute('gdpr_tasks.remove_settings'))->toString();
+      $errors[] = new TranslatableMarkup('An export directory has not been set. Please set this %link.', ['%link', $link]);
       return $errors;
     }
 

@@ -14,7 +14,6 @@ use Drupal\Core\TypedData\Exception\ReadOnlyException;
 use Drupal\gdpr_fields\Entity\GdprField;
 use Drupal\gdpr_fields\Entity\GdprFieldConfigEntity;
 use Drupal\gdpr_fields\EntityTraversal;
-use Drupal\gdpr_fields\GDPRCollector;
 
 /**
  * Entity traversal used for Right to be Forgotten requests.
@@ -102,7 +101,7 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
         list($success, $msg, $anonymizer) = $this->anonymize($field, $field_definition, $field_config);
       }
       elseif ($mode == 'remove') {
-        list($success, $msg, $should_delete) = $this->remove($field, $entity);
+        list($success, $msg, $should_delete) = $this->remove($field, $field_config, $entity);
       }
 
       if ($success === TRUE) {
@@ -140,6 +139,8 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
    *
    * @param \Drupal\Core\Field\FieldItemListInterface $field
    *   The current field to process.
+   * @param \Drupal\gdpr_fields\Entity\GdprField $field_config
+   *   The current field config.
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity to remove.
    *
@@ -148,18 +149,19 @@ class RightToBeForgottenEntityTraversal extends EntityTraversal {
    *   third element is boolean indicating whether the whole
    *   entity should be deleted.
    */
-  private function remove(FieldItemListInterface $field, EntityInterface $entity) {
+  private function remove(FieldItemListInterface $field, GdprField $field_config, EntityInterface $entity) {
     try {
       $should_delete = FALSE;
       // If this is the entity's ID, treat the removal as remove the entire
       // entity.
       $entity_type = $entity->getEntityType();
+      $error_message = NULL;
       if ($entity_type->getKey('id') == $field->getName()) {
         $should_delete = TRUE;
         return [TRUE, NULL, $should_delete];
       }
       // Check if the property can be removed.
-      elseif (!GDPRCollector::propertyCanBeRemoved($entity_type, $field->getFieldDefinition(), $error_message)) {
+      elseif (!$field_config->propertyCanBeRemoved($field->getFieldDefinition(), $error_message)) {
         return [FALSE, $error_message, $should_delete];
       }
 
