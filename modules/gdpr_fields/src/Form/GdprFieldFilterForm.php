@@ -54,6 +54,7 @@ class GdprFieldFilterForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $filters = self::getFilters($this->getRequest());
 
+    // @todo Add classes and styling to move filters inline.
     $form['container'] = [];
 
     $entities = [];
@@ -81,7 +82,7 @@ class GdprFieldFilterForm extends FormBase {
     $form['container']['rta'] = [
       '#type' => 'select',
       '#title' => $this->t('Right to access'),
-      '#options' => ['' => 'Not configured'] + GdprField::rtaOptions(),
+      '#options' => ['0' => 'Not configured'] + GdprField::rtaOptions(),
       '#multiple' => TRUE,
       '#default_value' => $filters['rta'],
     ];
@@ -89,7 +90,7 @@ class GdprFieldFilterForm extends FormBase {
     $form['container']['rtf'] = [
       '#type' => 'select',
       '#title' => $this->t('Right to be forgotten'),
-      '#options' => ['' => 'Not configured'] + GdprField::rtfOptions(),
+      '#options' => ['0' => 'Not configured'] + GdprField::rtfOptions(),
       '#multiple' => TRUE,
       '#default_value' => $filters['rtf'],
     ];
@@ -104,13 +105,13 @@ class GdprFieldFilterForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Apply'),
       '#button_type' => 'primary',
-      '#name' => 'Apply',
     ];
 
     $form['container']['reset'] = [
       '#type' => 'submit',
       '#value' => $this->t('Reset'),
-      '#name' => 'Reset',
+      '#submit' => [[$this, 'resetForm']],
+      '#limit_validation_errors' => [],
     ];
 
     return $form;
@@ -120,20 +121,27 @@ class GdprFieldFilterForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    if ($form_state->getTriggeringElement()['#name'] == 'Reset') {
-      $arguments = [];
-    }
-    else {
-      $arguments = [
-        'search' => $form_state->getValue('search'),
-        'entity_type' => $form_state->getValue('entity_type'),
-        'rta' => $form_state->getValue('rta'),
-        'rtf' => $form_state->getValue('rtf'),
-        'empty' => $form_state->getValue('empty'),
-      ];
-    }
+    $arguments = [
+      'search' => $form_state->getValue('search'),
+      'entity_type' => $form_state->getValue('entity_type'),
+      'rta' => $form_state->getValue('rta'),
+      'rtf' => $form_state->getValue('rtf'),
+      'empty' => $form_state->getValue('empty'),
+    ];
 
-    $form_state->setRedirect('gdpr_fields.fields_list', $arguments);
+    $form_state->setRedirect('gdpr_fields.fields_list', [], ['query' => $arguments]);
+  }
+
+  /**
+   * Form submission handler to reset filters.
+   *
+   * @param array $form
+   *   An associative array containing the structure of the form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   */
+  public function resetForm(array &$form, FormStateInterface $form_state) {
+    $form_state->setRedirect('gdpr_fields.fields_list');
   }
 
   /**
