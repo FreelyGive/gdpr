@@ -3,10 +3,7 @@
 namespace Drupal\gdpr_fields;
 
 /**
- * Defines a common interface for dependency container injection.
- *
- * This interface gives classes who need services a factory method for
- * instantiation as well as the entity to be traversed.
+ * Defines a common interface for entity traversal.
  */
 interface EntityTraversalInterface extends EntityTraversalContainerInjectionInterface {
 
@@ -28,8 +25,7 @@ interface EntityTraversalInterface extends EntityTraversalContainerInjectionInte
    *   Results collected by the traversal.
    *   By default this will be a nested array. The first dimension is
    *   keyed by entity type and contains an array keyed by entity ID.
-   *   The values will be the entity instances (although this can be changed by
-   *   overriding the handleEntity method).
+   *   The values will be the entity instances.
    */
   public function getResults();
 

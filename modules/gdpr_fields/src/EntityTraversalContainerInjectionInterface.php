@@ -14,7 +14,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 interface EntityTraversalContainerInjectionInterface {
 
   /**
-   * Instantiates a new instance of this class.
+   * Creates an instance of the traversal for this specific entity.
    *
    * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
    *   The service container this instance should use.
