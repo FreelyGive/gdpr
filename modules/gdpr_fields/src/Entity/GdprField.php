@@ -382,9 +382,18 @@ class GdprField {
       return FALSE;
     }
 
-    $entity_type = \Drupal::entityTypeManager()->getDefinition($this->entityTypeId);
-    // @todo Find something less generic than `getKeys()`.
-    if (in_array($field_definition->getName(), $entity_type->getKeys())) {
+    // @todo Find something less generic than `EntityTypeInterface::getKeys()`.
+    $entity_keys = [
+      'id',
+      'uuid',
+      'revision',
+      'bundle',
+      'label',
+      'langcode',
+      'default_langcode',
+      'revision_translation_affected',
+    ];
+    if (in_array($field_definition->getName(), $entity_keys)) {
       $error_message = new TranslatableMarkup('Unable to remove entity key %field.', ['%field' => $field_definition->getName()]);
       return FALSE;
     }
