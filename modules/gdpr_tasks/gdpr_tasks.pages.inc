@@ -48,7 +48,6 @@ function template_preprocess_gdpr_task(array &$variables) {
           t('Bundle'),
           t('Notes'),
           t('Right to be forgotten'),
-          '',
         ],
         '#rows' => $rows,
         '#sticky' => TRUE,

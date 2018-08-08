@@ -42,12 +42,11 @@ class RightToBeForgottenDisplayTraversal extends EntityTraversal {
 
       $this->results[$key] = [
         'title' => $field->getLabel(),
-        'value' => $entity->get($field_id)->view(),
+        'value' => $entity->get($field_id)->getString(),
         'entity' => $entity_definition->getLabel(),
         'bundle' => $this->getBundleLabel($entity),
         'notes' => $field_config->notes,
         'gdpr_rtf' => $field_config->rtf,
-        'link' => $field_config->rtf == 'maybe' ? $entity->toLink('Edit', 'edit-form') : '',
       ];
     }
   }

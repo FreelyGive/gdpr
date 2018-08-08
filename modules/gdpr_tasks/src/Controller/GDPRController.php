@@ -104,9 +104,14 @@ class GDPRController extends ControllerBase {
         'type' => $gdpr_task_type,
         'user_id' => $user->id(),
       ];
-      $this->entityTypeManager->getStorage('gdpr_task')
-        ->create($values)
-        ->save();
+      $task = $this->entityTypeManager->getStorage('gdpr_task')
+        ->create($values);
+      $task->save();
+
+      $queue = \Drupal::queue('gdpr_tasks_process_gdpr_sar');
+      $queue->createQueue();
+      $queue->createItem($task->id());
+
       $this->messenger->addStatus('Your request has been logged');
     }
 

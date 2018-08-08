@@ -24,7 +24,7 @@ class UsernameAnonymizer extends AnonymizerBase {
    * @throws \RuntimeException
    */
   public function anonymize($input, FieldItemListInterface $field = NULL) {
-    return $this->faker->generator()->unique()->userName;
+    return 'anon_' . $this->faker->generator()->unique()->userName;
   }
 
 }

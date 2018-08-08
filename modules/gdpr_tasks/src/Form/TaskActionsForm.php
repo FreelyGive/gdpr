@@ -167,6 +167,7 @@ class TaskActionsForm extends ContentEntityForm {
         $form_state->setRebuild();
       }
       else {
+        $entity->status = 'closed';
         $should_save = TRUE;
       }
     }
@@ -175,11 +176,11 @@ class TaskActionsForm extends ContentEntityForm {
       $queue = \Drupal::queue('gdpr_tasks_process_gdpr_sar');
       $queue->createQueue();
       $queue->createItem($entity->id());
+      $entity->status = 'processed';
       $should_save = TRUE;
     }
 
     if ($should_save) {
-      $entity->status = 'processed';
       $entity->setProcessedById($this->currentUser()->id());
       $this->messenger()->addStatus('Task has been processed.');
       parent::save($form, $form_state);

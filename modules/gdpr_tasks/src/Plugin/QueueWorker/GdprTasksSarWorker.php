@@ -10,8 +10,8 @@ use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Queue\QueueInterface;
 use Drupal\Core\Queue\QueueWorkerBase;
+use Drupal\gdpr_fields\EntityTraversalFactory;
 use Drupal\gdpr_tasks\Entity\TaskInterface;
-use Drupal\gdpr_tasks\Traversal\RightToAccessDisplayTraversal;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -57,11 +57,11 @@ class GdprTasksSarWorker extends QueueWorkerBase implements ContainerFactoryPlug
   protected $queue;
 
   /**
-   * The rta traversal service.
+   * The rta traversal factory.
    *
-   * @var \Drupal\gdpr_tasks\Traversal\RightToAccessDisplayTraversal
+   * @var \Drupal\gdpr_fields\EntityTraversalFactory
    */
-  protected $rtaTraversal;
+  protected $traversalFactory;
 
   /**
    * The file system.
@@ -94,20 +94,20 @@ class GdprTasksSarWorker extends QueueWorkerBase implements ContainerFactoryPlug
    *   The field type plugin manager.
    * @param \Drupal\Core\Queue\QueueInterface $queue
    *   The gdpr sars task queue.
-   * @param \Drupal\gdpr_tasks\Traversal\RightToAccessDisplayTraversal $rta_traversal
+   * @param \Drupal\gdpr_fields\EntityTraversalFactory $traversal_factory
    *   The rta traversal service.
    * @param \Drupal\Core\File\FileSystem $file_system
    *   The file system.
    * @param \Drupal\Core\Messenger\MessengerInterface $messenger
    *   The messenger service.
    */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityTypeManagerInterface $entity_type_manager, Php $uuid, FieldTypePluginManager $field_type_plugin_manager, QueueInterface $queue, RightToAccessDisplayTraversal $rta_traversal, FileSystem $file_system, MessengerInterface $messenger) {
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityTypeManagerInterface $entity_type_manager, Php $uuid, FieldTypePluginManager $field_type_plugin_manager, QueueInterface $queue, EntityTraversalFactory $traversal_factory, FileSystem $file_system, MessengerInterface $messenger) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->taskStorage = $entity_type_manager->getStorage('gdpr_task');
     $this->uuid = $uuid;
     $this->fieldTypePluginManager = $field_type_plugin_manager;
     $this->queue = $queue;
-    $this->rtaTraversal = $rta_traversal;
+    $this->traversalFactory = $traversal_factory;
     $this->fileSystem = $file_system;
     $this->messenger = $messenger;
   }
@@ -124,7 +124,7 @@ class GdprTasksSarWorker extends QueueWorkerBase implements ContainerFactoryPlug
       $container->get('uuid'),
       $container->get('plugin.manager.field.field_type'),
       $container->get('queue')->get('gdpr_tasks_process_gdpr_sar'),
-      $container->get('gdpr_tasks.rta_display_traversal'),
+      $container->get('gdpr_tasks.rta_traversal'),
       $container->get('file_system'),
       $container->get('messenger')
     );
@@ -137,6 +137,10 @@ class GdprTasksSarWorker extends QueueWorkerBase implements ContainerFactoryPlug
     if (!empty($data)) {
       /* @var \Drupal\gdpr_tasks\Entity\TaskInterface $task */
       $task = $this->taskStorage->load($data);
+
+      if (!$task) {
+        return;
+      }
 
       // Work out where we are up to and what to do next.
       switch ($task->getStatus()) {
@@ -201,6 +205,9 @@ class GdprTasksSarWorker extends QueueWorkerBase implements ContainerFactoryPlug
       $file = file_save_data('', "{$directory}/{$uuid}.zip", FILE_EXISTS_ERROR);
     } while (!$file);
 
+    $file->setOwner($task->getOwner());
+    $file->save();
+
     // Prepare the directory for our sub-files.
     $content_directory = "{$directory}/{$uuid}";
     file_prepare_directory($content_directory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
@@ -256,7 +263,8 @@ class GdprTasksSarWorker extends QueueWorkerBase implements ContainerFactoryPlug
 
     // Gather our entities.
     // @todo: Move this inline.
-    $all_data = $this->rtaTraversal->traverse($task->getOwner());
+    $traverser = $this->traversalFactory->getTraversal($task->getOwner());
+    $all_data = $traverser->getResults();
 
     // Build our export files.
     $csvs = array();

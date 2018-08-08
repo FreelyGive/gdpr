@@ -176,6 +176,10 @@ abstract class EntityTraversal implements EntityTraversalInterface {
     /* @var \Drupal\gdpr_fields\Entity\GdprFieldConfigEntity $config */
     $config = $this->configStorage->load($entity_type);
 
+    if (!$config) {
+      throw new \Exception("Entity of type $entity_type has not yet been configured for GDPR tasks.");
+    }
+
     // Let subclasses do with the entity. They will add to the $results array.
     $this->processEntity($entity, $config, $row_id, $parent_config);
 

@@ -84,6 +84,10 @@ class TaskListBuilder extends EntityListBuilder {
     ]) . ' ago';
 
     $row['requested_by'] = $entity->requested_by->entity->toLink()->toString();
+
+    // Fix another way...
+    $row['operations']['data'] = $this->buildOperations($entity);
+
     return $row + parent::buildRow($entity);
   }
 
@@ -124,6 +128,23 @@ class TaskListBuilder extends EntityListBuilder {
       ],
     ];
 
+    $build['reviewing']['title'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'h3',
+      '#value' => 'Needs Review tasks',
+    ];
+
+    $build['reviewing']['table'] = [
+      '#type' => 'table',
+      '#header' => $this->buildHeader(),
+      '#rows' => [],
+      '#empty' => $this->t('There is no needing review @label yet.', ['@label' => $this->entityType->getLabel()]),
+      '#cache' => [
+        'contexts' => $this->entityType->getListCacheContexts(),
+        'tags' => $this->entityType->getListCacheTags(),
+      ],
+    ];
+
     $build['closed']['title'] = [
       '#type' => 'html_tag',
       '#tag' => 'h3',
@@ -141,6 +162,10 @@ class TaskListBuilder extends EntityListBuilder {
       ],
     ];
     foreach ($this->load() as $entity) {
+      if ($entity->bundle() == 'gdpr_sar' && $entity->status->value == 'requested') {
+        continue;
+      }
+
       if ($row = $this->buildRow($entity)) {
         $build[$entity->status->value]['table']['#rows'][$entity->id()] = $row;
       }
