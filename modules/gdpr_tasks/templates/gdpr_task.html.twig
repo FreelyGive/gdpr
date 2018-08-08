@@ -17,9 +17,10 @@
 #}
 
 {% if content %}
-  <details data-drupal-selector="task-summary" id="task-summary" open="open">
-    <summary role="button" aria-controls="task-summary" aria-expanded="true" aria-pressed="true">Task Summary</summary>
-    <div class="details-wrapper">
+  {# @todo Fix the seven details classes in a better way. #}
+  <details data-drupal-selector="task-summary" id="task-summary" open="open" class="seven-details">
+    <summary role="button" aria-controls="task-summary" aria-expanded="true" aria-pressed="true" class="seven-details__summary">Task Summary</summary>
+    <div class="details-wrapper seven-details__wrapper">
       <div{{ attributes.addClass('gdpr_task') }}>
         <strong>Type: </strong> {{ type }}
         {{- content -}}
@@ -29,9 +30,9 @@
 {% endif %}
 
 {% if data %}
-  <details data-drupal-selector="task-data" id="task-data" open="open">
-    <summary role="button" aria-controls="task-data" aria-expanded="true" aria-pressed="true">Data</summary>
-    <div class="details-wrapper">
+  <details data-drupal-selector="task-data" id="task-data" open="open" class="seven-details">
+    <summary role="button" aria-controls="task-data" aria-expanded="true" aria-pressed="true" class="seven-details__summary">Data</summary>
+    <div class="details-wrapper seven-details__wrapper">
       <div{{ attributes.addClass('gdpr_task') }}>
         {{ data }}
       </div>

@@ -112,12 +112,10 @@ class UserConsentItem extends FieldItemBase {
    */
   public function fieldSettingsForm(array $form, FormStateInterface $form_state) {
 
-    $agreement_ids = \Drupal::entityQuery('gdpr_consent_agreement')
-      ->condition('status', 1)
-      ->sort('title')
-      ->execute();
-
-    $agreements = ConsentAgreement::loadMultiple($agreement_ids);
+    $query = \Drupal::entityQuery('gdpr_consent_agreement');
+    // @todo Filter by status to show enabled.
+    $results = $query->execute();
+    $agreements = ConsentAgreement::loadMultiple($results);
 
     $element = [];
 

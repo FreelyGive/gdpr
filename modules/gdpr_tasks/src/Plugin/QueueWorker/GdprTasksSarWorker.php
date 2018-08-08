@@ -57,11 +57,11 @@ class GdprTasksSarWorker extends QueueWorkerBase implements ContainerFactoryPlug
   protected $queue;
 
   /**
-   * The rta traversal service.
+   * The rta traversal factory.
    *
-   * @var \Drupal\gdpr_tasks\Traversal\RightToAccessDisplayTraversal
+   * @var \Drupal\gdpr_fields\EntityTraversalFactory
    */
-  protected $rtaTraversal;
+  protected $traversalFactory;
 
   /**
    * The file system.
@@ -94,20 +94,20 @@ class GdprTasksSarWorker extends QueueWorkerBase implements ContainerFactoryPlug
    *   The field type plugin manager.
    * @param \Drupal\Core\Queue\QueueInterface $queue
    *   The gdpr sars task queue.
-   * @param \Drupal\gdpr_fields\EntityTraversalFactory $rta_traversal
+   * @param \Drupal\gdpr_fields\EntityTraversalFactory $traversal_factory
    *   The rta traversal service.
    * @param \Drupal\Core\File\FileSystem $file_system
    *   The file system.
    * @param \Drupal\Core\Messenger\MessengerInterface $messenger
    *   The messenger service.
    */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityTypeManagerInterface $entity_type_manager, Php $uuid, FieldTypePluginManager $field_type_plugin_manager, QueueInterface $queue, EntityTraversalFactory $rta_traversal, FileSystem $file_system, MessengerInterface $messenger) {
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityTypeManagerInterface $entity_type_manager, Php $uuid, FieldTypePluginManager $field_type_plugin_manager, QueueInterface $queue, EntityTraversalFactory $traversal_factory, FileSystem $file_system, MessengerInterface $messenger) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->taskStorage = $entity_type_manager->getStorage('gdpr_task');
     $this->uuid = $uuid;
     $this->fieldTypePluginManager = $field_type_plugin_manager;
     $this->queue = $queue;
-    $this->rtaTraversal = $rta_traversal;
+    $this->traversalFactory = $traversal_factory;
     $this->fileSystem = $file_system;
     $this->messenger = $messenger;
   }
@@ -137,6 +137,10 @@ class GdprTasksSarWorker extends QueueWorkerBase implements ContainerFactoryPlug
     if (!empty($data)) {
       /* @var \Drupal\gdpr_tasks\Entity\TaskInterface $task */
       $task = $this->taskStorage->load($data);
+
+      if (!$task) {
+        return;
+      }
 
       // Work out where we are up to and what to do next.
       switch ($task->getStatus()) {
@@ -266,9 +270,8 @@ class GdprTasksSarWorker extends QueueWorkerBase implements ContainerFactoryPlug
 
     // Gather our entities.
     // @todo: Move this inline.
-    $rtaTraversal = $this->rtaTraversal->getTraversal($task->getOwner());
-    $rtaTraversal->traverse();
-    $all_data = $rtaTraversal->getResults();
+    $traverser = $this->traversalFactory->getTraversal($task->getOwner());
+    $all_data = $traverser->getResults();
 
     // Build our export files.
     $csvs = [];

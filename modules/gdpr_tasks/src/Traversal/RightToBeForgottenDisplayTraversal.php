@@ -47,7 +47,6 @@ class RightToBeForgottenDisplayTraversal extends EntityTraversal {
         'bundle' => $this->getBundleLabel($entity),
         'notes' => $field_config->notes,
         'gdpr_rtf' => $field_config->rtf,
-        'link' => $field_config->rtf == 'maybe' ? $entity->toLink('Edit', 'edit-form') : '',
       ];
     }
   }

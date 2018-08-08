@@ -43,7 +43,7 @@ class CreateGdprRequestOnBehalfOfUserForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $user_id = $this->getRouteMatch()->getParameter('user');
+    $user_id = $this->getRouteMatch()->getParameter('user')->id();
     $request_type = $this->getRouteMatch()->getParameter('gdpr_task_type');
     $notes = $form_state->getValue('notes');
 
@@ -53,8 +53,13 @@ class CreateGdprRequestOnBehalfOfUserForm extends FormBase {
       'notes' => $notes,
     ]);
     $task->save();
+
+    $queue = \Drupal::queue('gdpr_tasks_process_gdpr_sar');
+    $queue->createQueue();
+    $queue->createItem($task->id());
+
     $this->messenger()->addStatus('The request has been logged');
-    return $this->redirect('view.gdpr_tasks_my_data_requests.page_1', ['user' => $user_id]);
+    $form_state->setRedirect('view.gdpr_tasks_my_data_requests.page_1', ['user' => $user_id]);
   }
 
 }
