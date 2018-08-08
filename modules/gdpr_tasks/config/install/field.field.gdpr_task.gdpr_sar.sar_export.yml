@@ -18,7 +18,7 @@ default_value: {  }
 default_value_callback: ''
 settings:
   file_directory: 'gdpr-exports'
-  file_extensions: csv
+  file_extensions: zip
   max_filesize: ''
   description_field: false
   handler: 'default:file'

@@ -103,7 +103,7 @@ class Anonymizer {
 
     if (!$this->checkExportDirectoryExists()) {
       $link = Link::fromTextAndUrl('here', Url::fromRoute('gdpr_tasks.remove_settings'))->toString();
-      $errors[] = new TranslatableMarkup('An export directory has not been set. Please set this %link.', ['%link', $link]);
+      $errors[] = new TranslatableMarkup('An export directory has not been set. Please set this @link.', ['@link' => $link]);
       return $errors;
     }
 

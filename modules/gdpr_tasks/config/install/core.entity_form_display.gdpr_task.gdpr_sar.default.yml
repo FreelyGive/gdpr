@@ -4,22 +4,41 @@ dependencies:
   config:
     - field.field.gdpr_task.gdpr_sar.manual_data
     - field.field.gdpr_task.gdpr_sar.sar_export
+    - field.field.gdpr_task.gdpr_sar.sar_export_assets
+    - field.field.gdpr_task.gdpr_sar.sar_export_parts
     - gdpr_tasks.gdpr_task_type.gdpr_sar
-third_party_settings: {  }
+  module:
+    - file
 id: gdpr_task.gdpr_sar.default
 targetEntityType: gdpr_task
 bundle: gdpr_sar
 mode: default
 content:
-  manual_data:
-    type: string_textarea
+  sar_export:
+    type: file_generic
     weight: 0
     region: content
     settings:
-      rows: 5
-      placeholder: ''
+      progress_indicator: throbber
+    third_party_settings: {  }
+  sar_export_assets:
+    type: file_generic
+    weight: 1
+    region: content
+    settings:
+      progress_indicator: throbber
+    third_party_settings: {  }
+  sar_export_parts:
+    type: file_generic
+    weight: 2
+    region: content
+    settings:
+      progress_indicator: throbber
     third_party_settings: {  }
 hidden:
-  sar_export: true
+  manual_data: true
+  notes: true
+  processed_by: true
+  requested_by: true
   status: true
   user_id: true

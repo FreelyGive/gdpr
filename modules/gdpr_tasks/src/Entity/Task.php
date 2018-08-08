@@ -274,7 +274,7 @@ class Task extends ContentEntityBase implements TaskInterface {
       ->setDescription(t('Notes with this request'))
       ->setRequired(FALSE)
       ->setDisplayOptions('view', [
-        'type' => 'textfield',
+        'type' => 'basic_string',
       ])
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE);

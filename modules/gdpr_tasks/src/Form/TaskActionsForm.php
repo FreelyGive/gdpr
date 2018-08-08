@@ -163,7 +163,9 @@ class TaskActionsForm extends ContentEntityForm {
       // If this happens, combine the error messages and display them.
       if (\count($errors) > 0) {
         $should_save = FALSE;
-        $this->messenger()->addError(implode(' ', $errors));
+        foreach ($errors as $error) {
+          $this->messenger()->addError($error);
+        }
         $form_state->setRebuild();
       }
       else {
