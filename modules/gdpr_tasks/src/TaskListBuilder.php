@@ -118,6 +118,7 @@ class TaskListBuilder extends EntityListBuilder {
       '#header' => $this->buildHeader(),
       '#rows' => [],
       '#empty' => $this->t('There is no open @label yet.', ['@label' => $this->entityType->getLabel()]),
+      '#attributes' => ['class' => ['tasks-requested']],
       '#cache' => [
         'contexts' => $this->entityType->getListCacheContexts(),
         'tags' => $this->entityType->getListCacheTags(),
@@ -135,6 +136,7 @@ class TaskListBuilder extends EntityListBuilder {
       '#header' => $this->buildHeader(),
       '#rows' => [],
       '#empty' => $this->t('There are no tasks to be reviewed yet.'),
+      '#attributes' => ['class' => ['tasks-reviewing']],
       '#cache' => [
         'contexts' => $this->entityType->getListCacheContexts(),
         'tags' => $this->entityType->getListCacheTags(),
@@ -152,6 +154,7 @@ class TaskListBuilder extends EntityListBuilder {
       '#header' => $this->buildHeader(),
       '#rows' => [],
       '#empty' => $this->t('There are no processed tasks yet.'),
+      '#attributes' => ['class' => ['tasks-processed']],
       '#cache' => [
         'contexts' => $this->entityType->getListCacheContexts(),
         'tags' => $this->entityType->getListCacheTags(),
@@ -169,6 +172,7 @@ class TaskListBuilder extends EntityListBuilder {
       '#header' => $this->buildHeader(),
       '#rows' => [],
       '#empty' => $this->t('There are no closed tasks yet.'),
+      '#attributes' => ['class' => ['tasks-closed']],
       '#cache' => [
         'contexts' => $this->entityType->getListCacheContexts(),
         'tags' => $this->entityType->getListCacheTags(),
