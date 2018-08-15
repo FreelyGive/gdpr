@@ -144,7 +144,7 @@ class ConsentWidget extends WidgetBase implements ContainerFactoryPluginInterfac
 
     $element['target_revision_id'] = [
       '#type' => 'hidden',
-      '#default_value' => isset($item->target_revision_id) ? $item->target_revision_id : $agreement->getRevisionId(),
+      '#default_value' => $agreement->getRevisionId(),
     ];
 
     $element['agreed'] = [

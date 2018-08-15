@@ -84,9 +84,14 @@ class UserConsentItem extends FieldItemBase {
       $should_log = TRUE;
     }
     else {
-      $field_name = $this->getFieldDefinition()->getName();
-      $original_value = $this->getEntity()->original->{$field_name}->agreed;
-      if ($original_value != $this->agreed) {
+      $field_name = $definition->getName();
+      $original_field = $this->getEntity()->original->{$field_name};
+      if ($original_field->agreed != $this->agreed) {
+        $should_log = TRUE;
+      }
+
+      // Check for change in revision_id.
+      if ($original_field->target_revision_id != $this->target_revision_id) {
         $should_log = TRUE;
       }
     }
