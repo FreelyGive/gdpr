@@ -101,7 +101,7 @@ class TaskActionsForm extends ContentEntityForm {
 
     if (in_array($entity->getStatus(), ['processed', 'closed'])) {
       $form['manual_data']['#access'] = FALSE;
-      $form['field_sar_export']['#access'] = FALSE;
+      $form['sar_export']['#access'] = FALSE;
       $form['sar_export_assets']['#access'] = FALSE;
       $form['sar_export_parts']['#access'] = FALSE;
       $form['actions']['#access'] = FALSE;

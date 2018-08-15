@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * @file
+ * Install file for the GDPR Consent module.
+ */
+
+use Drupal\Core\Field\BaseFieldDefinition;
+
+/**
+ * Re-create the 'description' field as a long text.
+ */
+function gdpr_consent_update_8001() {
+  // Store the existing values.
+  $database = \Drupal::database();
+  $update_manager = \Drupal::entityDefinitionUpdateManager();
+
+  $descriptions = $database->select('gdpr_consent_agreement_field_revision', 'data')
+    ->fields('data', ['id', 'revision_id', 'description'])
+    ->execute()
+    ->fetchAllAssoc('revision_id');
+
+  $storage_definition = $update_manager->getFieldStorageDefinition('description', 'gdpr_consent_agreement');
+  $update_manager->uninstallFieldStorageDefinition($storage_definition);
+
+  $storage_definition = BaseFieldDefinition::create('string_long')
+    ->setLabel(t('Description'))
+    ->setRevisionable(TRUE)
+    ->setTranslatable(TRUE)
+    ->setDescription(t('Text displayed to the user on the form'))
+    ->setRequired(TRUE)
+    ->setDisplayOptions('view', [
+      'type' => 'textfield',
+    ])
+    ->setDisplayOptions('form', [
+      'type' => 'textfield',
+      'weight' => 2,
+    ])
+    ->setDisplayConfigurable('form', TRUE)
+    ->setDisplayConfigurable('view', TRUE);
+
+  $update_manager->installFieldStorageDefinition('description', 'gdpr_consent_agreement', 'gdpr_consent_agreement', $storage_definition);
+
+  // Restore the values.
+  foreach ($descriptions as $revision_id => $data) {
+    $database->update('gdpr_consent_agreement_field_data')
+      ->fields(['description' => $data->description])
+      ->condition('id', $data->id)
+      ->execute();
+
+    $database->update('gdpr_consent_agreement_field_revision')
+      ->fields(['description' => $data->description])
+      ->condition('id', $data->id)
+      ->condition('revision_id', $revision_id)
+      ->execute();
+  }
+}

@@ -249,7 +249,7 @@ class ConsentAgreement extends RevisionableContentEntityBase implements ConsentA
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE);
 
-    $fields['description'] = BaseFieldDefinition::create('string')
+    $fields['description'] = BaseFieldDefinition::create('string_long')
       ->setLabel(t('Description'))
       ->setRevisionable(TRUE)
       ->setTranslatable(TRUE)
