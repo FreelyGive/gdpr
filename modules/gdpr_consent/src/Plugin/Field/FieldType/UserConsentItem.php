@@ -73,11 +73,20 @@ class UserConsentItem extends FieldItemBase {
     $resolver = $plugin_manager->getForEntityType($definition->getTargetEntityTypeId(), $definition->getTargetBundle());
     $user = $resolver->resolve($this->getEntity());
 
+    $should_log = FALSE;
+    $should_update = FALSE;
+
     if ($user != NULL) {
       $this->set('user_id', $user->id());
+      $should_update = TRUE;
     }
 
-    $should_log = FALSE;
+    // Only log if agreement is explicit.
+    /* @var \Drupal\gdpr_consent\Entity\ConsentAgreement $agreement*/
+    $agreement = \Drupal::entityTypeManager()->getStorage('gdpr_consent_agreement')->load($this->target_id);
+    if (!$agreement->requiresExplicitAcceptance()) {
+      return $should_update;
+    }
 
     if (!$update) {
       // Always log on a create.
@@ -106,10 +115,7 @@ class UserConsentItem extends FieldItemBase {
       $msg->save();
     }
 
-    if ($user != NULL) {
-      return TRUE;
-    }
-
+    return $should_update;
   }
 
   /**
