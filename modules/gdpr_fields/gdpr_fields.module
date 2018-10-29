@@ -163,9 +163,13 @@ function gdpr_fields_collect_gdpr_entities($entity_type, $entity, array $entity_
         $passed_row_id = NULL;
         if ($source_plugin) {
           $source_gdpr_data = GDPRFieldData::createFromName($source_plugin);
-          if ($GDPR_data->getSetting('gdpr_sars_filename','main') == $source_gdpr_data->getSetting('gdpr_sars_filename','main')) {
-            $passed_row_id = $row_id;
-          }
+          $source_filename = $source_gdpr_data->getSetting('gdpr_sars_filename', 'main');
+        }
+        else {
+          $source_filename = 'main';
+        }
+        if ($GDPR_data->getSetting('gdpr_sars_filename','main') == $source_filename) {
+          $passed_row_id = $row_id;
         }
         $property_wrapper = $wrapper->{$property_name};
         $entity_list = gdpr_fields_collect_gdpr_entities(

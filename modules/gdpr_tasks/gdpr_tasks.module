@@ -152,6 +152,9 @@ function gdpr_tasks_menu() {
 function gdpr_tasks_menu_alter(&$items) {
   $items['user/%/gdpr/requests']['access callback'] = 'gdpr_tasks_user_tasks_access';
   $items['user/%/gdpr/requests']['access arguments'] = array('view', 1);
+
+  $items['user/%/gdpr']['access callback'] = 'gdpr_tasks_user_tasks_access';
+  $items['user/%/gdpr']['access arguments'] = array('view', 1);
 }
 
 /**

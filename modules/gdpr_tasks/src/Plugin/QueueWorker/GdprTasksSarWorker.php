@@ -21,6 +21,11 @@ class GdprTasksSarWorker {
         break;
 
       // Processed by staff and ready to compile.
+      case 'building':
+        $this->build($task);
+        break;
+
+      // Processed by staff and ready to compile.
       case 'processed':
         $this->compile($task);
         break;
