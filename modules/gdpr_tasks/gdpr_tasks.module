@@ -523,6 +523,19 @@ function gdpr_tasks_collect_rta_data($user) {
     foreach ($entities as $entity) {
       /* @var \EntityDrupalWrapper $wrapper */
       $wrapper = entity_metadata_wrapper($entity_type, $entity);
+
+      if ($entity_type == 'commerce_order' && $wrapper->getBundle() == 'commerce_booking') {
+        // Check for missing events.
+        try {
+          if (!$wrapper->commerce_booking_event->raw()) {
+            continue;
+          }
+        }
+        catch (EntityMetadataWrapperException $exc) {
+          continue;
+        }
+      }
+
       $entity_info = entity_get_info($entity_type);
       $entity_id_key = isset($entity_info['entity keys']['id']) ? $entity_info['entity keys']['id'] : NULL;
       foreach ($wrapper->getPropertyInfo() as $property => $property_info) {
