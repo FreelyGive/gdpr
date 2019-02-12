@@ -207,6 +207,8 @@ class GdprTasksSarWorker {
     // @todo: Add error handling.
     $zip->close();
 
+    // Make sure the user owns the compiled zip file.
+    $file->value()->uid = $task->getOwner()->uid;
     // Save the file to update the file size.
     $file->save();
 
