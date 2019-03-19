@@ -6,6 +6,36 @@
 class Anonymizer {
 
   /**
+   * Errors encountered by anonymization.
+   *
+   * @var array
+   */
+  public $errors = array();
+
+  /**
+   * Entities successfully anonymized.
+   *
+   * Array is keyed by entity_type and entity_id.
+   *
+   * @var array
+   */
+  public $successes = array();
+
+  /**
+   * Entities that failed to anonymize.
+   *
+   * @var array
+   */
+  public $failures = array();
+
+  /**
+   * Entities that need to be deleted entirely.
+   *
+   * @var array
+   */
+  public $delete = array();
+
+  /**
    * Runs anonymization routines against a user.
    *
    * @param GDPRTask $task
@@ -21,17 +51,13 @@ class Anonymizer {
     // so we don't end up affecting any other references to the entity.
     $user = $task->getOwner();
 
-    $errors = array();
-    $successes = array();
-    $entire_entities = array();
-    $failures = array();
     $log = array();
 
     if (!$this->checkExportDirectoryExists()) {
-      $errors[] = 'An export directory has not been set. Please set this under Configuration -> GDPR -> Right to be Forgotten';
+      $this->errors[] = 'An export directory has not been set. Please set this under Configuration -> GDPR -> Right to be Forgotten';
     }
 
-    foreach (gdpr_tasks_collect_rtf_data($user, TRUE) as $plugin_id => $data) {
+    foreach (gdpr_tasks_collect_rtf_data($user, TRUE) as $data) {
       $mode = $data['rtf'];
       $entity_type = $data['entity_type'];
       $entity_id = $data['entity_id'];
@@ -69,7 +95,7 @@ class Anonymizer {
         // Could not anonymize/remove field. Record to errors list.
         // Prevent entity from being saved.
         $entity_success = FALSE;
-        $errors[] = $msg;
+        $this->errors[] = $msg;
         $log[] = 'error';
         $log[] = array(
           'error' => $msg,
@@ -83,41 +109,55 @@ class Anonymizer {
 
       if ($entity_success) {
         if ($entire_entity) {
-          $entire_entities[$entity_type][$entity_id] = $entity_id;
+          $this->delete[$entity_type][$entity_id] = $entity_id;
         }
         else {
-          $successes[$entity_type][$entity_id] = $entity;
+          $this->successes[$entity_type][$entity_id] = $entity;
         }
       }
       else {
-        $failures[] = $entity;
+        $this->failures[] = $entity;
       }
     }
 
     // @todo Better log field.
     $task->wrapper()->gdpr_tasks_removal_log = json_encode($log);
 
-    if (count($failures) === 0) {
+    $this->complete($task, $log);
+
+    return $this->errors;
+  }
+
+  /**
+   * Complete anonymization routines.
+   *
+   * @param GDPRTask $task
+   *   The current task being executed.
+   * @param array $log
+   *   The log of .
+   */
+  protected function complete(GDPRTask $task, $log) {
+    if (count($this->failures) === 0) {
       $tx = db_transaction();
 
       try {
-        /* @var EntityInterface $entity */
-        foreach ($entire_entities as $entity_type => $entities) {
+        foreach ($this->delete as $entity_type => $entities) {
           foreach ($entities as $entity_id) {
             entity_delete($entity_type, $entity_id);
 
             // Make sure we don't try to save it later.
-            unset($successes[$entity_type][$entity_id]);
+            if (isset($this->successes[$entity_type][$entity_id])) {
+              unset($this->successes[$entity_type][$entity_id]);
+            }
           }
         }
 
         /* @var EntityInterface $entity */
-        foreach ($successes as $entity_type => $entities) {
+        foreach ($this->successes as $entity_type => $entities) {
           foreach ($entities as $entity) {
             entity_save($entity_type, $entity);
           }
         }
-
         // Re-fetch the user so we see any changes that were made.
         $user = entity_load_unchanged('user', $task->user_id);
         user_save($user, array('status' => 0));
@@ -127,11 +167,9 @@ class Anonymizer {
       }
       catch (\Exception $e) {
         $tx->rollback();
-        $errors[] = $e->getMessage();
+        $this->errors[] = $e->getMessage();
       }
     }
-
-    return $errors;
   }
 
   /**
@@ -139,16 +177,25 @@ class Anonymizer {
    *
    * @param array $field_info
    *   The current field to process.
-   * @param EntityInterface|stdClass $entity
+   * @param object|EntityInterface $entity
    *   The current field to process.
    *
    * @return array
    *   First element is success boolean, second element is the error message.
    */
-  private function remove($field_info, $entity) {
+  private function remove(array $field_info, $entity) {
     try {
       $entity_type = $field_info['entity_type'];
       $field = $field_info['plugin']->property_name;
+
+      // If this is the entity's ID, treat the removal as remove the entire
+      // entity.
+      if (self::propertyIsEntityId($entity_type, $field)) {
+        if (entity_delete($entity_type, $entity->{$field}) === FALSE) {
+          return array(FALSE, "Unable to delete entity type.");
+        }
+        return array(TRUE, NULL);
+      }
 
       // Check if the property can be removed.
       $wrapper = entity_metadata_wrapper($entity_type, $entity);
@@ -170,13 +217,13 @@ class Anonymizer {
    *
    * @param array $field_info
    *   The field to anonymise.
-   * @param $entity
+   * @param object|EntityInterface $entity
    *   The parent entity.
    *
    * @return array
    *   First element is success boolean, second element is the error message.
    */
-  private function anonymize($field_info, $entity) {
+  private function anonymize(array $field_info, $entity) {
     $sanitizer_id = $this->getSanitizerId($field_info, $entity);
     $field = $field_info['plugin']->property_name;
 
@@ -203,7 +250,6 @@ class Anonymizer {
       return array(FALSE, $e->getMessage(), NULL);
     }
   }
-
 
   /**
    * Checks that the export directory has been set.
@@ -265,13 +311,13 @@ class Anonymizer {
    *   The field name.
    * @param array $property_info
    *   The property info.
-   * @param null $error_message
+   * @param mixed $error_message
    *   A variable to fill with an error message.
    *
    * @return bool
    *   TRUE if the property can be removed, FALSE if not.
    */
-  public static function propertyCanBeRemoved($entity_type, $field, $property_info, &$error_message = NULL) {
+  public static function propertyCanBeRemoved($entity_type, $field, array $property_info, &$error_message = NULL) {
     $msg_vars = array(
       '%entity_type' => $entity_type,
       '%field' => $field,
