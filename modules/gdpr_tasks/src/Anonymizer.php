@@ -162,8 +162,8 @@ class Anonymizer {
         $user = entity_load_unchanged('user', $task->user_id);
         user_save($user, array('status' => 0));
 
-        // @todo Write a log to file system.
-//        $this->writeLogToFile($task, $log);
+        // Track removal log in file system.
+        $this->writeLogToFile($task, $log);
       }
       catch (\Exception $e) {
         $tx->rollback();
@@ -258,10 +258,23 @@ class Anonymizer {
    *   Indicates whether the export directory has been configured and exists.
    */
   private function checkExportDirectoryExists() {
-    // @todo Configure export directory.
-    $directory = 'private://gdpr-export';
-
+    $directory = $this->getExportDirectory();
     return !empty($directory) && file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
+  }
+
+  /**
+   * Gets the directory to export logs to.
+   *
+   * This can be saved in a variable or set in settings.php.
+   *
+   * @return string
+   *   Stream wrapper for file path.
+   *
+   * @todo Create a settings form for setting this.
+   */
+  private function getExportDirectory() {
+    $directory = variable_get('gdpr_tasks_export_directory', 'private://gdpr-export');
+    return $directory;
   }
 
   /**
@@ -349,6 +362,33 @@ class Anonymizer {
 
     // Otherwise assume we can.
     return TRUE;
+  }
+
+  /**
+   * Stores the task log to the configured directory as JSON.
+   *
+   * @param GDPRTask $task
+   *   The task in progress.
+   * @param array $log
+   *   Log of processed fields.
+   */
+  private function writeLogToFile(GDPRTask $task, array $log) {
+    global $user;
+    $filename = 'GDPR_RTF_' . date('Y-m-d H-i-s') . '_' . $task->user_id . '.json';
+    $dir = $this->getExportDirectory();
+
+    $filename = $dir . '/' . $filename;
+
+    // Don't serialize the whole entity as we don't need all fields.
+    $output = array(
+      'task_id' => $task->id,
+      'owner_id' => $task->user_id,
+      'created' => $task->created,
+      'processed_by' => $user->uid,
+      'log' => $log,
+    );
+
+    file_put_contents($filename, json_encode($output));
   }
 
 }
